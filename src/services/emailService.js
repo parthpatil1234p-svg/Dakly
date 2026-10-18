@@ -20,19 +20,20 @@ function getTransporter(project, decryptedPassword) {
     return transporterCache.get(cacheKey);
   }
 
-  // Create new pooled transporter for Gmail SMTP
+  // Create cloud-compatible transporter for Gmail SMTP (Port 587 with STARTTLS)
+  // Cloud providers like Render restrict port 465/25, whereas Port 587 is universally open
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // Use SSL
-    pool: true, // KEEP CONNECTION ALIVE (Solves cold start & OTP delay!)
-    maxConnections: 5,
-    maxMessages: 100,
+    port: 587,
+    secure: false, // Must be false for 587 (uses STARTTLS)
+    requireTLS: true,
     auth: {
       user: project.senderEmail,
       pass: decryptedPassword,
     },
+    connectionTimeout: 10000, // 10s connection timeout
+    greetingTimeout: 5000,    // 5s greeting timeout
+    socketTimeout: 15000,    // 15s socket timeout
     tls: {
       rejectUnauthorized: true,
     },
