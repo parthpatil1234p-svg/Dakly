@@ -1,23 +1,36 @@
 {
-  "name": "free-gmail-microservice",
+  "name": "dakly",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Dakly - The zero-setup headless transactional email delivery engine for developers.",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "node -c src/utils/crypto.js src/config/db.js src/models/User.js src/models/Project.js src/models/EmailLog.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "keywords": [
+    "email",
+    "transactional-email",
+    "otp",
+    "microservice",
+    "gmail-smtp",
+    "dakly",
+    "developer-tools",
+    "smtp-relay"
+  ],
+  "author": "Parth Patil",
+  "license": "MIT",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
-    "dotenv": "^18.0.8",
-    "express": "^5.3.0",
-    "helmet": "^8.3.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.11.2",
-    "nodemailer": "^10.1.7"
+    "mongoose": "^9.3.2",
+    "nodemailer": "^8.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
   }
 }
