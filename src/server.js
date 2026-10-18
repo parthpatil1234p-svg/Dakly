@@ -18,6 +18,21 @@ app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
+// Live HTTP Request Logger (Prints in Render Console for every request)
+app.use((req, res, next) => {
+  const start = Date.now();
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const statusCode = res.statusCode;
+    const icon = statusCode >= 400 ? '❌' : statusCode >= 300 ? '⚠️' : '✅';
+    console.log(`[${new Date().toISOString()}] ${icon} ${req.method} ${req.originalUrl} | Status: ${statusCode} | Time: ${duration}ms | IP: ${clientIp}`);
+  });
+
+  next();
+});
+
 // Health Check Endpoint (For Render / UptimeRobot / cron-job.org keep-awake)
 app.get('/health', (req, res) => {
   res.json({
