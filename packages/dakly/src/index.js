@@ -502,7 +502,7 @@ class Dakly {
    * @param {object} options
    * @param {string|object} options.payload - Raw body string or JSON object
    * @param {string} options.signature - Value of 'x-dakly-signature' header
-   * @param {string} options.secret - Webhook HMAC secret ('whsec_...')
+   * @param {string} options.secret - Webhook HMAC secret ('daksec_...')
    * @returns {boolean} Whether the webhook signature is authentic
    */
   static verifyWebhookSignature(options = {}) {

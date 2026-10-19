@@ -781,7 +781,7 @@ async function generateWebhookSecret(req, res) {
       return res.status(403).json({ success: false, error: 'Access denied.' });
     }
 
-    const newSecret = `whsec_${crypto.randomBytes(24).toString('hex')}`;
+    const newSecret = `daksec_${crypto.randomBytes(24).toString('hex')}`;
     project.webhookSecret = newSecret;
     await project.save();
 

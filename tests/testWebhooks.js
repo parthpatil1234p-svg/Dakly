@@ -13,7 +13,7 @@ const StandaloneDakly = require('../sdk/dakly.js');
 async function runWebhookTests() {
   console.log('🧪 Starting Dakly Webhook Unit Tests...\n');
 
-  const testSecret = 'whsec_9841ab7c2ef6409841ab7c2ef640';
+  const testSecret = 'daksec_test_mock_secret_key';
   const testPayload = {
     event: 'email.delivered',
     trackingId: 'tr_test_999',
@@ -44,7 +44,7 @@ async function runWebhookTests() {
     const isBad = verifyWebhookSignature(payloadString, 'sha256=bad_hex_signature', testSecret);
     assert.strictEqual(isBad, false, 'Invalid signature should return false');
 
-    const isWrongSecret = verifyWebhookSignature(payloadString, `sha256=${correctHex}`, 'whsec_wrong');
+    const isWrongSecret = verifyWebhookSignature(payloadString, `sha256=${correctHex}`, 'daksec_wrong_key');
     assert.strictEqual(isWrongSecret, false, 'Wrong secret should return false');
 
     console.log('✅ Test 2 Passed: Tampered or invalid HMAC signatures are strictly rejected.');

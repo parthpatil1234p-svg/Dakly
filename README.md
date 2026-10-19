@@ -526,7 +526,7 @@ Stream real-time HTTP events directly to your backend server as emails are deliv
 - `webhook.test`: Live diagnostic ping sent from the Webhook console.
 
 ### Cryptographic Signature Verification (`x-dakly-signature`)
-Dakly calculates an HMAC-SHA256 signature using your project's Webhook Secret (`whsec_...`) and sends it in the `x-dakly-signature` header:
+Dakly calculates an HMAC-SHA256 signature using your project's Webhook Secret (`daksec_...`) and sends it in the `x-dakly-signature` header:
 `x-dakly-signature: sha256=<hex_digest>`
 
 #### Node.js / Express Verification:
@@ -542,7 +542,7 @@ app.post('/api/webhooks/dakly', (req, res) => {
   const isValid = Dakly.verifyWebhookSignature({
     payload: req.body,
     signature,
-    secret: process.env.DAKLY_WEBHOOK_SECRET, // 'whsec_...'
+    secret: process.env.DAKLY_WEBHOOK_SECRET, // 'daksec_...'
   });
 
   if (!isValid) {
@@ -567,7 +567,7 @@ app = FastAPI()
 async def handle_dakly_webhook(request: Request):
     payload = await request.json()
     signature = request.headers.get("x-dakly-signature", "")
-    secret = os.environ.get("DAKLY_WEBHOOK_SECRET", "whsec_...")
+    secret = os.environ.get("DAKLY_WEBHOOK_SECRET", "daksec_...")
 
     is_valid = Dakly.verify_webhook_signature(payload=payload, signature=signature, secret=secret)
     if not is_valid:

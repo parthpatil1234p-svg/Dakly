@@ -3346,7 +3346,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                           type={showWebhookSecret ? 'text' : 'password'}
                           value={webhookSecretInput}
                           onChange={(e) => setWebhookSecretInput(e.target.value)}
-                          placeholder="e.g. whsec_9841ab7c... (Click Generate to auto-create)"
+                          placeholder="e.g. daksec_9841ab7c... (Click Generate to auto-create)"
                           className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 pr-20 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-inner"
                         />
                         <div className="absolute right-2 flex items-center space-x-1">
@@ -3587,7 +3587,7 @@ app.post('/api/webhooks/dakly', (req, res) => {
   const isValid = Dakly.verifyWebhookSignature({
     payload: req.body,
     signature,
-    secret: process.env.DAKLY_WEBHOOK_SECRET, // '${webhookSecretInput || 'whsec_...'}'
+    secret: process.env.DAKLY_WEBHOOK_SECRET, // '${webhookSecretInput || 'daksec_...'}'
   });
 
   if (!isValid) {
@@ -3640,7 +3640,7 @@ app = FastAPI()
 async def handle_dakly_webhook(request: Request):
     payload = await request.json()
     signature = request.headers.get("x-dakly-signature", "")
-    secret = os.environ.get("DAKLY_WEBHOOK_SECRET", "${webhookSecretInput || 'whsec_...'}")
+    secret = os.environ.get("DAKLY_WEBHOOK_SECRET", "${webhookSecretInput || 'daksec_...'}")
 
     is_valid = Dakly.verify_webhook_signature(
         payload=payload,

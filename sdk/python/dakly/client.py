@@ -358,7 +358,7 @@ class Dakly:
         
         :param payload: Raw body string or parsed dictionary from incoming request
         :param signature: Value of the 'x-dakly-signature' HTTP header
-        :param secret: Your project's Webhook Secret (whsec_...)
+        :param secret: Your project's Webhook Secret (daksec_...)
         :returns: True if the signature is valid and payload authentic
         """
         import hmac

@@ -100,7 +100,7 @@ class TestDaklyPythonSdk(unittest.TestCase):
     def test_webhook_verification(self):
         import hmac
         import hashlib
-        secret = "whsec_supersecret123"
+        secret = "daksec_supersecret123"
         payload = {"event": "email.delivered", "trackingId": "tr_123"}
         body_str = '{"event":"email.delivered","trackingId":"tr_123"}'
         sig = hmac.new(secret.encode("utf-8"), body_str.encode("utf-8"), hashlib.sha256).hexdigest()
@@ -109,7 +109,7 @@ class TestDaklyPythonSdk(unittest.TestCase):
         self.assertTrue(Dakly.verify_webhook_signature(body_str, f"sha256={sig}", secret))
         self.assertTrue(Dakly.verify_webhook_signature(body_str, sig, secret))
         self.assertFalse(Dakly.verify_webhook_signature(body_str, "sha256=invalid", secret))
-        self.assertFalse(Dakly.verify_webhook_signature(body_str, sig, "whsec_wrong"))
+        self.assertFalse(Dakly.verify_webhook_signature(body_str, sig, "daksec_wrong"))
 
 
 if __name__ == "__main__":
