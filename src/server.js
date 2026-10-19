@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const connectDB = require('./config/db');
@@ -10,9 +11,12 @@ const emailRoutes = require('./routes/emailRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security Middleware
-app.use(helmet());
+// Security Middleware (Disable CSP restriction for Dashboard CDN assets)
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
+
+// Serve Static Frontend Assets
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Body Parsers (15MB limit to allow base64 PDF/image attachments)
 app.use(express.json({ limit: '15mb' }));
@@ -65,14 +69,25 @@ app.get('/health', async (req, res) => {
   });
 });
 
-// API Welcome & Quick Info
+// Dashboard View (Web UI)
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// API Welcome & Quick Info (or Dashboard for Browser Requests)
 app.get('/', (req, res) => {
+  const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
+  if (acceptsHtml) {
+    return res.sendFile(path.join(__dirname, '../public/index.html'));
+  }
+
   res.json({
     name: '📮 Dakly API',
     tagline: 'The zero-setup headless transactional email delivery engine for developers.',
     status: 'active',
     version: '1.0.0',
     documentation: {
+      dashboard: 'GET /dashboard',
       healthCheck: 'GET /health',
       createProject: 'POST /api/projects',
       listProjects: 'GET /api/projects',
