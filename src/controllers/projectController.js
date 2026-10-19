@@ -1,7 +1,9 @@
 const Project = require('../models/Project');
+const Suppression = require('../models/Suppression');
 const { encrypt } = require('../utils/crypto');
 const { invalidateTransporter } = require('../services/emailService');
 const { validateLogoImage } = require('../utils/logoValidator');
+const { calculateWarmupStage } = require('../utils/warmupHelper');
 
 /**
  * Register a new project and receive an API Key
@@ -488,6 +490,210 @@ async function deleteLogo(req, res) {
   }
 }
 
+/**
+ * Get paginated list of suppressed emails for a project
+ * GET /api/projects/:id/suppression
+ */
+async function getSuppressionList(req, res) {
+  try {
+    const { id } = req.params;
+    const { page = 1, limit = 50, search = '' } = req.query;
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    const query = { projectId: project._id };
+    if (search && search.trim()) {
+      query.email = { $regex: search.trim(), $options: 'i' };
+    }
+
+    const pageNum = Math.max(1, parseInt(page, 10));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [total, suppressions] = await Promise.all([
+      Suppression.countDocuments(query),
+      Suppression.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+    ]);
+
+    res.json({
+      success: true,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum) || 1,
+      count: suppressions.length,
+      suppressions,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Manually add an email to the suppression list
+ * POST /api/projects/:id/suppression
+ * Body: { email, reason, details }
+ */
+async function addSuppression(req, res) {
+  try {
+    const { id } = req.params;
+    const { email, reason = 'MANUAL_BLOCK', details } = req.body;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, error: 'Valid email address is required.' });
+    }
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    const suppression = await Suppression.findOneAndUpdate(
+      { projectId: project._id, email: cleanEmail },
+      {
+        projectId: project._id,
+        email: cleanEmail,
+        reason: reason || 'MANUAL_BLOCK',
+        details: details || 'Manually added by workspace operator',
+        lastAttemptedAt: new Date(),
+      },
+      { upsert: true, new: true }
+    );
+
+    res.json({
+      success: true,
+      message: `Email "${cleanEmail}" added to suppression list. Future dispatches will be blocked.`,
+      suppression,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Remove an email from the suppression list (unblock)
+ * DELETE /api/projects/:id/suppression/:suppressionId
+ */
+async function removeSuppression(req, res) {
+  try {
+    const { id, suppressionId } = req.params;
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    // Support deletion by suppression ObjectId or by email address
+    let deleted;
+    if (suppressionId.includes('@')) {
+      deleted = await Suppression.findOneAndDelete({
+        projectId: project._id,
+        email: suppressionId.trim().toLowerCase(),
+      });
+    } else {
+      deleted = await Suppression.findOneAndDelete({
+        _id: suppressionId,
+        projectId: project._id,
+      });
+    }
+
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: 'Suppression record not found.' });
+    }
+
+    res.json({
+      success: true,
+      message: `Email "${deleted.email}" removed from suppression list. Dispatches unblocked.`,
+      deleted,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Toggle Smart Warm-up mode or reset warm-up start date for a sender
+ * PATCH /api/projects/:id/senders/:senderId/warmup
+ * Body: { warmupEnabled, resetStartDate }
+ */
+async function updateSenderWarmup(req, res) {
+  try {
+    const { id, senderId } = req.params;
+    const { warmupEnabled, resetStartDate } = req.body;
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    let updatedSender = null;
+
+    // Check in senders array
+    if (project.senders && project.senders.length > 0) {
+      const sender = project.senders.id(senderId) || project.senders.find((s) => s.email.toLowerCase() === senderId.toLowerCase());
+      if (sender) {
+        if (warmupEnabled !== undefined) {
+          sender.warmupEnabled = !!warmupEnabled;
+        }
+        if (resetStartDate) {
+          sender.warmupStartedAt = new Date();
+        }
+        updatedSender = sender;
+      }
+    }
+
+    // Check if matching legacy sender
+    if (!updatedSender && (project.senderEmail && (senderId === 'primary' || senderId === project.senderEmail.toLowerCase() || senderId === project._id.toString()))) {
+      if (warmupEnabled !== undefined) {
+        project.warmupEnabled = !!warmupEnabled;
+      }
+      if (resetStartDate) {
+        project.warmupStartedAt = new Date();
+      }
+      updatedSender = { email: project.senderEmail };
+    }
+
+    if (!updatedSender) {
+      return res.status(404).json({ success: false, error: 'Sender account not found in project.' });
+    }
+
+    await project.save();
+
+    const capacity = project.getCapacitySummary();
+    res.json({
+      success: true,
+      message: 'Warm-up settings updated successfully.',
+      capacity,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   createProject,
   getProjects,
@@ -499,4 +705,8 @@ module.exports = {
   uploadLogo,
   getLogo,
   deleteLogo,
+  getSuppressionList,
+  addSuppression,
+  removeSuppression,
+  updateSenderWarmup,
 };

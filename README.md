@@ -40,6 +40,7 @@ By plugging Dakly into your project, your application instantly gets an enterpri
 | 🖼️ **1:1 Brand Logo & Anti-Piracy Guard** | Strict 1:1 square brand logo (1 per project) with magic-byte anti-malware/piracy inspection | Renders high-trust brand logo in outgoing emails while blocking fake media/torrents |
 | 📧 **Pre-built Templates & Variable Engine** | 5 built-in responsive templates (OTP, Welcome, Password Reset, College Notes, Receipts) with dynamic `vars` | Zero HTML design work needed; dynamic interpolation with project branding |
 | 📊 **Open & Click Tracking Analytics** | 1x1 zero-latency transparent pixel + phishing-safe link redirects + device breakdown (Mobile vs Desktop) | Real-time engagement telemetry & webhooks (`email.opened`, `email.clicked`) without 3rd-party dependencies |
+| 🛡️ **Smart Warm-up & Bounce Protection** | Progressive 6-day ramp ladder (25 -> 500) + automatic hard-bounce suppression list | Protects Gmail account health, sender reputation, and avoids Google SMTP rate bans |
 | 💻 **Zero Client Dependencies** | Integrates using standard native `fetch()` without installing `nodemailer` or SDKs | Keeps your client application lightweight, clean, and bug-free |
 
 ---
@@ -420,6 +421,23 @@ If your client application triggers a burst of requests (e.g. 50 OTP requests wi
 
 ### 3. Delivery Webhooks (HMAC-SHA256)
 Configure a webhook URL in your project settings (`https://yourapp.com/api/dakly-webhook`). Whenever an email is delivered or bounces, Dakly posts an event signed with an HMAC-SHA256 signature (`x-dakly-signature`).
+
+### 4. Smart Gmail Account Warm-up
+Sending 500 emails on Day 1 from a brand-new Gmail account can raise spam flags with Google algorithms. Dakly automatically activates **Smart Warm-up** for every new sender, progressively ramping up capacity over 6 days:
+- **Day 1:** 25 emails/day
+- **Day 2:** 50 emails/day
+- **Day 3:** 100 emails/day
+- **Day 4:** 200 emails/day
+- **Day 5:** 350 emails/day
+- **Day 6+:** 500 emails/day (Fully warmed up)
+
+*Operators can toggle warm-up mode on/off or skip straight to full 500/day speed anytime with 1 click in the dashboard.*
+
+### 5. Automated Hard Bounce Suppression Guard
+Google penalizes sender accounts that repeatedly send to non-existent or invalid addresses.
+- Whenever an SMTP hard bounce occurs (`550 User unknown`, `551`, `553 Invalid mailbox`, `does not exist`), Dakly automatically flags and saves the recipient to the project's **Suppression List**.
+- Any future dispatches to that recipient are **blocked proactively (`status: "BLOCKED_SUPPRESSED"`)** before reaching Google SMTP, preserving your sender reputation.
+- Operators can view, filter, manually add, or unblock recipients directly from the **Bounce Guard & Suppression** dashboard modal.
 
 ---
 

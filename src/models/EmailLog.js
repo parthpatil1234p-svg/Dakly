@@ -33,8 +33,13 @@ const emailLogSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['DELIVERED', 'FAILED', 'QUEUED'],
+      enum: ['DELIVERED', 'FAILED', 'QUEUED', 'BLOCKED_SUPPRESSED'],
       default: 'DELIVERED',
+      index: true,
+    },
+    isSuppressed: {
+      type: Boolean,
+      default: false,
       index: true,
     },
     error: {

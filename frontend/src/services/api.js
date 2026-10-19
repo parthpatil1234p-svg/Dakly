@@ -155,4 +155,54 @@ export async function previewTemplate(template, vars, apiKey) {
   return res.json();
 }
 
+// Smart Email Warm-up & Bounce Suppression Endpoints
+export async function fetchSuppressionList(projectId, { page = 1, limit = 50, search = '' } = {}, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  let url = `${API_BASE_URL}/api/projects/${projectId}/suppression?page=${page}&limit=${limit}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  const res = await fetch(url, { headers });
+  return res.json();
+}
+
+export async function addSuppressionEmail(projectId, { email, reason, details }, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/suppression`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ email, reason, details }),
+  });
+  return res.json();
+}
+
+export async function removeSuppressionEmail(projectId, suppressionId, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/suppression/${encodeURIComponent(suppressionId)}`, {
+    method: 'DELETE',
+    headers,
+  });
+  return res.json();
+}
+
+export async function updateSenderWarmupMode(projectId, senderId, { warmupEnabled, resetStartDate }, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/senders/${senderId}/warmup`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ warmupEnabled, resetStartDate }),
+  });
+  return res.json();
+}
+
 

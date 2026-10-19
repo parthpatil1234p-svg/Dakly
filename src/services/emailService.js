@@ -1,9 +1,11 @@
 const nodemailer = require('nodemailer');
 const EmailLog = require('../models/EmailLog');
 const Project = require('../models/Project');
+const Suppression = require('../models/Suppression');
 const { generateTrackingId } = require('../utils/crypto');
 const { processAttachments } = require('../utils/attachmentHelper');
 const { processEmailHtmlForTracking } = require('../utils/trackingHelper');
+const { isHardBounceError } = require('../utils/warmupHelper');
 const { paceSender } = require('./pacingService');
 const { dispatchWebhook } = require('./webhookService');
 
@@ -96,6 +98,53 @@ function isQuotaOrAuthLimitError(errorMsg = '') {
 async function sendEmail({ project, to, subject, html, text, otp, template, attachments = [] }) {
   const startTime = Date.now();
   const trackingId = generateTrackingId();
+  const cleanRecipient = (to || '').trim().toLowerCase();
+
+  // 0. Bounce Suppression Guard: Proactively block recipients on the project's suppression list
+  try {
+    const suppressed = await Suppression.findOne({ projectId: project._id, email: cleanRecipient });
+    if (suppressed) {
+      suppressed.blockedDispatchesCount = (suppressed.blockedDispatchesCount || 0) + 1;
+      suppressed.lastAttemptedAt = new Date();
+      await suppressed.save().catch(() => {});
+
+      const errorMsg = `Recipient "${cleanRecipient}" is on the Suppression List (${suppressed.reason}: ${suppressed.bounceCode || 'Permanent bounce'}). Dispatches automatically blocked to protect your Gmail sender reputation.`;
+
+      await EmailLog.create({
+        projectId: project._id,
+        trackingId,
+        to: cleanRecipient,
+        subject: subject || 'No Subject',
+        status: 'BLOCKED_SUPPRESSED',
+        isSuppressed: true,
+        template: template || null,
+        error: errorMsg,
+        executionTimeMs: Date.now() - startTime,
+      });
+
+      dispatchWebhook(project, {
+        event: 'email.suppressed',
+        trackingId,
+        projectId: project._id,
+        projectName: project.name,
+        recipient: cleanRecipient,
+        reason: suppressed.reason,
+        bounceCode: suppressed.bounceCode,
+        timestamp: new Date().toISOString(),
+      }).catch(() => {});
+
+      return {
+        success: false,
+        status: 'BLOCKED_SUPPRESSED',
+        suppressed: true,
+        reason: suppressed.reason,
+        trackingId,
+        error: errorMsg,
+      };
+    }
+  } catch (suppressCheckErr) {
+    console.error('Suppression check error:', suppressCheckErr.message);
+  }
 
   // 1. Process and validate attachments (URLs, base64, 15MB limit)
   let processedAttachments = [];
@@ -289,8 +338,17 @@ async function sendEmail({ project, to, subject, html, text, otp, template, atta
         }
       }
 
-      // If no failover was possible or retry also failed:
-      const executionTimeMs = Date.now() - startTime;
+      // Auto-register hard bounce to Suppression List to protect future dispatches
+      if (isHardBounceError(error.message)) {
+        console.warn(`🛑 Hard bounce detected on [${cleanRecipient}]: Auto-suppressing to protect sender reputation.`);
+        Suppression.create({
+          projectId: project._id,
+          email: cleanRecipient,
+          reason: 'HARD_BOUNCE',
+          bounceCode: error.message.slice(0, 300),
+          details: 'Auto-suppressed due to permanent SMTP rejection/hard bounce',
+        }).catch(() => {});
+      }
 
       await EmailLog.create({
         projectId: project._id,

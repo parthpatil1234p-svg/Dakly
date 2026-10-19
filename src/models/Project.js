@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { decrypt, encrypt, generateApiKey } = require('../utils/crypto');
+const { calculateWarmupStage } = require('../utils/warmupHelper');
 
 const senderAccountSchema = new mongoose.Schema(
   {
@@ -56,6 +57,15 @@ const senderAccountSchema = new mongoose.Schema(
     isExhaustedToday: {
       type: Boolean,
       default: false,
+    },
+    // Smart Warm-up Mode (Progressive daily ramp: Day 1: 25, Day 2: 50... Day 6: 500)
+    warmupEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    warmupStartedAt: {
+      type: Date,
+      default: Date.now,
     },
   },
   {
@@ -125,6 +135,15 @@ const projectSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    // Smart Warm-up Mode (Project-level default)
+    warmupEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    warmupStartedAt: {
+      type: Date,
+      default: Date.now,
     },
     // Anti-Spam Burst Pacing (Default 200ms spacing between rapid sends)
     burstPacingMs: {
@@ -213,6 +232,8 @@ projectSchema.methods.getAllSenders = function () {
         priority: 0,
         isActive: this.isActive !== false,
         isExhaustedToday: false,
+        warmupEnabled: this.warmupEnabled !== false,
+        warmupStartedAt: this.warmupStartedAt || this.createdAt || Date.now(),
         isLegacy: true,
       },
     ];
@@ -225,6 +246,7 @@ projectSchema.methods.getAllSenders = function () {
  * Selects the active sender using Failover Logic:
  * Checks Primary -> if full/exhausted -> switches to Backup 1 -> Backup 2...
  * Automatically resets daily quota on day transition (UTC).
+ * Respects progressive Smart Warm-up daily limits if enabled.
  * @returns {Object|null} Active sender object or null if all quotas exhausted
  */
 projectSchema.methods.getActiveSender = function () {
@@ -244,7 +266,12 @@ projectSchema.methods.getActiveSender = function () {
       sender.lastQuotaReset = now;
     }
 
-    if (!sender.isExhaustedToday && sender.emailsSentToday < sender.dailyQuota) {
+    // Determine effective daily quota (Progressive Warm-up vs Full Quota)
+    const effectiveLimit = sender.warmupEnabled !== false
+      ? calculateWarmupStage(sender.warmupStartedAt, sender.dailyQuota).effectiveQuota
+      : sender.dailyQuota;
+
+    if (!sender.isExhaustedToday && sender.emailsSentToday < effectiveLimit) {
       return sender;
     }
   }
@@ -306,6 +333,7 @@ projectSchema.methods.addSender = async function ({
   displayName = '',
   dailyQuota = 500,
   priority = 1,
+  warmupEnabled = true,
 }) {
   const cleanPassword = appPassword.replace(/\s+/g, '');
   const { encryptedData, iv, authTag } = encrypt(cleanPassword);
@@ -326,6 +354,8 @@ projectSchema.methods.addSender = async function ({
         lastQuotaReset: this.lastQuotaReset || Date.now(),
         priority: 0,
         isActive: true,
+        warmupEnabled: this.warmupEnabled !== false,
+        warmupStartedAt: this.warmupStartedAt || Date.now(),
       },
     ];
   }
@@ -341,6 +371,9 @@ projectSchema.methods.addSender = async function ({
     this.senders[existingIndex].priority = priority;
     this.senders[existingIndex].isActive = true;
     this.senders[existingIndex].isExhaustedToday = false;
+    if (warmupEnabled !== undefined) {
+      this.senders[existingIndex].warmupEnabled = warmupEnabled;
+    }
   } else {
     this.senders.push({
       email: cleanEmail,
@@ -352,6 +385,8 @@ projectSchema.methods.addSender = async function ({
       priority,
       isActive: true,
       isExhaustedToday: false,
+      warmupEnabled: warmupEnabled !== false,
+      warmupStartedAt: new Date(),
     });
   }
 
@@ -362,30 +397,53 @@ projectSchema.methods.addSender = async function ({
 };
 
 /**
- * Returns overall quota and sender status summary
+ * Returns overall quota and sender status summary including Smart Warm-up details
  */
 projectSchema.methods.getCapacitySummary = function () {
   const senders = this.getAllSenders();
   const totalDailyQuota = senders.reduce((acc, s) => acc + (s.isActive ? s.dailyQuota : 0), 0) || this.dailyQuota;
+
+  const totalEffectiveDailyQuota = senders.reduce((acc, s) => {
+    if (!s.isActive) return acc;
+    const stage = calculateWarmupStage(s.warmupStartedAt, s.dailyQuota);
+    return acc + (s.warmupEnabled !== false ? stage.effectiveQuota : s.dailyQuota);
+  }, 0) || this.dailyQuota;
+
   const totalSentToday = senders.reduce((acc, s) => acc + s.emailsSentToday, 0) || this.emailsSentToday;
 
   return {
     totalDailyQuota,
+    totalEffectiveDailyQuota,
     totalSentToday,
-    remainingToday: Math.max(0, totalDailyQuota - totalSentToday),
+    remainingToday: Math.max(0, totalEffectiveDailyQuota - totalSentToday),
     sendersCount: senders.length,
-    senders: senders.map((s, idx) => ({
-      id: s._id,
-      email: s.email,
-      displayName: s.displayName,
-      priority: s.priority,
-      role: s.priority === 0 || idx === 0 ? 'Primary' : `Backup #${s.priority || idx}`,
-      dailyQuota: s.dailyQuota,
-      emailsSentToday: s.emailsSentToday,
-      remainingToday: Math.max(0, s.dailyQuota - s.emailsSentToday),
-      isActive: s.isActive,
-      isExhaustedToday: !!s.isExhaustedToday,
-    })),
+    senders: senders.map((s, idx) => {
+      const warmup = calculateWarmupStage(s.warmupStartedAt, s.dailyQuota);
+      const effectiveQuota = s.warmupEnabled !== false ? warmup.effectiveQuota : s.dailyQuota;
+      return {
+        id: s._id,
+        email: s.email,
+        displayName: s.displayName,
+        priority: s.priority,
+        role: s.priority === 0 || idx === 0 ? 'Primary' : `Backup #${s.priority || idx}`,
+        dailyQuota: s.dailyQuota,
+        effectiveQuota,
+        emailsSentToday: s.emailsSentToday,
+        remainingToday: Math.max(0, effectiveQuota - s.emailsSentToday),
+        isActive: s.isActive,
+        isExhaustedToday: !!s.isExhaustedToday,
+        warmupEnabled: s.warmupEnabled !== false,
+        warmup: {
+          enabled: s.warmupEnabled !== false,
+          day: warmup.day,
+          stage: warmup.stage,
+          effectiveQuota: warmup.effectiveQuota,
+          maxQuota: s.dailyQuota,
+          isComplete: warmup.isComplete,
+          progressPercent: warmup.progressPercent,
+        },
+      };
+    }),
   };
 };
 
