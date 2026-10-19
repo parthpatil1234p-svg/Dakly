@@ -40,6 +40,14 @@ async function register(req, res) {
       password,
     });
 
+    // Auto-link any pending team workspace invitations for this email
+    const Project = require('../models/Project');
+    Project.updateMany(
+      { 'members.email': cleanEmail },
+      { $set: { 'members.$[elem].user': user._id, 'members.$[elem].status': 'active' } },
+      { arrayFilters: [{ 'elem.email': cleanEmail }] }
+    ).exec().catch(() => {});
+
     const token = generateToken(user._id);
 
     res.status(201).json({

@@ -205,3 +205,17 @@ class Dakly:
 
     def get_status(self, tracking_id: str) -> Dict[str, Any]:
         return self._request(f"/api/status/{urllib.parse.quote(tracking_id.strip())}", method="GET")
+
+    @staticmethod
+    def verify_webhook_signature(payload: Union[str, Dict[str, Any]], signature: str, secret: str) -> bool:
+        import hmac
+        import hashlib
+        if not signature or not secret or payload is None:
+            return False
+        try:
+            raw_sig = signature[7:] if signature.startswith("sha256=") else signature
+            body_str = payload if isinstance(payload, str) else json.dumps(payload, separators=(',', ':'))
+            expected = hmac.new(secret.encode("utf-8"), body_str.encode("utf-8"), hashlib.sha256).hexdigest()
+            return hmac.compare_digest(raw_sig, expected)
+        except Exception:
+            return False

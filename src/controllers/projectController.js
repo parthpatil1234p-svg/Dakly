@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const Project = require('../models/Project');
 const Suppression = require('../models/Suppression');
 const { encrypt } = require('../utils/crypto');
@@ -107,8 +108,14 @@ async function getProjects(req, res) {
     const query = { isActive: true };
 
     if (req.user) {
-      // Return projects belonging to the logged in user, or unclaimed legacy projects
-      query.$or = [{ userId: req.user._id }, { userId: null }, { userId: { $exists: false } }];
+      // Return projects belonging to the logged in user, shared team projects, or unclaimed legacy projects
+      query.$or = [
+        { userId: req.user._id },
+        { 'members.user': req.user._id },
+        { 'members.email': req.user.email.toLowerCase() },
+        { userId: null },
+        { userId: { $exists: false } },
+      ];
     }
 
     const projects = await Project.find(query)
@@ -117,9 +124,13 @@ async function getProjects(req, res) {
 
     const sanitized = projects.map((p) => {
       const capacity = p.getCapacitySummary();
+      const userRole = p.getUserRole ? p.getUserRole(req.user) : 'owner';
       return {
         id: p._id,
         name: p.name,
+        currentUserRole: userRole,
+        isOwner: userRole === 'owner',
+        canEdit: userRole === 'owner' || userRole === 'admin',
         senderEmail: p.senderEmail,
         senderDisplayName: p.senderDisplayName,
         apiKey: p.apiKey,
@@ -130,8 +141,34 @@ async function getProjects(req, res) {
         senders: capacity.senders,
         burstPacingMs: p.burstPacingMs || 200,
         webhookUrl: p.webhookUrl,
+        webhookSecret: p.webhookSecret,
+        webhookSecretConfigured: !!p.webhookSecret,
+        webhookEnabled: p.webhookEnabled !== false,
+        webhookEvents: p.webhookEvents && p.webhookEvents.length > 0 ? p.webhookEvents : [
+          'email.delivered',
+          'email.failed',
+          'email.suppressed',
+          'email.opened',
+          'email.clicked',
+        ],
+        lastWebhookDispatchedAt: p.lastWebhookDispatchedAt || null,
+        lastWebhookStatus: p.lastWebhookStatus || null,
+        lastWebhookResponseCode: p.lastWebhookResponseCode || null,
+        lastWebhookLatencyMs: p.lastWebhookLatencyMs || null,
+        lastWebhookError: p.lastWebhookError || null,
         lastApiCallAt: p.lastApiCallAt || null,
         lastClientIp: p.lastClientIp || null,
+        ipWhitelist: p.ipWhitelist || [],
+        ipWhitelistEnabled: Boolean(p.ipWhitelistEnabled),
+        members: (p.members || []).map((m) => ({
+          id: m._id,
+          user: m.user,
+          email: m.email,
+          role: m.role,
+          status: m.status,
+          invitedBy: m.invitedBy,
+          invitedAt: m.invitedAt,
+        })),
         brandLogo: p.brandLogo && p.brandLogo.data ? {
           data: p.brandLogo.data,
           contentType: p.brandLogo.contentType,
@@ -156,22 +193,36 @@ async function getProjects(req, res) {
 }
 
 /**
- * Update project settings (Webhooks, pacing, display name)
+ * Update project settings (Webhooks, pacing, display name, IP whitelist)
  * PATCH /api/projects/:id
  */
 async function updateProject(req, res) {
   try {
     const { id } = req.params;
-    const { name, senderDisplayName, burstPacingMs, webhookUrl, webhookSecret } = req.body;
+    const {
+      name,
+      senderDisplayName,
+      burstPacingMs,
+      webhookUrl,
+      webhookSecret,
+      webhookEnabled,
+      webhookEvents,
+      ipWhitelist,
+      ipWhitelistEnabled,
+    } = req.body;
 
     const project = await Project.findById(id);
     if (!project) {
       return res.status(404).json({ success: false, error: 'Project not found.' });
     }
 
-    // Tenant check
-    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    // Role check: Only Owner or Admin can update settings
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (!['owner', 'admin'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. Only Owner or Admin can update project settings.',
+      });
     }
 
     if (!project.userId && req.user) {
@@ -183,6 +234,16 @@ async function updateProject(req, res) {
     if (burstPacingMs !== undefined) project.burstPacingMs = Math.max(0, parseInt(burstPacingMs, 10));
     if (webhookUrl !== undefined) project.webhookUrl = webhookUrl ? webhookUrl.trim() : null;
     if (webhookSecret !== undefined) project.webhookSecret = webhookSecret ? webhookSecret.trim() : null;
+    if (webhookEnabled !== undefined) project.webhookEnabled = Boolean(webhookEnabled);
+    if (webhookEvents !== undefined && Array.isArray(webhookEvents)) project.webhookEvents = webhookEvents;
+    if (ipWhitelist !== undefined && Array.isArray(ipWhitelist)) {
+      project.ipWhitelist = ipWhitelist
+        .map((ip) => (typeof ip === 'string' ? ip.trim() : ''))
+        .filter(Boolean);
+    }
+    if (ipWhitelistEnabled !== undefined) {
+      project.ipWhitelistEnabled = Boolean(ipWhitelistEnabled);
+    }
 
     await project.save();
 
@@ -195,7 +256,17 @@ async function updateProject(req, res) {
         senderDisplayName: project.senderDisplayName,
         burstPacingMs: project.burstPacingMs,
         webhookUrl: project.webhookUrl,
+        webhookSecret: project.webhookSecret,
         webhookSecretConfigured: !!project.webhookSecret,
+        webhookEnabled: project.webhookEnabled !== false,
+        webhookEvents: project.webhookEvents,
+        ipWhitelist: project.ipWhitelist,
+        ipWhitelistEnabled: project.ipWhitelistEnabled,
+        lastWebhookDispatchedAt: project.lastWebhookDispatchedAt,
+        lastWebhookStatus: project.lastWebhookStatus,
+        lastWebhookResponseCode: project.lastWebhookResponseCode,
+        lastWebhookLatencyMs: project.lastWebhookLatencyMs,
+        lastWebhookError: project.lastWebhookError,
       },
     });
   } catch (error) {
@@ -694,6 +765,389 @@ async function updateSenderWarmup(req, res) {
   }
 }
 
+/**
+ * Generate or rotate Webhook HMAC signing secret
+ * POST /api/projects/:id/webhook/secret
+ */
+async function generateWebhookSecret(req, res) {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied.' });
+    }
+
+    const newSecret = `whsec_${crypto.randomBytes(24).toString('hex')}`;
+    project.webhookSecret = newSecret;
+    await project.save();
+
+    res.json({
+      success: true,
+      message: 'New Webhook HMAC secret generated successfully.',
+      webhookSecret: newSecret,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Dispatch live test webhook to verify receiver endpoint
+ * POST /api/projects/:id/webhook/test
+ */
+async function testWebhookEndpoint(req, res) {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied.' });
+    }
+
+    // Allow testing a new URL before saving
+    if (req.body.webhookUrl && req.body.webhookUrl.trim()) {
+      project.webhookUrl = req.body.webhookUrl.trim();
+    }
+    if (req.body.webhookSecret !== undefined) {
+      project.webhookSecret = req.body.webhookSecret ? req.body.webhookSecret.trim() : null;
+    }
+
+    const { sendTestWebhook } = require('../services/webhookService');
+    const result = await sendTestWebhook(project);
+
+    res.json({
+      success: result.success,
+      result,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * 1-Click API Key Rotation / Regeneration
+ * Permanently revokes the old key and generates a brand-new cryptographically secure API key
+ * POST /api/projects/:id/api-key/rotate
+ */
+async function rotateApiKey(req, res) {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (!['owner', 'admin'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. Only project Owner or Admin can rotate the API key.',
+      });
+    }
+
+    const { generateApiKey } = require('../utils/crypto');
+    const newApiKey = generateApiKey();
+    project.apiKey = newApiKey;
+    await project.save();
+
+    res.json({
+      success: true,
+      message: 'API Key regenerated successfully. Previous key has been permanently invalidated.',
+      apiKey: newApiKey,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Get IP Whitelist configuration and detected caller IP
+ * GET /api/projects/:id/ip-whitelist
+ */
+async function getIpWhitelist(req, res) {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (!userRole) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    const { extractClientIp } = require('../utils/ipFilter');
+    const detectedIp = extractClientIp(req);
+
+    res.json({
+      success: true,
+      clientIp: detectedIp,
+      ipWhitelist: project.ipWhitelist || [],
+      ipWhitelistEnabled: Boolean(project.ipWhitelistEnabled),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Update IP Whitelist configuration
+ * PATCH /api/projects/:id/ip-whitelist
+ */
+async function updateIpWhitelist(req, res) {
+  try {
+    const { id } = req.params;
+    const { ipWhitelist, ipWhitelistEnabled } = req.body;
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (!['owner', 'admin'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. Only Owner or Admin can configure IP Whitelisting.',
+      });
+    }
+
+    if (ipWhitelist !== undefined && Array.isArray(ipWhitelist)) {
+      project.ipWhitelist = ipWhitelist
+        .map((ip) => (typeof ip === 'string' ? ip.trim() : ''))
+        .filter(Boolean);
+    }
+
+    if (ipWhitelistEnabled !== undefined) {
+      project.ipWhitelistEnabled = Boolean(ipWhitelistEnabled);
+    }
+
+    await project.save();
+
+    const { extractClientIp } = require('../utils/ipFilter');
+    res.json({
+      success: true,
+      message: 'IP Whitelist configuration updated successfully.',
+      clientIp: extractClientIp(req),
+      ipWhitelist: project.ipWhitelist,
+      ipWhitelistEnabled: project.ipWhitelistEnabled,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * List team members for a project
+ * GET /api/projects/:id/members
+ */
+async function getProjectMembers(req, res) {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id).populate('userId', 'name email');
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (!userRole) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    const ownerInfo = project.userId
+      ? { id: project.userId._id, name: project.userId.name, email: project.userId.email }
+      : { id: null, name: 'Project Creator', email: project.senderEmail };
+
+    const members = (project.members || []).map((m) => ({
+      id: m._id,
+      user: m.user,
+      email: m.email,
+      role: m.role,
+      status: m.status,
+      invitedBy: m.invitedBy,
+      invitedAt: m.invitedAt,
+    }));
+
+    res.json({
+      success: true,
+      currentUserRole: userRole,
+      isOwner: userRole === 'owner',
+      canManageMembers: userRole === 'owner',
+      owner: ownerInfo,
+      members,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Invite / Add a collaborator to the project
+ * POST /api/projects/:id/members
+ */
+async function addProjectMember(req, res) {
+  try {
+    const { id } = req.params;
+    const { email, role } = req.body;
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({ success: false, error: 'Please provide a valid teammate email address.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const assignedRole = role === 'viewer' ? 'viewer' : 'admin';
+
+    const project = await Project.findById(id).populate('userId', 'name email');
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (!['owner', 'admin'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. Only Owner or Admin can invite team members.',
+      });
+    }
+
+    // Check if email matches owner
+    if (project.userId && project.userId.email && project.userId.email.toLowerCase() === cleanEmail) {
+      return res.status(400).json({
+        success: false,
+        error: `${cleanEmail} is already the Owner of this project.`,
+      });
+    }
+
+    // Check if already in members
+    if (project.members && project.members.some((m) => m.email.toLowerCase() === cleanEmail)) {
+      return res.status(400).json({
+        success: false,
+        error: `${cleanEmail} is already a member of this project team.`,
+      });
+    }
+
+    const User = require('../models/User');
+    const existingUser = await User.findOne({ email: cleanEmail });
+
+    const newMember = {
+      user: existingUser ? existingUser._id : null,
+      email: cleanEmail,
+      role: assignedRole,
+      status: existingUser ? 'active' : 'pending',
+      invitedBy: req.user ? req.user.email : 'Owner',
+      invitedAt: new Date(),
+    };
+
+    project.members.push(newMember);
+    await project.save();
+
+    res.status(201).json({
+      success: true,
+      message: `Teammate ${cleanEmail} invited successfully as ${assignedRole.toUpperCase()}.`,
+      members: project.members,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Update collaborator role (Admin / Viewer)
+ * PATCH /api/projects/:id/members/:memberId
+ */
+async function updateProjectMember(req, res) {
+  try {
+    const { id, memberId } = req.params;
+    const { role } = req.body;
+
+    if (!role || !['admin', 'viewer'].includes(role)) {
+      return res.status(400).json({ success: false, error: 'Role must be either "admin" or "viewer".' });
+    }
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (userRole !== 'owner') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. Only the project Owner can modify team member roles.',
+      });
+    }
+
+    const member = project.members.id(memberId);
+    if (!member) {
+      return res.status(404).json({ success: false, error: 'Team member not found in project.' });
+    }
+
+    member.role = role;
+    await project.save();
+
+    res.json({
+      success: true,
+      message: `Member ${member.email} role updated to ${role.toUpperCase()}.`,
+      members: project.members,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Remove collaborator from project or leave project
+ * DELETE /api/projects/:id/members/:memberId
+ */
+async function removeProjectMember(req, res) {
+  try {
+    const { id, memberId } = req.params;
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const member = project.members.id(memberId);
+    if (!member) {
+      return res.status(404).json({ success: false, error: 'Team member not found in project.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    const isSelf = req.user && (
+      (member.user && member.user.toString() === req.user._id.toString()) ||
+      (member.email.toLowerCase() === req.user.email.toLowerCase())
+    );
+
+    // Permitted if: Owner, or Self (leaving project), or Admin removing Viewer
+    const canRemove = userRole === 'owner' || isSelf || (userRole === 'admin' && member.role === 'viewer');
+    if (!canRemove) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. You do not have permission to remove this member.',
+      });
+    }
+
+    project.members.pull({ _id: memberId });
+    await project.save();
+
+    res.json({
+      success: true,
+      message: isSelf ? 'You have left the project team.' : `Member ${member.email} removed from project.`,
+      members: project.members,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   createProject,
   getProjects,
@@ -709,4 +1163,13 @@ module.exports = {
   addSuppression,
   removeSuppression,
   updateSenderWarmup,
+  generateWebhookSecret,
+  testWebhookEndpoint,
+  rotateApiKey,
+  getIpWhitelist,
+  updateIpWhitelist,
+  getProjectMembers,
+  addProjectMember,
+  updateProjectMember,
+  removeProjectMember,
 };

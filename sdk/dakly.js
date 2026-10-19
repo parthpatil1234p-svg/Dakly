@@ -263,6 +263,23 @@ class Dakly {
     if (!trackingId) throw new DaklyValidationError('trackingId is required.');
     return this._request(`/api/status/${encodeURIComponent(trackingId)}`, { method: 'GET' });
   }
+
+  static verifyWebhookSignature(options = {}) {
+    const { payload, signature, secret } = options;
+    if (!signature || !secret || !payload) return false;
+    try {
+      const crypto = require('crypto');
+      const rawSignature = signature.startsWith('sha256=') ? signature.slice(7) : signature;
+      const bodyString = typeof payload === 'string' ? payload : JSON.stringify(payload);
+      const expected = crypto.createHmac('sha256', secret).update(bodyString).digest('hex');
+      const sigBuf = Buffer.from(rawSignature, 'hex');
+      const expBuf = Buffer.from(expected, 'hex');
+      if (sigBuf.length !== expBuf.length) return false;
+      return crypto.timingSafeEqual(sigBuf, expBuf);
+    } catch {
+      return false;
+    }
+  }
 }
 
 if (typeof module !== 'undefined' && module.exports) {

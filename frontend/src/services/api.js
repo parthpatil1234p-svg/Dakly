@@ -205,4 +205,130 @@ export async function updateSenderWarmupMode(projectId, senderId, { warmupEnable
   return res.json();
 }
 
+// Webhook & Instant Delivery Alerts API
+export async function updateProjectSettings(projectId, data, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function generateWebhookSecret(projectId, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/webhook/secret`, {
+    method: 'POST',
+    headers,
+  });
+  return res.json();
+}
+
+export async function testWebhook(projectId, { webhookUrl, webhookSecret }, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/webhook/test`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ webhookUrl, webhookSecret }),
+  });
+  return res.json();
+}
+
+// Security, Key Rotation & Team Workspaces Endpoints
+export async function rotateApiKey(projectId, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/api-key/rotate`, {
+    method: 'POST',
+    headers,
+  });
+  return res.json();
+}
+
+export async function fetchIpWhitelist(projectId, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/ip-whitelist`, {
+    headers,
+  });
+  return res.json();
+}
+
+export async function updateIpWhitelist(projectId, { ipWhitelist, ipWhitelistEnabled }, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/ip-whitelist`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ ipWhitelist, ipWhitelistEnabled }),
+  });
+  return res.json();
+}
+
+export async function fetchProjectMembers(projectId, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/members`, {
+    headers,
+  });
+  return res.json();
+}
+
+export async function addProjectMember(projectId, { email, role }, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/members`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ email, role }),
+  });
+  return res.json();
+}
+
+export async function updateProjectMember(projectId, memberId, { role }, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/members/${memberId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ role }),
+  });
+  return res.json();
+}
+
+export async function removeProjectMember(projectId, memberId, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/members/${memberId}`, {
+    method: 'DELETE',
+    headers,
+  });
+  return res.json();
+}
+
+
 

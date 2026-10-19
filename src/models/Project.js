@@ -73,6 +73,43 @@ const senderAccountSchema = new mongoose.Schema(
   }
 );
 
+const memberSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    email: {
+      type: String,
+      required: [true, 'Please provide member email'],
+      lowercase: true,
+      trim: true,
+    },
+    role: {
+      type: String,
+      enum: ['admin', 'viewer'],
+      default: 'admin',
+    },
+    status: {
+      type: String,
+      enum: ['active', 'pending'],
+      default: 'active',
+    },
+    invitedBy: {
+      type: String,
+      default: '',
+    },
+    invitedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 const projectSchema = new mongoose.Schema(
   {
     userId: {
@@ -152,7 +189,7 @@ const projectSchema = new mongoose.Schema(
       min: 0,
       max: 5000,
     },
-    // Delivery Webhooks
+    // Delivery Webhooks & Instant Delivery Alerts
     webhookUrl: {
       type: String,
       default: null,
@@ -162,6 +199,40 @@ const projectSchema = new mongoose.Schema(
       type: String,
       default: null,
       trim: true,
+    },
+    webhookEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    webhookEvents: {
+      type: [String],
+      default: [
+        'email.delivered',
+        'email.failed',
+        'email.suppressed',
+        'email.opened',
+        'email.clicked',
+      ],
+    },
+    lastWebhookDispatchedAt: {
+      type: Date,
+      default: null,
+    },
+    lastWebhookStatus: {
+      type: String,
+      default: null,
+    },
+    lastWebhookResponseCode: {
+      type: Number,
+      default: null,
+    },
+    lastWebhookLatencyMs: {
+      type: Number,
+      default: null,
+    },
+    lastWebhookError: {
+      type: String,
+      default: null,
     },
     // Inbound Activity & Connectivity Tracking
     lastApiCallAt: {
@@ -199,11 +270,61 @@ const projectSchema = new mongoose.Schema(
         default: null,
       },
     },
+    // IP Whitelisting (Security Guard)
+    ipWhitelist: {
+      type: [String],
+      default: [],
+    },
+    ipWhitelistEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    // Team Workspaces & Multi-Seat Collaboration
+    members: [memberSchema],
   },
   {
     timestamps: true,
   }
 );
+
+/**
+ * Resolves user role on this project: 'owner', 'admin', 'viewer', or null if no access
+ * @param {Object} user - Decoded User object or { _id, email }
+ * @returns {'owner' | 'admin' | 'viewer' | null}
+ */
+projectSchema.methods.getUserRole = function (user) {
+  if (!user) {
+    return !this.userId ? 'owner' : null;
+  }
+
+  const userIdStr = (user._id || user.id || '').toString();
+  const userEmail = (user.email || '').toLowerCase().trim();
+
+  // If project has no owner recorded (legacy), whoever connects is treated as owner
+  if (!this.userId) {
+    return 'owner';
+  }
+
+  // Project owner
+  if (this.userId.toString() === userIdStr) {
+    return 'owner';
+  }
+
+  // Check team members list
+  if (this.members && this.members.length > 0) {
+    const member = this.members.find((m) => {
+      const mUserId = m.user ? m.user.toString() : null;
+      const mEmail = (m.email || '').toLowerCase().trim();
+      return (mUserId && mUserId === userIdStr) || (userEmail && mEmail === userEmail);
+    });
+
+    if (member) {
+      return member.role || 'viewer';
+    }
+  }
+
+  return null;
+};
 
 /**
  * Normalizes all available senders (handles both multi-sender array & legacy single sender)

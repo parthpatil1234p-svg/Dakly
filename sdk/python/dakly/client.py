@@ -346,3 +346,29 @@ class Dakly:
         if not tracking_id:
             raise DaklyValidationError("tracking_id is required.")
         return self._request(f"/api/status/{urllib.parse.quote(tracking_id.strip())}", method="GET")
+
+    @staticmethod
+    def verify_webhook_signature(
+        payload: Union[str, Dict[str, Any]],
+        signature: str,
+        secret: str,
+    ) -> bool:
+        """
+        Verify cryptographic HMAC-SHA256 signature on incoming Dakly webhook.
+        
+        :param payload: Raw body string or parsed dictionary from incoming request
+        :param signature: Value of the 'x-dakly-signature' HTTP header
+        :param secret: Your project's Webhook Secret (whsec_...)
+        :returns: True if the signature is valid and payload authentic
+        """
+        import hmac
+        import hashlib
+        if not signature or not secret or payload is None:
+            return False
+        try:
+            raw_signature = signature[7:] if signature.startswith("sha256=") else signature
+            body_str = payload if isinstance(payload, str) else json.dumps(payload, separators=(',', ':'))
+            expected = hmac.new(secret.encode("utf-8"), body_str.encode("utf-8"), hashlib.sha256).hexdigest()
+            return hmac.compare_digest(raw_signature, expected)
+        except Exception:
+            return False

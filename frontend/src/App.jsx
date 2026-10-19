@@ -45,6 +45,11 @@ import {
   Flame,
   UserX,
   Ban,
+  Users,
+  UserPlus,
+  ShieldAlert,
+  Globe,
+  Key,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import SpotlightCard from './components/SpotlightCard';
@@ -68,6 +73,16 @@ import {
   addSuppressionEmail,
   removeSuppressionEmail,
   updateSenderWarmupMode,
+  updateProjectSettings,
+  generateWebhookSecret,
+  testWebhook,
+  rotateApiKey,
+  fetchIpWhitelist,
+  updateIpWhitelist,
+  fetchProjectMembers,
+  addProjectMember,
+  updateProjectMember,
+  removeProjectMember,
 } from './services/api';
 
 const DEFAULT_TEMPLATES = [
@@ -301,6 +316,42 @@ export default function App() {
     setTimeout(() => setCopiedSnippetKey(null), 2000);
   };
 
+  // Webhooks Tab State
+  const [webhookUrlInput, setWebhookUrlInput] = useState('');
+  const [webhookSecretInput, setWebhookSecretInput] = useState('');
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
+  const [webhookEnabledInput, setWebhookEnabledInput] = useState(true);
+  const [webhookEventsInput, setWebhookEventsInput] = useState([
+    'email.delivered',
+    'email.failed',
+    'email.suppressed',
+    'email.opened',
+    'email.clicked',
+  ]);
+  const [isSavingWebhook, setIsSavingWebhook] = useState(false);
+  const [webhookSaveMsg, setWebhookSaveMsg] = useState('');
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  const [webhookTestResult, setWebhookTestResult] = useState(null);
+  const [webhookVerifyLang, setWebhookVerifyLang] = useState('node'); // 'node' | 'python' | 'nextjs'
+
+  // Security, IP Whitelisting & Team Workspaces State
+  const [showRotateKeyModal, setShowRotateKeyModal] = useState(false);
+  const [isRotatingKey, setIsRotatingKey] = useState(false);
+  const [rotateKeyMsg, setRotateKeyMsg] = useState('');
+  const [ipWhitelistList, setIpWhitelistList] = useState([]);
+  const [ipWhitelistEnabledInput, setIpWhitelistEnabledInput] = useState(false);
+  const [detectedClientIp, setDetectedClientIp] = useState('');
+  const [newIpInput, setNewIpInput] = useState('');
+  const [isSavingIpWhitelist, setIsSavingIpWhitelist] = useState(false);
+  const [ipWhitelistSaveMsg, setIpWhitelistSaveMsg] = useState('');
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [projectOwner, setProjectOwner] = useState(null);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [inviteMemberEmail, setInviteMemberEmail] = useState('');
+  const [inviteMemberRole, setInviteMemberRole] = useState('admin');
+  const [isInvitingMember, setIsInvitingMember] = useState(false);
+  const [memberActionMsg, setMemberActionMsg] = useState('');
+
   // Verify Auth on Mount
   useEffect(() => {
     if (authToken) {
@@ -316,13 +367,296 @@ export default function App() {
     }
   }, [authToken]);
 
-  // When activeProject changes, reload stats and logs
+  // When activeProject changes, reload stats, logs, and sync webhook/security settings
   useEffect(() => {
     if (activeProject) {
       loadStats(activeProject.apiKey);
       loadLogs(activeProject.apiKey, 1, logSearch, logStatus);
+      setWebhookUrlInput(activeProject.webhookUrl || '');
+      setWebhookSecretInput(activeProject.webhookSecret || '');
+      setWebhookEnabledInput(activeProject.webhookEnabled !== false);
+      setWebhookEventsInput(
+        activeProject.webhookEvents && activeProject.webhookEvents.length > 0
+          ? activeProject.webhookEvents
+          : ['email.delivered', 'email.failed', 'email.suppressed', 'email.opened', 'email.clicked']
+      );
+      setWebhookTestResult(null);
+      setWebhookSaveMsg('');
+      setIpWhitelistList(activeProject.ipWhitelist || []);
+      setIpWhitelistEnabledInput(Boolean(activeProject.ipWhitelistEnabled));
+      loadSecurityAndTeamData(activeProject.id);
     }
   }, [activeProject]);
+
+  const handleToggleWebhookEvent = (eventName) => {
+    setWebhookEventsInput((prev) =>
+      prev.includes(eventName) ? prev.filter((e) => e !== eventName) : [...prev, eventName]
+    );
+  };
+
+  const handleSaveWebhookSettings = async (e) => {
+    if (e) e.preventDefault();
+    if (!activeProject) return;
+
+    try {
+      setIsSavingWebhook(true);
+      setWebhookSaveMsg('');
+      const res = await updateProjectSettings(
+        activeProject.id,
+        {
+          webhookUrl: webhookUrlInput.trim(),
+          webhookSecret: webhookSecretInput.trim(),
+          webhookEnabled: webhookEnabledInput,
+          webhookEvents: webhookEventsInput,
+        },
+        authToken
+      );
+
+      if (res.success) {
+        setWebhookSaveMsg('✅ Webhook settings saved successfully!');
+        setActiveProject((prev) => ({
+          ...prev,
+          webhookUrl: res.project.webhookUrl,
+          webhookSecret: res.project.webhookSecret,
+          webhookSecretConfigured: res.project.webhookSecretConfigured,
+          webhookEnabled: res.project.webhookEnabled,
+          webhookEvents: res.project.webhookEvents,
+        }));
+        setProjects((prev) =>
+          prev.map((p) =>
+            p.id === activeProject.id
+              ? {
+                  ...p,
+                  webhookUrl: res.project.webhookUrl,
+                  webhookSecret: res.project.webhookSecret,
+                  webhookSecretConfigured: res.project.webhookSecretConfigured,
+                  webhookEnabled: res.project.webhookEnabled,
+                  webhookEvents: res.project.webhookEvents,
+                }
+              : p
+          )
+        );
+      } else {
+        setWebhookSaveMsg(`❌ Error: ${res.error || 'Failed to save webhook settings.'}`);
+      }
+    } catch (err) {
+      setWebhookSaveMsg(`❌ Error: ${err.message}`);
+    } finally {
+      setIsSavingWebhook(false);
+      setTimeout(() => setWebhookSaveMsg(''), 4000);
+    }
+  };
+
+  const handleGenerateWebhookSecret = async () => {
+    if (!activeProject) return;
+    try {
+      const res = await generateWebhookSecret(activeProject.id, authToken);
+      if (res.success && res.webhookSecret) {
+        setWebhookSecretInput(res.webhookSecret);
+        setActiveProject((prev) => ({
+          ...prev,
+          webhookSecret: res.webhookSecret,
+          webhookSecretConfigured: true,
+        }));
+        setWebhookSaveMsg('🔑 New Webhook Secret generated! Remember to click Save.');
+      } else {
+        alert(res.error || 'Failed to generate secret.');
+      }
+    } catch (err) {
+      alert(`Error generating secret: ${err.message}`);
+    }
+  };
+
+  const handleTriggerTestWebhook = async () => {
+    if (!activeProject) return;
+    if (!webhookUrlInput.trim()) {
+      alert('Please enter a Webhook URL before testing.');
+      return;
+    }
+
+    try {
+      setIsTestingWebhook(true);
+      setWebhookTestResult(null);
+      const res = await testWebhook(
+        activeProject.id,
+        {
+          webhookUrl: webhookUrlInput.trim(),
+          webhookSecret: webhookSecretInput.trim(),
+        },
+        authToken
+      );
+      setWebhookTestResult(res.result || res);
+    } catch (err) {
+      setWebhookTestResult({
+        success: false,
+        httpStatus: 0,
+        latencyMs: 0,
+        error: err.message,
+      });
+    } finally {
+      setIsTestingWebhook(false);
+    }
+  };
+
+  async function loadSecurityAndTeamData(projId) {
+    if (!projId) return;
+    setIsLoadingMembers(true);
+    try {
+      const [ipRes, membersRes] = await Promise.all([
+        fetchIpWhitelist(projId, authToken),
+        fetchProjectMembers(projId, authToken),
+      ]);
+      if (ipRes && ipRes.success) {
+        setDetectedClientIp(ipRes.clientIp || '');
+        if (ipRes.ipWhitelist) setIpWhitelistList(ipRes.ipWhitelist);
+        if (ipRes.ipWhitelistEnabled !== undefined) setIpWhitelistEnabledInput(Boolean(ipRes.ipWhitelistEnabled));
+      }
+      if (membersRes && membersRes.success) {
+        setTeamMembers(membersRes.members || []);
+        setProjectOwner(membersRes.owner || null);
+      }
+    } catch (err) {
+      console.warn('Failed loading security/team data:', err);
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  }
+
+  async function handleRotateApiKey() {
+    if (!activeProject) return;
+    setIsRotatingKey(true);
+    setRotateKeyMsg('');
+    try {
+      const res = await rotateApiKey(activeProject.id, authToken);
+      if (res.success && res.apiKey) {
+        activeProject.apiKey = res.apiKey;
+        setProjects((prev) =>
+          prev.map((p) => (p.id === activeProject.id ? { ...p, apiKey: res.apiKey } : p))
+        );
+        setRotateKeyMsg('API key successfully regenerated! The old key has been revoked.');
+        confetti({
+          particleCount: 70,
+          spread: 60,
+          origin: { y: 0.6 },
+          colors: ['#6366f1', '#10b981'],
+        });
+        setTimeout(() => setShowRotateKeyModal(false), 2000);
+      } else {
+        alert(res.error || 'Failed to rotate API key.');
+      }
+    } catch (err) {
+      alert('Error rotating key: ' + err.message);
+    } finally {
+      setIsRotatingKey(false);
+    }
+  }
+
+  function handleAddIpToWhitelist(ipToAdd) {
+    const cleanIp = (ipToAdd || newIpInput).trim();
+    if (!cleanIp) return;
+    if (ipWhitelistList.includes(cleanIp)) {
+      alert(`IP "${cleanIp}" is already in the whitelist.`);
+      return;
+    }
+    setIpWhitelistList([...ipWhitelistList, cleanIp]);
+    setNewIpInput('');
+  }
+
+  function handleRemoveIpFromWhitelist(ipToRemove) {
+    setIpWhitelistList(ipWhitelistList.filter((ip) => ip !== ipToRemove));
+  }
+
+  async function handleSaveIpWhitelistSettings(e) {
+    if (e) e.preventDefault();
+    if (!activeProject) return;
+    setIsSavingIpWhitelist(true);
+    setIpWhitelistSaveMsg('');
+    try {
+      const res = await updateIpWhitelist(
+        activeProject.id,
+        {
+          ipWhitelist: ipWhitelistList,
+          ipWhitelistEnabled: ipWhitelistEnabledInput,
+        },
+        authToken
+      );
+      if (res.success) {
+        activeProject.ipWhitelist = res.ipWhitelist;
+        activeProject.ipWhitelistEnabled = res.ipWhitelistEnabled;
+        setIpWhitelistSaveMsg('✅ IP Whitelist configuration saved successfully!');
+        setTimeout(() => setIpWhitelistSaveMsg(''), 4000);
+      } else {
+        alert(res.error || 'Failed to update IP whitelist');
+      }
+    } catch (err) {
+      alert('Error updating IP whitelist: ' + err.message);
+    } finally {
+      setIsSavingIpWhitelist(false);
+    }
+  }
+
+  async function handleInviteMember(e) {
+    if (e) e.preventDefault();
+    if (!activeProject || !inviteMemberEmail.trim()) return;
+    setIsInvitingMember(true);
+    setMemberActionMsg('');
+    try {
+      const res = await addProjectMember(
+        activeProject.id,
+        { email: inviteMemberEmail.trim(), role: inviteMemberRole },
+        authToken
+      );
+      if (res.success) {
+        setTeamMembers(res.members || []);
+        setInviteMemberEmail('');
+        setMemberActionMsg(res.message || 'Teammate invited successfully!');
+        confetti({
+          particleCount: 50,
+          spread: 50,
+          origin: { y: 0.6 },
+          colors: ['#6366f1', '#a855f7'],
+        });
+        setTimeout(() => setMemberActionMsg(''), 4000);
+      } else {
+        alert(res.error || 'Failed to invite team member');
+      }
+    } catch (err) {
+      alert('Error inviting member: ' + err.message);
+    } finally {
+      setIsInvitingMember(false);
+    }
+  }
+
+  async function handleUpdateMemberRole(memberId, newRole) {
+    if (!activeProject || !memberId) return;
+    try {
+      const res = await updateProjectMember(activeProject.id, memberId, { role: newRole }, authToken);
+      if (res.success) {
+        setTeamMembers(res.members || []);
+      } else {
+        alert(res.error || 'Failed to update role');
+      }
+    } catch (err) {
+      alert('Error updating member role: ' + err.message);
+    }
+  }
+
+  async function handleRemoveMember(memberId, memberEmail) {
+    if (!activeProject || !memberId) return;
+    if (!confirm(`Are you sure you want to remove ${memberEmail} from this project?`)) return;
+    try {
+      const res = await removeProjectMember(activeProject.id, memberId, authToken);
+      if (res.success) {
+        setTeamMembers(res.members || []);
+        setMemberActionMsg(res.message);
+        setTimeout(() => setMemberActionMsg(''), 4000);
+      } else {
+        alert(res.error || 'Failed to remove member');
+      }
+    } catch (err) {
+      alert('Error removing member: ' + err.message);
+    }
+  }
 
   // Auto-render template preview when selected template, vars, or active project changes
   useEffect(() => {
@@ -1333,6 +1667,8 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
             { id: 'playground', label: 'Live Playground', icon: PlayCircle },
             { id: 'senders', label: 'Senders & Quotas', icon: Server },
             { id: 'logs', label: 'Audit Logs', icon: FileText },
+            { id: 'webhooks', label: 'Webhooks & Alerts', icon: Radio, badge: activeProject?.webhookUrl ? 'LIVE' : null },
+            { id: 'security', label: 'Security & Team', icon: ShieldCheck, badge: activeProject?.ipWhitelistEnabled ? 'ARMED' : (teamMembers.length > 0 ? `${teamMembers.length + 1} SEATS` : null) },
             { id: 'snippets', label: 'SDK & Snippets', icon: Code },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -1426,6 +1762,11 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                           1:1 Logo Active
                         </span>
                       )}
+                      {activeProject?.ipWhitelistEnabled && (
+                        <span className="hidden sm:inline-flex items-center text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          🛡️ IP Guard Active
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2.5 mt-1">
                       <span className="font-mono text-xs sm:text-sm text-indigo-600 dark:text-indigo-300 font-semibold tracking-wider bg-slate-100 dark:bg-[#07080c] px-3 py-1 rounded-lg border border-slate-200 dark:border-white/5">
@@ -1470,6 +1811,17 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                   >
                     {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedKey ? 'Copied Key!' : 'Copy Key'}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setRotateKeyMsg('');
+                      setShowRotateKeyModal(true);
+                    }}
+                    className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20 text-xs font-semibold transition active:scale-[0.98]"
+                    title="Rotate and regenerate API key"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>Rotate Key</span>
                   </button>
                 </div>
               </div>
@@ -2883,6 +3235,875 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
               </div>
             )}
 
+            {/* TAB: WEBHOOKS & INSTANT ALERTS */}
+            {activeTab === 'webhooks' && (
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="pb-4 border-b border-slate-200 dark:border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
+                        🔔 Real-Time Telemetry
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                        HMAC-SHA256 Signed
+                      </span>
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1.5">Webhooks & Instant Delivery Alerts</h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                      Stream delivery confirmations, bounces, opens, and link clicks directly into your backend server in real time.
+                    </p>
+                  </div>
+
+                  {/* Status Indicator Pill */}
+                  <div className="flex items-center space-x-2.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs">
+                    <span className={`w-2.5 h-2.5 rounded-full ${activeProject?.webhookUrl ? (activeProject?.webhookEnabled !== false ? 'bg-emerald-500 shadow-sm shadow-emerald-500 animate-pulse' : 'bg-amber-500') : 'bg-slate-400'}`}></span>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-slate-800 dark:text-white text-[11px]">
+                        {activeProject?.webhookUrl
+                          ? activeProject?.webhookEnabled !== false
+                            ? 'Webhook Active & Listening'
+                            : 'Webhooks Paused'
+                          : 'No Webhook Configured'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[200px]">
+                        {activeProject?.webhookUrl || 'Enter your receiver URL below'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Webhook Configuration Form */}
+                <SpotlightCard
+                  spotlightColor="rgba(99, 102, 241, 0.16)"
+                  borderColor="rgba(99, 102, 241, 0.35)"
+                  className="p-6 space-y-6"
+                >
+                  <form onSubmit={handleSaveWebhookSettings} className="space-y-5">
+                    {/* Destination URL & Enabled Toggle */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                      <div className="md:col-span-3 space-y-1.5">
+                        <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          Destination Webhook URL (HTTPS Required in Production) *
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="url"
+                            required
+                            value={webhookUrlInput}
+                            onChange={(e) => setWebhookUrlInput(e.target.value)}
+                            placeholder="https://api.yourdomain.com/api/webhooks/dakly"
+                            className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-inner"
+                          />
+                          {webhookUrlInput && (
+                            <button
+                              type="button"
+                              onClick={() => setWebhookUrlInput('')}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          Delivery Status
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setWebhookEnabledInput(!webhookEnabledInput)}
+                          className={`w-full py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center space-x-2 transition ${
+                            webhookEnabledInput
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30'
+                              : 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-white/5 dark:text-slate-400 dark:border-white/10'
+                          }`}
+                        >
+                          <span className={`w-2 h-2 rounded-full ${webhookEnabledInput ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                          <span>{webhookEnabledInput ? 'Enabled (Active)' : 'Paused (Disabled)'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* HMAC-SHA256 Signing Secret */}
+                    <div className="space-y-1.5 pt-2 border-t border-slate-200/80 dark:border-white/5">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          HMAC-SHA256 Signing Secret (Payload Authentication)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleGenerateWebhookSecret}
+                          className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
+                        >
+                          <KeyRound className="w-3.5 h-3.5" />
+                          <span>Generate New Secret</span>
+                        </button>
+                      </div>
+                      <div className="relative flex items-center">
+                        <input
+                          type={showWebhookSecret ? 'text' : 'password'}
+                          value={webhookSecretInput}
+                          onChange={(e) => setWebhookSecretInput(e.target.value)}
+                          placeholder="e.g. whsec_9841ab7c... (Click Generate to auto-create)"
+                          className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 pr-20 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-inner"
+                        />
+                        <div className="absolute right-2 flex items-center space-x-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+                            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            title={showWebhookSecret ? 'Hide secret' : 'Show secret'}
+                          >
+                            {showWebhookSecret ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                          {webhookSecretInput && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(webhookSecretInput);
+                                alert('Webhook Secret copied to clipboard!');
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                              title="Copy Secret"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Dakly signs outgoing requests by adding header <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-white/10 font-mono text-[10px]">x-dakly-signature: sha256=&lt;hex&gt;</code>. Use this secret to verify authenticity.
+                      </p>
+                    </div>
+
+                    {/* Subscribed Events Selector */}
+                    <div className="space-y-2 pt-2 border-t border-slate-200/80 dark:border-white/5">
+                      <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        Event Subscriptions (Select which events trigger webhooks)
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {[
+                          { id: 'email.delivered', label: 'email.delivered', desc: 'Dispatched when Gmail confirms inbox delivery (250 OK)' },
+                          { id: 'email.failed', label: 'email.failed', desc: 'Dispatched when SMTP dispatch fails or times out' },
+                          { id: 'email.suppressed', label: 'email.suppressed', desc: 'Dispatched when recipient is blocked by Bounce Guard' },
+                          { id: 'email.opened', label: 'email.opened', desc: 'Dispatched when tracking pixel is loaded by recipient' },
+                          { id: 'email.clicked', label: 'email.clicked', desc: 'Dispatched when a recipient clicks a tracked link' },
+                        ].map((evt) => {
+                          const isChecked = webhookEventsInput.includes(evt.id);
+                          return (
+                            <button
+                              key={evt.id}
+                              type="button"
+                              onClick={() => handleToggleWebhookEvent(evt.id)}
+                              className={`p-3 rounded-xl border text-left transition flex items-start space-x-2.5 ${
+                                isChecked
+                                  ? 'bg-indigo-50/50 border-indigo-400 dark:bg-indigo-500/10 dark:border-indigo-500/50 shadow-xs'
+                                  : 'bg-white/50 dark:bg-white/5 border-slate-200 dark:border-white/5 opacity-60 hover:opacity-100'
+                              }`}
+                            >
+                              <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition shrink-0 ${
+                                isChecked
+                                  ? 'bg-indigo-600 border-indigo-600 text-white'
+                                  : 'border-slate-300 dark:border-white/20 bg-white dark:bg-[#12151c]'
+                              }`}>
+                                {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                              </div>
+                              <div className="min-w-0">
+                                <span className="block text-xs font-mono font-bold text-slate-900 dark:text-white truncate">
+                                  {evt.label}
+                                </span>
+                                <span className="block text-[10px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
+                                  {evt.desc}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Actions Row */}
+                    <div className="pt-4 border-t border-slate-200/80 dark:border-white/5 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="submit"
+                          disabled={isSavingWebhook}
+                          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-sm shadow-indigo-500/20 disabled:opacity-50"
+                        >
+                          {isSavingWebhook ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                          <span>{isSavingWebhook ? 'Saving...' : 'Save Webhook Configuration'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleTriggerTestWebhook}
+                          disabled={isTestingWebhook || !webhookUrlInput}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-sm shadow-emerald-500/20 disabled:opacity-50"
+                        >
+                          {isTestingWebhook ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                          <span>{isTestingWebhook ? 'Sending Test...' : 'Send Test Webhook'}</span>
+                        </button>
+                      </div>
+
+                      {webhookSaveMsg && (
+                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          {webhookSaveMsg}
+                        </span>
+                      )}
+                    </div>
+                  </form>
+                </SpotlightCard>
+
+                {/* Test Result Live Banner */}
+                {webhookTestResult && (
+                  <SpotlightCard
+                    spotlightColor={webhookTestResult.success ? 'rgba(16, 185, 129, 0.16)' : 'rgba(239, 68, 68, 0.16)'}
+                    borderColor={webhookTestResult.success ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}
+                    className="p-5 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-3 h-3 rounded-full ${webhookTestResult.success ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">
+                          {webhookTestResult.success ? '🎉 Webhook Test Succeeded!' : '❌ Webhook Test Failed'}
+                        </span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                          HTTP {webhookTestResult.httpStatus || 0}
+                        </span>
+                        {webhookTestResult.latencyMs !== undefined && (
+                          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                            ⚡ {webhookTestResult.latencyMs}ms
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setWebhookTestResult(null)}
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+
+                    {webhookTestResult.error && (
+                      <p className="text-xs text-rose-600 dark:text-rose-400 font-mono bg-rose-50 dark:bg-rose-500/10 p-3 rounded-lg border border-rose-200 dark:border-rose-500/20">
+                        {webhookTestResult.error}
+                      </p>
+                    )}
+
+                    {webhookTestResult.responseText && (
+                      <div>
+                        <span className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Receiver Server Response Body:</span>
+                        <pre className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 font-mono text-xs overflow-x-auto">
+                          <code>{webhookTestResult.responseText}</code>
+                        </pre>
+                      </div>
+                    )}
+                  </SpotlightCard>
+                )}
+
+                {/* Telemetry & Last Dispatch Info */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="p-4 rounded-xl bg-white dark:bg-[#12151c] border border-slate-200 dark:border-white/5 space-y-1">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Last Dispatched</span>
+                    <span className="block text-sm font-bold text-slate-900 dark:text-white">
+                      {activeProject?.lastWebhookDispatchedAt
+                        ? new Date(activeProject.lastWebhookDispatchedAt).toLocaleTimeString()
+                        : 'No Dispatches Yet'}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white dark:bg-[#12151c] border border-slate-200 dark:border-white/5 space-y-1">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Last Status</span>
+                    <span className={`block text-sm font-bold ${
+                      activeProject?.lastWebhookStatus === 'SUCCESS' ? 'text-emerald-500' : activeProject?.lastWebhookStatus === 'FAILED' ? 'text-rose-500' : 'text-slate-500'
+                    }`}>
+                      {activeProject?.lastWebhookStatus || 'Idle'}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white dark:bg-[#12151c] border border-slate-200 dark:border-white/5 space-y-1">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Last Response Code</span>
+                    <span className="block text-sm font-mono font-bold text-slate-900 dark:text-white">
+                      {activeProject?.lastWebhookResponseCode ? `HTTP ${activeProject.lastWebhookResponseCode}` : '—'}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white dark:bg-[#12151c] border border-slate-200 dark:border-white/5 space-y-1">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Last Latency</span>
+                    <span className="block text-sm font-mono font-bold text-slate-900 dark:text-white">
+                      {activeProject?.lastWebhookLatencyMs !== undefined && activeProject?.lastWebhookLatencyMs !== null
+                        ? `${activeProject.lastWebhookLatencyMs} ms`
+                        : '—'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Receiver Server Verification Guide */}
+                <SpotlightCard
+                  spotlightColor="rgba(99, 102, 241, 0.16)"
+                  borderColor="rgba(99, 102, 241, 0.35)"
+                  className="p-5 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white">🛡️ How to Verify HMAC Signatures in Your Server</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">1-Line Verification</span>
+                    </div>
+                    <div className="flex items-center space-x-1 bg-slate-100 dark:bg-white/5 p-0.5 rounded-lg">
+                      {[
+                        { id: 'node', label: 'Node / Express' },
+                        { id: 'nextjs', label: 'Next.js App Router' },
+                        { id: 'python', label: 'Python (FastAPI)' },
+                      ].map((lang) => (
+                        <button
+                          key={lang.id}
+                          type="button"
+                          onClick={() => setWebhookVerifyLang(lang.id)}
+                          className={`px-2.5 py-1 text-[11px] rounded-md transition ${
+                            webhookVerifyLang === lang.id
+                              ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          {lang.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
+                    <code>
+{webhookVerifyLang === 'node' && `// Express.js Route Handler
+const express = require('express');
+const { Dakly } = require('dakly');
+
+const app = express();
+app.use(express.json());
+
+app.post('/api/webhooks/dakly', (req, res) => {
+  const signature = req.headers['x-dakly-signature'];
+  const isValid = Dakly.verifyWebhookSignature({
+    payload: req.body,
+    signature,
+    secret: process.env.DAKLY_WEBHOOK_SECRET, // '${webhookSecretInput || 'whsec_...'}'
+  });
+
+  if (!isValid) {
+    return res.status(401).json({ error: 'Invalid HMAC signature' });
+  }
+
+  const { event, trackingId, recipient, status } = req.body;
+  console.log(\`Received event \${event} for \${recipient} (Tracking: \${trackingId})\`);
+
+  if (event === 'email.delivered') {
+    // Update your database: e.g. user.emailVerified = true
+  } else if (event === 'email.suppressed') {
+    // Mark email as bounced / uncontactable
+  }
+
+  res.status(200).json({ received: true });
+});`}
+{webhookVerifyLang === 'nextjs' && `// app/api/webhooks/dakly/route.ts
+import { NextResponse } from 'next/server';
+import { Dakly } from 'dakly';
+
+export async function POST(req: Request) {
+  const body = await req.json();
+  const signature = req.headers.get('x-dakly-signature') || '';
+
+  const isValid = Dakly.verifyWebhookSignature({
+    payload: body,
+    signature,
+    secret: process.env.DAKLY_WEBHOOK_SECRET!,
+  });
+
+  if (!isValid) {
+    return NextResponse.json({ error: 'Unauthorized signature' }, { status: 401 });
+  }
+
+  const { event, trackingId, recipient } = body;
+  console.log(\`[Dakly Webhook] \${event} -> \${recipient}\`);
+
+  // Handle event
+  return NextResponse.json({ success: true });
+}`}
+{webhookVerifyLang === 'python' && `# FastAPI Webhook Receiver
+from fastapi import FastAPI, Request, HTTPException
+from dakly import Dakly
+import os
+
+app = FastAPI()
+
+@app.post("/api/webhooks/dakly")
+async def handle_dakly_webhook(request: Request):
+    payload = await request.json()
+    signature = request.headers.get("x-dakly-signature", "")
+    secret = os.environ.get("DAKLY_WEBHOOK_SECRET", "${webhookSecretInput || 'whsec_...'}")
+
+    is_valid = Dakly.verify_webhook_signature(
+        payload=payload,
+        signature=signature,
+        secret=secret
+    )
+
+    if not is_valid:
+        raise HTTPException(status_code=401, detail="Invalid HMAC signature")
+
+    print(f"Received event: {payload.get('event')} for {payload.get('recipient')}")
+    return {"status": "ok"}`}
+                    </code>
+                  </pre>
+                </SpotlightCard>
+              </div>
+            )}
+
+            {/* TAB: SECURITY, IP WHITELIST & TEAM WORKSPACES */}
+            {activeTab === 'security' && (
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="pb-4 border-b border-slate-200 dark:border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                        🛡️ Zero-Trust Security
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
+                        👥 Multi-Seat Workspaces
+                      </span>
+                      {activeProject?.currentUserRole && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-300 border border-slate-200 dark:border-white/10">
+                          Role: {activeProject.currentUserRole}
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1.5">
+                      Security Guard & Team Collaboration
+                    </h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                      Protect against leaked credentials with IP Whitelisting, rotate keys in 1 click, and invite team members to collaborate on this project.
+                    </p>
+                  </div>
+
+                  {/* Summary Status Badges */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs">
+                      <span className={`w-2.5 h-2.5 rounded-full ${ipWhitelistEnabledInput ? 'bg-emerald-500 shadow-sm shadow-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                      <span className="font-semibold text-slate-800 dark:text-white text-[11px]">
+                        IP Guard: {ipWhitelistEnabledInput ? `Active (${ipWhitelistList.length} IPs)` : 'Open (Any IP)'}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs">
+                      <Users className="w-3.5 h-3.5 text-indigo-500" />
+                      <span className="font-semibold text-slate-800 dark:text-white text-[11px]">
+                        Team Seats: {teamMembers.length + 1}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 1: 🔐 API Key Management & 1-Click Key Rotation */}
+                <SpotlightCard
+                  spotlightColor="rgba(245, 158, 11, 0.16)"
+                  borderColor="rgba(245, 158, 11, 0.35)"
+                  className="p-6 space-y-4"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-white/5">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        <Key className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">API Key Credential & Rotation</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          If your API key was accidentally committed to git or leaked, immediately regenerate it here.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRotateKeyMsg('');
+                        setShowRotateKeyModal(true);
+                      }}
+                      className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition active:scale-[0.98]"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Regenerate API Key</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 space-y-1">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Active API Key:</span>
+                      <div className="flex items-center justify-between pt-1">
+                        <code className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                          {isKeyVisible ? activeProject?.apiKey : `${activeProject?.apiKey?.slice(0, 12)}••••••••••••••••••••••••`}
+                        </code>
+                        <div className="flex items-center space-x-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setIsKeyVisible(!isKeyVisible)}
+                            className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                          >
+                            {isKeyVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCopyApiKey}
+                            className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                          >
+                            {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 space-y-1">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Last Inbound Request:</span>
+                      <div className="pt-1 flex items-center justify-between font-mono text-xs">
+                        <span className="text-slate-800 dark:text-slate-200">
+                          IP: <b className="text-indigo-500">{activeProject?.lastClientIp || 'None yet'}</b>
+                        </span>
+                        <span className="text-slate-500 text-[11px]">
+                          {activeProject?.lastApiCallAt ? new Date(activeProject.lastApiCallAt).toLocaleTimeString() : 'Awaiting first call'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </SpotlightCard>
+
+                {/* Section 2: 🛡️ Server IP Whitelisting (Zero-Trust Guard) */}
+                <SpotlightCard
+                  spotlightColor="rgba(16, 185, 129, 0.16)"
+                  borderColor="rgba(16, 185, 129, 0.35)"
+                  className="p-6 space-y-5"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-white/5">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">Server IP Whitelisting</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Bind your API key strictly to your backend server IPs. Unauthorized IP addresses will be blocked with HTTP 403.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Enable / Disable Toggle Switch */}
+                    <button
+                      type="button"
+                      onClick={() => setIpWhitelistEnabledInput(!ipWhitelistEnabledInput)}
+                      className={`px-4 py-2 rounded-xl border text-xs font-semibold flex items-center space-x-2 transition ${
+                        ipWhitelistEnabledInput
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30'
+                          : 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-white/5 dark:text-slate-400 dark:border-white/10'
+                      }`}
+                    >
+                      <span className={`w-2.5 h-2.5 rounded-full ${ipWhitelistEnabledInput ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                      <span>{ipWhitelistEnabledInput ? 'IP Guard: ARMED' : 'IP Guard: DISABLED'}</span>
+                    </button>
+                  </div>
+
+                  {/* Detected IP Helper Badge */}
+                  {detectedClientIp && (
+                    <div className="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center space-x-2 text-indigo-900 dark:text-indigo-200">
+                        <Globe className="w-4 h-4 text-indigo-500" />
+                        <span>
+                          Your current detected caller IP is <code className="font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-500/20">{detectedClientIp}</code>
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddIpToWhitelist(detectedClientIp)}
+                        className="inline-flex items-center space-x-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>+ Add My Current IP</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Add New IP Input */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      Add Allowed IP or Subnet Range:
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newIpInput}
+                        onChange={(e) => setNewIpInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddIpToWhitelist();
+                          }
+                        }}
+                        placeholder="e.g. 203.0.113.195, 10.0.0.0/24, or 192.168.1.*"
+                        className="flex-1 bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-inner"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddIpToWhitelist()}
+                        className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition flex items-center space-x-1.5 shadow-sm active:scale-[0.98]"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add</span>
+                      </button>
+                    </div>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Supports exact IPv4/IPv6, CIDR blocks (e.g. <code className="font-mono">192.168.1.0/24</code>), and wildcards (e.g. <code className="font-mono">10.0.*.*</code>). Leave list empty to allow all IPs.
+                    </span>
+                  </div>
+
+                  {/* Configured IP List Tags */}
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <span>Configured Whitelist ({ipWhitelistList.length} rules)</span>
+                      {ipWhitelistList.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setIpWhitelistList([])}
+                          className="text-[11px] text-rose-500 hover:underline"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                    </div>
+
+                    {ipWhitelistList.length === 0 ? (
+                      <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-white/10 text-center text-xs text-slate-500 dark:text-slate-400">
+                        No IP restrictions configured. Requests from any IP address will be accepted.
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {ipWhitelistList.map((ip) => {
+                          const isCidr = ip.includes('/');
+                          const isWildcard = ip.includes('*');
+                          const isLocal = ip === '127.0.0.1' || ip === 'localhost' || ip === '::1';
+                          return (
+                            <div
+                              key={ip}
+                              className="inline-flex items-center space-x-2 pl-3 pr-2 py-1.5 rounded-xl bg-white dark:bg-[#12151c] border border-slate-200 dark:border-white/10 shadow-xs font-mono text-xs text-slate-800 dark:text-slate-200"
+                            >
+                              <span>{ip}</span>
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400">
+                                {isLocal ? 'Localhost' : isCidr ? 'CIDR' : isWildcard ? 'Wildcard' : 'Exact IP'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveIpFromWhitelist(ip)}
+                                className="text-slate-400 hover:text-rose-500 p-0.5"
+                                title="Remove IP"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Save Whitelist Button */}
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200/80 dark:border-white/5">
+                    {ipWhitelistSaveMsg ? (
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                        {ipWhitelistSaveMsg}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-slate-500 font-mono">
+                        Changes apply immediately across all edge nodes.
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      disabled={isSavingIpWhitelist}
+                      onClick={handleSaveIpWhitelistSettings}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold text-xs transition shadow-md shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center space-x-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>{isSavingIpWhitelist ? 'Saving...' : 'Save IP Whitelist'}</span>
+                    </button>
+                  </div>
+                </SpotlightCard>
+
+                {/* Section 3: 👥 Team Workspaces & Collaborator Seats (RBAC) */}
+                <SpotlightCard
+                  spotlightColor="rgba(99, 102, 241, 0.16)"
+                  borderColor="rgba(99, 102, 241, 0.35)"
+                  className="p-6 space-y-6"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-white/5">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">Team Workspaces & Collaborators</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Invite engineers and team members to manage this project without sharing developer passwords.
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
+                      Total Seats: {teamMembers.length + 1}
+                    </span>
+                  </div>
+
+                  {/* Invite Teammate Form */}
+                  <form onSubmit={handleInviteMember} className="p-4 rounded-xl bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 space-y-3">
+                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center space-x-1.5">
+                      <UserPlus className="w-4 h-4 text-indigo-500" />
+                      <span>Invite a Teammate by Email</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                      <div className="sm:col-span-2">
+                        <input
+                          type="email"
+                          required
+                          value={inviteMemberEmail}
+                          onChange={(e) => setInviteMemberEmail(e.target.value)}
+                          placeholder="teammate@company.com"
+                          className="w-full bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-inner"
+                        />
+                      </div>
+
+                      <div>
+                        <select
+                          value={inviteMemberRole}
+                          onChange={(e) => setInviteMemberRole(e.target.value)}
+                          className="w-full bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-indigo-500"
+                        >
+                          <option value="admin">Admin (Full Control)</option>
+                          <option value="viewer">Viewer (Read-Only)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <button
+                          type="submit"
+                          disabled={isInvitingMember}
+                          className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center justify-center space-x-1.5 shadow-md shadow-indigo-500/20 active:scale-[0.98]"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                          <span>{isInvitingMember ? 'Inviting...' : 'Send Invite'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {memberActionMsg && (
+                      <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                        {memberActionMsg}
+                      </div>
+                    )}
+                  </form>
+
+                  {/* Team Members List Table */}
+                  <div className="space-y-3">
+                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      Active Collaborator Seats
+                    </div>
+
+                    <div className="border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden divide-y divide-slate-200 dark:divide-white/10 bg-white dark:bg-[#080a0f]">
+                      {/* Project Owner Row */}
+                      <div className="p-3.5 flex items-center justify-between bg-indigo-50/30 dark:bg-indigo-950/10 text-xs">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold flex items-center justify-center border border-amber-500/20 text-xs">
+                            ⭐
+                          </div>
+                          <div>
+                            <div className="font-semibold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                              <span>{projectOwner?.name || activeProject?.senderDisplayName || 'Project Owner'}</span>
+                              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 font-bold">
+                                OWNER
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-mono">
+                              {projectOwner?.email || activeProject?.senderEmail}
+                            </div>
+                          </div>
+                        </div>
+
+                        <span className="text-[11px] text-slate-500 font-mono">
+                          Full Privileges
+                        </span>
+                      </div>
+
+                      {/* Teammates Rows */}
+                      {teamMembers.map((member) => (
+                        <div key={member.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center border border-indigo-500/20 text-xs uppercase font-mono">
+                              {member.email.slice(0, 2)}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-slate-900 dark:text-white flex items-center space-x-2">
+                                <span className="font-mono">{member.email}</span>
+                                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold uppercase ${
+                                  member.status === 'active'
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
+                                    : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                                }`}>
+                                  {member.status}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-500">
+                                Invited by {member.invitedBy || 'Owner'} • {new Date(member.invitedAt || Date.now()).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-3 self-end sm:self-auto">
+                            {/* Role Switcher */}
+                            {activeProject?.isOwner ? (
+                              <select
+                                value={member.role}
+                                onChange={(e) => handleUpdateMemberRole(member.id, e.target.value)}
+                                className="bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 text-xs rounded-lg px-2.5 py-1 text-slate-800 dark:text-slate-200 font-medium"
+                              >
+                                <option value="admin">Admin</option>
+                                <option value="viewer">Viewer</option>
+                              </select>
+                            ) : (
+                              <span className="font-mono text-xs uppercase font-bold text-slate-600 dark:text-slate-400">
+                                {member.role}
+                              </span>
+                            )}
+
+                            {/* Remove Member Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMember(member.id, member.email)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 transition"
+                              title="Remove member from project"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {teamMembers.length === 0 && (
+                        <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
+                          No collaborators added yet. Use the form above to invite team members.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </SpotlightCard>
+              </div>
+            )}
+
             {/* TAB 5: SNIPPETS & SDK SHOWCASE */}
             {activeTab === 'snippets' && (
               <div className="space-y-6">
@@ -3966,6 +5187,70 @@ curl -X POST "${API_BASE_URL}/api/send" \\
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ROTATE API KEY CONFIRMATION */}
+      {showRotateKeyModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10 max-w-md w-full space-y-4 shadow-2xl bg-white dark:bg-[#0d1017] my-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  <RefreshCw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Rotate API Key
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Instant credential revocation & re-issue
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRotateKeyModal(false)}
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2 text-xs">
+              <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center space-x-1.5">
+                <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+                <span>Immediate Invalidation Warning:</span>
+              </div>
+              <p className="text-amber-900/80 dark:text-amber-200/80 leading-relaxed text-[11px]">
+                Rotating your API key will <b>permanently and immediately invalidate</b> your current key. Any live applications, webhooks, or scheduled tasks using the previous key will instantly stop delivering emails until updated with the new key.
+              </p>
+            </div>
+
+            {rotateKeyMsg && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                {rotateKeyMsg}
+              </div>
+            )}
+
+            <div className="pt-2 flex items-center justify-end space-x-2.5">
+              <button
+                type="button"
+                onClick={() => setShowRotateKeyModal(false)}
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-800 dark:text-white text-xs font-semibold transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isRotatingKey}
+                onClick={handleRotateApiKey}
+                className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-md shadow-amber-500/20 active:scale-[0.98] flex items-center space-x-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRotatingKey ? 'animate-spin' : ''}`} />
+                <span>{isRotatingKey ? 'Regenerating Key...' : 'Confirm & Rotate Key'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

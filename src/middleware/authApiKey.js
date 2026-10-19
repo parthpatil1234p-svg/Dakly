@@ -1,4 +1,5 @@
 const Project = require('../models/Project');
+const { extractClientIp, isIpAllowed } = require('../utils/ipFilter');
 
 /**
  * Middleware to authenticate requests using x-api-key header or query param
@@ -27,10 +28,23 @@ async function authenticateApiKey(req, res, next) {
       });
     }
 
+    const clientIp = extractClientIp(req);
+
+    // IP Whitelist Security Enforcement
+    if (project.ipWhitelistEnabled && project.ipWhitelist && project.ipWhitelist.length > 0) {
+      if (!isIpAllowed(clientIp, project.ipWhitelist)) {
+        return res.status(403).json({
+          success: false,
+          code: 'IP_NOT_WHITELISTED',
+          error: `Access denied: Client IP (${clientIp}) is not permitted by this project's IP whitelist.`,
+          clientIp,
+        });
+      }
+    }
+
     req.project = project;
 
     // Asynchronously log inbound activity timestamp & caller IP without blocking request
-    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
     Project.updateOne(
       { _id: project._id },
       { $set: { lastApiCallAt: new Date(), lastClientIp: clientIp } }

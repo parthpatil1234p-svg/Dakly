@@ -15,6 +15,15 @@ const {
   addSuppression,
   removeSuppression,
   updateSenderWarmup,
+  generateWebhookSecret,
+  testWebhookEndpoint,
+  rotateApiKey,
+  getIpWhitelist,
+  updateIpWhitelist,
+  getProjectMembers,
+  addProjectMember,
+  updateProjectMember,
+  removeProjectMember,
 } = require('../controllers/projectController');
 const { optionalProtect } = require('../middleware/authJwt');
 
@@ -28,6 +37,23 @@ router.post('/:id/senders', addSender);
 router.get('/:id/senders', getSenders);
 router.delete('/:id/senders/:senderId', removeSender);
 router.delete('/:id', deleteProject);
+
+// 1-Click API Key Rotation / Regeneration
+router.post('/:id/api-key/rotate', rotateApiKey);
+
+// IP Whitelisting (Security Guard)
+router.get('/:id/ip-whitelist', getIpWhitelist);
+router.patch('/:id/ip-whitelist', updateIpWhitelist);
+
+// Team Workspaces & Collaborator Access
+router.get('/:id/members', getProjectMembers);
+router.post('/:id/members', addProjectMember);
+router.patch('/:id/members/:memberId', updateProjectMember);
+router.delete('/:id/members/:memberId', removeProjectMember);
+
+// Webhook & Instant Delivery Alerts
+router.post('/:id/webhook/secret', generateWebhookSecret);
+router.post('/:id/webhook/test', testWebhookEndpoint);
 
 // Smart Warm-up & Bounce Suppression routes
 router.get('/:id/suppression', getSuppressionList);

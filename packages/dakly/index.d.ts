@@ -280,6 +280,12 @@ export class Dakly {
   getLogs(options?: GetLogsOptions): Promise<GetLogsResponse>;
   getStats(): Promise<StatsResponse>;
   getStatus(trackingId: string): Promise<StatusResponse>;
+
+  static verifyWebhookSignature(options: {
+    payload: string | object;
+    signature: string;
+    secret: string;
+  }): boolean;
 }
 
 export default Dakly;

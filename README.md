@@ -35,8 +35,9 @@ By plugging Dakly into your project, your application instantly gets an enterpri
 | 🛡️ **Zero-Crash Cloud Reliability** | Uses persistent STARTTLS on Port 587 with connection pooling | Eliminates cloud timeout freezes (`ETIMEDOUT`) on Vercel, Render, AWS, and Heroku |
 | 🔐 **Military-Grade AES-256-GCM** | Encrypts Google App Passwords with unique IVs and authenticated tags | Prevents credential leaks; passwords are never stored in plaintext |
 | 📊 **Real-Time Audit & Tracking Logs** | Generates an immutable tracking ID (`msg_...`) with millisecond latency logging | Instant visibility into delivery success, bounces, and timestamps |
-| 🔔 **HMAC Delivery Webhooks** | Sends asynchronous POST callbacks to your server when emails are delivered or bounce | Keeps your main database updated with two-way delivery status |
-| 👥 **Multi-Tenant Isolation** | Separate projects, API keys, and logs for different apps under one developer account | Cleanly manage multiple startup projects from a single control panel |
+| 🔔 **HMAC Delivery Webhooks** | Real-time HMAC-SHA256 authenticated webhooks for delivery, failure, suppression, opens, and clicks | Keeps your backend database updated with asynchronous two-way delivery telemetry |
+| 🛡️ **Server IP Whitelisting & Key Rotation** | Bind API keys to specific server IPs (exact, CIDR `/24`, or wildcard `*`) + 1-click zero-downtime key rotation | Prevents stolen API keys from quota misuse and hardens production infrastructure |
+| 👥 **Team Workspaces & Multi-Seat RBAC** | Multi-developer project collaboration with Owner, Admin, and Viewer permissions | Collaborate seamlessly with team members without sharing developer passwords |
 | 🖼️ **1:1 Brand Logo & Anti-Piracy Guard** | Strict 1:1 square brand logo (1 per project) with magic-byte anti-malware/piracy inspection | Renders high-trust brand logo in outgoing emails while blocking fake media/torrents |
 | 📧 **Pre-built Templates & Variable Engine** | 5 built-in responsive templates (OTP, Welcome, Password Reset, College Notes, Receipts) with dynamic `vars` | Zero HTML design work needed; dynamic interpolation with project branding |
 | 📊 **Open & Click Tracking Analytics** | 1x1 zero-latency transparent pixel + phishing-safe link redirects + device breakdown (Mobile vs Desktop) | Real-time engagement telemetry & webhooks (`email.opened`, `email.clicked`) without 3rd-party dependencies |
@@ -509,6 +510,94 @@ Google penalizes sender accounts that repeatedly send to non-existent or invalid
 - Whenever an SMTP hard bounce occurs (`550 User unknown`, `551`, `553 Invalid mailbox`, `does not exist`), Dakly automatically flags and saves the recipient to the project's **Suppression List**.
 - Any future dispatches to that recipient are **blocked proactively (`status: "BLOCKED_SUPPRESSED"`)** before reaching Google SMTP, preserving your sender reputation.
 - Operators can view, filter, manually add, or unblock recipients directly from the **Bounce Guard & Suppression** dashboard modal.
+
+---
+
+## 🔔 Webhooks & Instant Delivery Alerts
+
+Stream real-time HTTP events directly to your backend server as emails are delivered, opened, clicked, or bounced.
+
+### Supported Webhook Events
+- `email.delivered`: Gmail SMTP returned `250 OK` confirmation.
+- `email.failed`: Dispatch failed due to authentication or connection issues.
+- `email.suppressed`: Dispatch was proactively blocked by the Bounce Guard.
+- `email.opened`: Recipient opened the email (1x1 transparent tracking pixel loaded).
+- `email.clicked`: Recipient clicked a tracked hyperlink.
+- `webhook.test`: Live diagnostic ping sent from the Webhook console.
+
+### Cryptographic Signature Verification (`x-dakly-signature`)
+Dakly calculates an HMAC-SHA256 signature using your project's Webhook Secret (`whsec_...`) and sends it in the `x-dakly-signature` header:
+`x-dakly-signature: sha256=<hex_digest>`
+
+#### Node.js / Express Verification:
+```javascript
+import express from 'express';
+import { Dakly } from 'dakly';
+
+const app = express();
+app.use(express.json());
+
+app.post('/api/webhooks/dakly', (req, res) => {
+  const signature = req.headers['x-dakly-signature'];
+  const isValid = Dakly.verifyWebhookSignature({
+    payload: req.body,
+    signature,
+    secret: process.env.DAKLY_WEBHOOK_SECRET, // 'whsec_...'
+  });
+
+  if (!isValid) {
+    return res.status(401).json({ error: 'Invalid HMAC signature' });
+  }
+
+  const { event, trackingId, recipient } = req.body;
+  console.log(`Received event ${event} for ${recipient} (Tracking: ${trackingId})`);
+  res.status(200).json({ received: true });
+});
+```
+
+#### Python / FastAPI Verification:
+```python
+from fastapi import FastAPI, Request, HTTPException
+from dakly import Dakly
+import os
+
+app = FastAPI()
+
+@app.post("/api/webhooks/dakly")
+async def handle_dakly_webhook(request: Request):
+    payload = await request.json()
+    signature = request.headers.get("x-dakly-signature", "")
+    secret = os.environ.get("DAKLY_WEBHOOK_SECRET", "whsec_...")
+
+    is_valid = Dakly.verify_webhook_signature(payload=payload, signature=signature, secret=secret)
+    if not is_valid:
+        raise HTTPException(status_code=401, detail="Invalid HMAC signature")
+
+    print(f"Event: {payload.get('event')} -> {payload.get('recipient')}")
+    return {"status": "ok"}
+```
+
+---
+
+## 👥 Team Workspaces & Server IP Whitelisting
+
+### 1. Server IP Whitelisting (Zero-Trust Security)
+Bind your API key strictly to your application server IP addresses so that even if an API key is accidentally leaked or committed to a public Git repository, unauthorized machines cannot use your daily email quota.
+- **Exact IPs:** `203.0.113.195`
+- **CIDR Subnet Ranges:** `192.168.1.0/24`, `10.0.0.0/8`
+- **Wildcard Patterns:** `192.168.1.*`
+- **Localhost Aliases:** `127.0.0.1`, `::1`, `localhost`
+- Unauthorized requests are instantly rejected with **HTTP 403 Forbidden** (`code: "IP_NOT_WHITELISTED"`).
+
+### 2. 1-Click API Key Rotation
+If a key is ever compromised, regenerate it in **1 click** directly from the dashboard or via `POST /api/projects/:id/api-key/rotate`. The old key is immediately and permanently invalidated with zero server restart required.
+
+### 3. Team Workspaces & Multi-Seat RBAC
+Collaborate with teammates without sharing account passwords:
+- **Owner:** Full privileges (delete project, rotate API keys, manage team members, configure senders).
+- **Admin:** Can send emails, edit project settings, manage webhooks, configure IP rules, and view logs.
+- **Viewer:** Read-only access to analytics, audit logs, template previews, and quota status.
+- **Pending Invite Auto-Linking:** If you invite a teammate before they register on Dakly, their access is activated automatically the moment they create their account with that email address.
 
 ---
 

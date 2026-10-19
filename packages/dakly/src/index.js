@@ -495,6 +495,34 @@ class Dakly {
     }
     return this._request(`/api/status/${encodeURIComponent(trackingId.trim())}`, { method: 'GET' });
   }
+
+  /**
+   * Verify cryptographic HMAC-SHA256 signature on an incoming webhook payload
+   * 
+   * @param {object} options
+   * @param {string|object} options.payload - Raw body string or JSON object
+   * @param {string} options.signature - Value of 'x-dakly-signature' header
+   * @param {string} options.secret - Webhook HMAC secret ('whsec_...')
+   * @returns {boolean} Whether the webhook signature is authentic
+   */
+  static verifyWebhookSignature(options = {}) {
+    const { payload, signature, secret } = options;
+    if (!signature || !secret || !payload) return false;
+
+    try {
+      const crypto = require('crypto');
+      const rawSignature = signature.startsWith('sha256=') ? signature.slice(7) : signature;
+      const bodyString = typeof payload === 'string' ? payload : JSON.stringify(payload);
+      const expected = crypto.createHmac('sha256', secret).update(bodyString).digest('hex');
+
+      const sigBuf = Buffer.from(rawSignature, 'hex');
+      const expBuf = Buffer.from(expected, 'hex');
+      if (sigBuf.length !== expBuf.length) return false;
+      return crypto.timingSafeEqual(sigBuf, expBuf);
+    } catch {
+      return false;
+    }
+  }
 }
 
 // Named exports and CommonJS compatibility
