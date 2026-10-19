@@ -35,6 +35,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import SpotlightCard from './components/SpotlightCard';
 import {
   API_BASE_URL,
   loginUser,
@@ -430,10 +431,10 @@ export default function App() {
             </p>
           </div>
 
-          {/* Capabilities 8-Card Grid */}
+          {/* Capabilities 8-Card Grid with Spotlight Glow */}
           <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[58vh] overflow-y-auto">
             
-            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+            <SpotlightCard spotlightColor="rgba(245, 158, 11, 0.18)" borderColor="rgba(245, 158, 11, 0.3)" className="p-3.5 space-y-1">
               <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
                 <Zap className="w-4 h-4 text-amber-400" />
                 <span>1. Sub-Second OTP & Verification (&lt; 1s)</span>
@@ -441,9 +442,9 @@ export default function App() {
               <p className="text-[11px] text-slate-400 leading-relaxed">
                 4-6 digit OTPs, magic links aur password resets 1 second ke andar deliver karta hai via persistent STARTTLS Port 587.
               </p>
-            </div>
+            </SpotlightCard>
 
-            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+            <SpotlightCard spotlightColor="rgba(99, 102, 241, 0.18)" borderColor="rgba(99, 102, 241, 0.3)" className="p-3.5 space-y-1">
               <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
                 <FileCheck className="w-4 h-4 text-indigo-400" />
                 <span>2. 100% Custom HTML & Styling Freedom</span>
@@ -451,9 +452,9 @@ export default function App() {
               <p className="text-[11px] text-slate-400 leading-relaxed">
                 Koi fixed template nahi. Welcome cards, receipts, status updates aur alerts ko apne man-pasand HTML/CSS se design karein.
               </p>
-            </div>
+            </SpotlightCard>
 
-            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+            <SpotlightCard spotlightColor="rgba(16, 185, 129, 0.18)" borderColor="rgba(16, 185, 129, 0.3)" className="p-3.5 space-y-1">
               <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
                 <Paperclip className="w-4 h-4 text-emerald-400" />
                 <span>3. 15MB Multi-Format Attachments</span>
@@ -461,9 +462,9 @@ export default function App() {
               <p className="text-[11px] text-slate-400 leading-relaxed">
                 PDFs (College Notes, Invoices), Images (QR Codes, Receipts), Excel/CSV sheets, aur ZIP files direct link ya base64 se bhejein.
               </p>
-            </div>
+            </SpotlightCard>
 
-            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+            <SpotlightCard spotlightColor="rgba(6, 182, 212, 0.18)" borderColor="rgba(6, 182, 212, 0.3)" className="p-3.5 space-y-1">
               <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
                 <Layers className="w-4 h-4 text-cyan-400" />
                 <span>4. 1,000+ Free Emails/Day Failover</span>
@@ -471,9 +472,9 @@ export default function App() {
               <p className="text-[11px] text-slate-400 leading-relaxed">
                 Primary + Backup Gmail attach karein. Jab Primary 500 emails poore karega, Dakly auto-backup account par switch ho jayega.
               </p>
-            </div>
+            </SpotlightCard>
 
-            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+            <SpotlightCard spotlightColor="rgba(244, 63, 94, 0.18)" borderColor="rgba(244, 63, 94, 0.3)" className="p-3.5 space-y-1">
               <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
                 <ShieldCheck className="w-4 h-4 text-rose-400" />
                 <span>5. Anti-Spam Burst Pacing Queue</span>
@@ -481,9 +482,9 @@ export default function App() {
               <p className="text-[11px] text-slate-400 leading-relaxed">
                 Traffic spike hone par 200ms spacing queue lagata hai taaki Google aapke Gmail ko block na kare aur emails spam mein na jayein.
               </p>
-            </div>
+            </SpotlightCard>
 
-            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+            <SpotlightCard spotlightColor="rgba(16, 185, 129, 0.18)" borderColor="rgba(16, 185, 129, 0.3)" className="p-3.5 space-y-1">
               <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
                 <Activity className="w-4 h-4 text-emerald-400" />
                 <span>6. Live Traffic Pulse & API Diagnostics</span>
@@ -491,9 +492,9 @@ export default function App() {
               <p className="text-[11px] text-slate-400 leading-relaxed">
                 Dashboard se 1-click mein API Key test karein, real-time inbound traffic dekhein, aur live stream audit logs track karein.
               </p>
-            </div>
+            </SpotlightCard>
 
-            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+            <SpotlightCard spotlightColor="rgba(139, 92, 246, 0.18)" borderColor="rgba(139, 92, 246, 0.3)" className="p-3.5 space-y-1">
               <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
                 <Lock className="w-4 h-4 text-violet-400" />
                 <span>7. Military-Grade AES-256-GCM Security</span>
@@ -501,9 +502,9 @@ export default function App() {
               <p className="text-[11px] text-slate-400 leading-relaxed">
                 Google App Passwords kabhi plain text mein save nahi hote. Military-grade authenticated encryption se 100% secure rehte hain.
               </p>
-            </div>
+            </SpotlightCard>
 
-            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+            <SpotlightCard spotlightColor="rgba(245, 158, 11, 0.18)" borderColor="rgba(245, 158, 11, 0.3)" className="p-3.5 space-y-1">
               <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
                 <Terminal className="w-4 h-4 text-amber-300" />
                 <span>8. Zero Packages / Drop-in Replacement</span>
@@ -511,7 +512,7 @@ export default function App() {
               <p className="text-[11px] text-slate-400 leading-relaxed">
                 Apne project mein Nodemailer install karne ki zaroorat nahi. Sirf ek native fetch() call se bina koi purana code tode chalega.
               </p>
-            </div>
+            </SpotlightCard>
 
           </div>
 
@@ -541,13 +542,14 @@ export default function App() {
   // ==============================================================
   if (!authToken) {
     return (
-      <div className="min-h-screen bg-[#080a0f] flex flex-col justify-center items-center p-4 selection:bg-indigo-500 selection:text-white">
+      <div className="min-h-screen bg-[#07080c] flex flex-col justify-center items-center p-4 selection:bg-indigo-500 selection:text-white relative overflow-hidden">
         
         {/* Welcome Capabilities Popup on Visit */}
         {renderWelcomeModal()}
 
-        {/* Glow backdrop */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none"></div>
+        {/* Ambient Glow Backdrops */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-indigo-600/15 rounded-full blur-[140px] pointer-events-none"></div>
+        <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
         <div className="relative z-10 max-w-md w-full">
           
@@ -556,17 +558,18 @@ export default function App() {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-3xl mb-3 shadow-lg shadow-indigo-500/10">
               📮
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
-              Dakly Developer Console
+            <h1 className="text-2xl font-bold text-white tracking-tight flex items-center justify-center space-x-2">
+              <span>Dakly</span>
+              <span className="text-indigo-400 font-mono text-xs px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">ENGINE</span>
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              Multi-tenant transactional email engine for developers.
+              Multi-tenant transactional email & OTP engine for developers.
             </p>
             <div className="mt-3">
               <button
                 type="button"
                 onClick={() => setShowWelcomeModal(true)}
-                className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 text-[11px] font-semibold transition"
+                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 text-[11px] font-semibold transition active:scale-[0.98]"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 <span>Dekhein Dakly Kya-Kya Kar Sakta Hai ✨</span>
@@ -574,11 +577,15 @@ export default function App() {
             </div>
           </div>
 
-          {/* Auth Glass Card */}
-          <div className="glass-card rounded-2xl p-6 sm:p-8 border border-white/10 shadow-2xl space-y-6">
+          {/* Auth Spotlight Card */}
+          <SpotlightCard
+            spotlightColor="rgba(99, 102, 241, 0.2)"
+            borderColor="rgba(99, 102, 241, 0.4)"
+            className="p-6 sm:p-8 space-y-6"
+          >
             
             {/* Tab: Sign In vs Sign Up */}
-            <div className="grid grid-cols-2 p-1 rounded-xl bg-[#12151c] border border-white/10">
+            <div className="grid grid-cols-2 p-1 rounded-xl bg-[#080a0f] border border-white/10">
               <button
                 type="button"
                 onClick={() => {
@@ -586,7 +593,7 @@ export default function App() {
                   setAuthError('');
                 }}
                 className={`py-2 text-xs font-semibold rounded-lg transition ${
-                  authMode === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                  authMode === 'login' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Sign In
@@ -598,7 +605,7 @@ export default function App() {
                   setAuthError('');
                 }}
                 className={`py-2 text-xs font-semibold rounded-lg transition ${
-                  authMode === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                  authMode === 'register' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Create Account
@@ -627,7 +634,7 @@ export default function App() {
                       value={authForm.name}
                       onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })}
                       placeholder="Parth Patil"
-                      className="w-full bg-[#12151c] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-[#080a0f] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                 </div>
@@ -643,7 +650,7 @@ export default function App() {
                     value={authForm.email}
                     onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
                     placeholder="developer@example.com"
-                    className="w-full bg-[#12151c] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                    className="w-full bg-[#080a0f] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
                   />
                 </div>
               </div>
@@ -659,7 +666,7 @@ export default function App() {
                     value={authForm.password}
                     onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
                     placeholder="••••••••"
-                    className="w-full bg-[#12151c] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                    className="w-full bg-[#080a0f] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
                   />
                 </div>
               </div>
@@ -667,18 +674,18 @@ export default function App() {
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-500/25 mt-2"
+                className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-500/25 mt-2 active:scale-[0.98]"
               >
                 <span>{authLoading ? 'Verifying...' : authMode === 'login' ? 'Sign In to Console' : 'Register Developer Account'}</span>
               </button>
 
             </form>
 
-            <div className="pt-2 border-t border-white/5 text-center text-[11px] text-slate-500">
-              🔒 Military-grade AES-256-GCM encryption & isolated multi-tenant workspaces.
+            <div className="pt-2 border-t border-white/5 text-center text-[11px] text-slate-500 font-mono">
+              🔒 Military-grade AES-256-GCM encryption & multi-tenant isolation.
             </div>
 
-          </div>
+          </SpotlightCard>
 
         </div>
 
@@ -690,13 +697,20 @@ export default function App() {
   // VIEW: AUTHENTICATED DASHBOARD
   // ==============================================================
   return (
-    <div className="min-h-screen flex flex-col bg-[#080a0f] text-slate-100">
+    <div className="min-h-screen flex flex-col bg-[#07080c] text-slate-100 relative overflow-x-hidden">
       
+      {/* Ambient Lighting Glow Meshes */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-32 left-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px]" />
+        <div className="absolute top-1/3 -right-32 w-[450px] h-[450px] bg-violet-600/10 rounded-full blur-[140px]" />
+        <div className="absolute -bottom-24 left-1/3 w-[500px] h-[400px] bg-emerald-600/5 rounded-full blur-[140px]" />
+      </div>
+
       {/* Welcome Capabilities Popup on Visit */}
       {renderWelcomeModal()}
 
       {/* Top Header Navbar */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#080a0f]/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07080c]/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
           {/* Logo & Live Status */}
@@ -704,15 +718,17 @@ export default function App() {
             <div className="flex items-center space-x-2.5">
               <span className="text-2xl">📮</span>
               <span className="text-xl font-bold tracking-tight text-white flex items-center">
-                Dakly<span className="text-indigo-400 font-extrabold text-xs ml-1 px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">DASHBOARD</span>
+                Dakly<span className="text-indigo-400 font-extrabold text-xs ml-1.5 px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 font-mono">ENGINE</span>
               </span>
             </div>
-            <div className="hidden md:flex items-center space-x-2 pl-4 border-l border-white/10 text-xs">
+            <div className="hidden md:flex items-center space-x-2.5 pl-4 border-l border-white/10 text-xs">
               <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                <span className="radar-beacon absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-sm shadow-emerald-400"></span>
               </span>
-              <span className="text-slate-400 font-mono text-[11px]">Backend Live</span>
+              <span className="text-slate-300 font-mono text-[11px] font-medium tracking-wide">
+                Gmail Cluster: <span className="text-emerald-400 font-bold">100% OPERATIONAL</span>
+              </span>
             </div>
           </div>
 
@@ -819,57 +835,68 @@ export default function App() {
           </div>
         ) : (
           <>
-            {/* Active API Key Bar */}
-            <div className="glass-card rounded-xl p-3.5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-indigo-500/20 bg-indigo-500/5">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="text-xs text-slate-400 font-medium">
-                    Active Project Key: <span className="text-white font-semibold">{activeProject?.name}</span>
+            {/* Active API Key Bar with Spotlight Glow */}
+            <SpotlightCard
+              spotlightColor="rgba(99, 102, 241, 0.18)"
+              borderColor="rgba(99, 102, 241, 0.4)"
+              className="p-4 mb-6 border border-indigo-500/25 bg-gradient-to-r from-indigo-950/20 via-[#0d1017] to-purple-950/20"
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center space-x-3.5">
+                  <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-inner">
+                    <Lock className="w-4 h-4" />
                   </div>
-                  <div className="flex items-center space-x-2 mt-0.5">
-                    <span className="font-mono text-xs sm:text-sm text-indigo-300 font-semibold tracking-wider">
-                      {isKeyVisible ? activeProject?.apiKey : `${activeProject?.apiKey?.slice(0, 10)}••••••••••••••••••••••••••••••••`}
-                    </span>
-                    <button
-                      onClick={() => setIsKeyVisible(!isKeyVisible)}
-                      className="text-slate-400 hover:text-white p-1"
-                      title="Toggle visibility"
-                    >
-                      {isKeyVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    </button>
+                  <div>
+                    <div className="text-xs text-slate-400 font-medium flex items-center space-x-2">
+                      <span>Active Project Key:</span>
+                      <span className="text-white font-semibold px-2 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-[11px]">{activeProject?.name}</span>
+                    </div>
+                    <div className="flex items-center space-x-2.5 mt-1">
+                      <span className="font-mono text-xs sm:text-sm text-indigo-300 font-semibold tracking-wider bg-[#07080c] px-3 py-1 rounded-lg border border-white/5">
+                        {isKeyVisible ? activeProject?.apiKey : `${activeProject?.apiKey?.slice(0, 10)}••••••••••••••••••••••••••••••••`}
+                      </span>
+                      <button
+                        onClick={() => setIsKeyVisible(!isKeyVisible)}
+                        className="text-slate-400 hover:text-white p-1.5 rounded-md hover:bg-white/5 transition"
+                        title="Toggle visibility"
+                      >
+                        {isKeyVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center space-x-2 w-full sm:w-auto">
-                <button
-                  onClick={handlePingKey}
-                  disabled={isPinging}
-                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition shadow-sm"
-                  title="Verify API key connectivity & measure server response time"
-                >
-                  <Activity className={`w-3.5 h-3.5 ${isPinging ? 'animate-spin' : 'text-emerald-300'}`} />
-                  <span>{isPinging ? 'Pinging...' : '⚡ Test API Key'}</span>
-                </button>
-                <button
-                  onClick={handleCopyApiKey}
-                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition"
-                >
-                  {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedKey ? 'Copied Key!' : 'Copy API Key'}</span>
-                </button>
+                <div className="flex items-center space-x-2.5 w-full sm:w-auto">
+                  <button
+                    onClick={handlePingKey}
+                    disabled={isPinging}
+                    className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition shadow-md shadow-indigo-500/20 active:scale-[0.98]"
+                    title="Verify API key connectivity & measure server response time"
+                  >
+                    <Activity className={`w-3.5 h-3.5 ${isPinging ? 'animate-spin' : 'text-emerald-300'}`} />
+                    <span>{isPinging ? 'Pinging Engine...' : '⚡ Test API Key'}</span>
+                  </button>
+                  <button
+                    onClick={handleCopyApiKey}
+                    className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-medium transition active:scale-[0.98]"
+                  >
+                    {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedKey ? 'Copied Key!' : 'Copy API Key'}</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            </SpotlightCard>
 
             {/* TAB 1: OVERVIEW */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
 
                 {/* API Key Connection Diagnostics & Inbound Pulse Card */}
-                <div className="glass-card rounded-xl p-5 border border-indigo-500/20 bg-gradient-to-r from-indigo-950/20 via-[#0d1017] to-purple-950/20">
+                <SpotlightCard
+                  spotlightColor="rgba(99, 102, 241, 0.2)"
+                  borderColor="rgba(99, 102, 241, 0.35)"
+                  className="p-5 border border-indigo-500/20 bg-gradient-to-r from-indigo-950/20 via-[#0d1017] to-purple-950/20"
+                >
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
                     <div className="flex items-start space-x-3">
                       <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
@@ -892,7 +919,7 @@ export default function App() {
                     <button
                       onClick={handlePingKey}
                       disabled={isPinging}
-                      className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition self-start md:self-auto shadow-md shadow-indigo-500/20"
+                      className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition self-start md:self-auto shadow-md shadow-indigo-500/20 active:scale-[0.98]"
                     >
                       <Activity className={`w-4 h-4 ${isPinging ? 'animate-spin' : ''}`} />
                       <span>{isPinging ? 'Testing Key...' : 'Run Live Diagnostic Ping'}</span>
@@ -979,23 +1006,27 @@ export default function App() {
                     </div>
 
                   </div>
-                </div>
+                </SpotlightCard>
                 
-                {/* 4 Top KPI Cards */}
+                {/* 4 Top KPI Cards with Bento Spotlight Glow */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   
-                  <div className="glass-card p-5 rounded-xl border border-white/10">
+                  <SpotlightCard
+                    spotlightColor="rgba(99, 102, 241, 0.16)"
+                    borderColor="rgba(99, 102, 241, 0.35)"
+                    className="p-5"
+                  >
                     <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-                      <span>SENT TODAY</span>
+                      <span className="font-mono tracking-wider text-[11px]">SENT TODAY</span>
                       <Send className="w-4 h-4 text-indigo-400" />
                     </div>
                     <div className="mt-2 flex items-baseline space-x-2">
                       <span className="text-3xl font-bold text-white font-mono">{stats?.capacity?.sentToday ?? 0}</span>
-                      <span className="text-xs text-slate-400">/ {stats?.capacity?.totalDailyQuota ?? 500} daily</span>
+                      <span className="text-xs text-slate-400 font-mono">/ {stats?.capacity?.totalDailyQuota ?? 500} daily</span>
                     </div>
                     <div className="w-full bg-white/5 rounded-full h-1.5 mt-3 overflow-hidden">
                       <div
-                        className="bg-indigo-500 h-1.5 rounded-full transition-all duration-500"
+                        className="bg-indigo-500 h-1.5 rounded-full transition-all duration-500 shadow-sm shadow-indigo-500/50"
                         style={{
                           width: `${Math.min(
                             100,
@@ -1004,56 +1035,72 @@ export default function App() {
                         }}
                       ></div>
                     </div>
-                  </div>
+                  </SpotlightCard>
 
-                  <div className="glass-card p-5 rounded-xl border border-white/10">
+                  <SpotlightCard
+                    spotlightColor="rgba(16, 185, 129, 0.16)"
+                    borderColor="rgba(16, 185, 129, 0.35)"
+                    className="p-5"
+                  >
                     <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-                      <span>REMAINING QUOTA</span>
+                      <span className="font-mono tracking-wider text-[11px]">REMAINING QUOTA</span>
                       <ShieldCheck className="w-4 h-4 text-emerald-400" />
                     </div>
                     <div className="mt-2 flex items-baseline space-x-2">
                       <span className="text-3xl font-bold text-emerald-400 font-mono">
                         {stats?.capacity?.remainingToday ?? 500}
                       </span>
-                      <span className="text-xs text-slate-400">emails left</span>
+                      <span className="text-xs text-slate-400 font-mono">emails left</span>
                     </div>
-                    <div className="mt-3 text-xs text-slate-500">Resets at 00:00 UTC daily</div>
-                  </div>
+                    <div className="mt-3 text-xs text-slate-500 font-mono">Resets at 00:00 UTC daily</div>
+                  </SpotlightCard>
 
-                  <div className="glass-card p-5 rounded-xl border border-white/10">
+                  <SpotlightCard
+                    spotlightColor="rgba(99, 102, 241, 0.16)"
+                    borderColor="rgba(99, 102, 241, 0.35)"
+                    className="p-5"
+                  >
                     <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-                      <span>DELIVERY RATE</span>
+                      <span className="font-mono tracking-wider text-[11px]">DELIVERY RATE</span>
                       <CheckCircle className="w-4 h-4 text-indigo-400" />
                     </div>
                     <div className="mt-2 flex items-baseline space-x-2">
                       <span className="text-3xl font-bold text-white font-mono">
                         {stats?.metrics?.allTime?.successRate ?? '100%'}
                       </span>
-                      <span className="text-xs text-emerald-400 font-medium">● High Delivery</span>
+                      <span className="text-xs text-emerald-400 font-medium font-mono">● High Delivery</span>
                     </div>
-                    <div className="mt-3 text-xs text-slate-400">
+                    <div className="mt-3 text-xs text-slate-400 font-mono text-[11px]">
                       {stats?.metrics?.allTime?.totalDelivered ?? 0} delivered • {stats?.metrics?.allTime?.totalFailed ?? 0} failed
                     </div>
-                  </div>
+                  </SpotlightCard>
 
-                  <div className="glass-card p-5 rounded-xl border border-white/10">
+                  <SpotlightCard
+                    spotlightColor="rgba(245, 158, 11, 0.16)"
+                    borderColor="rgba(245, 158, 11, 0.35)"
+                    className="p-5"
+                  >
                     <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-                      <span>DISPATCH SPEED</span>
+                      <span className="font-mono tracking-wider text-[11px]">DISPATCH SPEED</span>
                       <Zap className="w-4 h-4 text-amber-400" />
                     </div>
                     <div className="mt-2 flex items-baseline space-x-2">
                       <span className="text-3xl font-bold text-amber-400 font-mono">
                         {stats?.metrics?.performance?.avgExecutionTimeMs || 710}ms
                       </span>
-                      <span className="text-xs text-slate-400">STARTTLS 587</span>
+                      <span className="text-xs text-slate-400 font-mono">STARTTLS 587</span>
                     </div>
-                    <div className="mt-3 text-xs text-emerald-400 font-medium">⚡ Ultra-Fast Serverless</div>
-                  </div>
+                    <div className="mt-3 text-xs text-emerald-400 font-medium font-mono">⚡ Ultra-Fast Serverless</div>
+                  </SpotlightCard>
 
                 </div>
 
-                {/* Senders & Failover Status */}
-                <div className="glass-card rounded-xl p-6 border border-white/10">
+                {/* Senders & Failover Status with Spotlight Glow */}
+                <SpotlightCard
+                  spotlightColor="rgba(139, 92, 246, 0.16)"
+                  borderColor="rgba(139, 92, 246, 0.35)"
+                  className="p-6"
+                >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
                     <div>
                       <h3 className="text-base font-semibold text-white flex items-center space-x-2">
@@ -1066,7 +1113,7 @@ export default function App() {
                     </div>
                     <button
                       onClick={() => setShowAddSenderModal(true)}
-                      className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition self-start sm:self-auto"
+                      className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition self-start sm:self-auto active:scale-[0.98]"
                     >
                       <Plus className="w-4 h-4 text-indigo-400" />
                       <span>Add Backup Gmail (+500/day)</span>
@@ -1077,7 +1124,7 @@ export default function App() {
                     {stats?.capacity?.senders?.map((s, idx) => (
                       <div
                         key={idx}
-                        className="p-3.5 rounded-lg bg-[#12151c] border border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
+                        className="p-3.5 rounded-lg bg-[#080a0f] border border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
                       >
                         <div className="flex items-center space-x-3">
                           <span
@@ -1111,7 +1158,7 @@ export default function App() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </SpotlightCard>
 
               </div>
             )}
@@ -1120,7 +1167,11 @@ export default function App() {
             {activeTab === 'playground' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
-                <div className="lg:col-span-7 glass-card rounded-xl p-6 border border-white/10 space-y-5">
+                <SpotlightCard
+                  spotlightColor="rgba(99, 102, 241, 0.16)"
+                  borderColor="rgba(99, 102, 241, 0.35)"
+                  className="lg:col-span-7 p-6 space-y-5"
+                >
                   <div className="flex items-center justify-between pb-3 border-b border-white/10">
                     <div>
                       <h2 className="text-base font-semibold text-white flex items-center space-x-2">
@@ -1129,7 +1180,7 @@ export default function App() {
                       </h2>
                       <p className="text-xs text-slate-400 mt-0.5">Test transactional dispatches in under 1 second without Postman.</p>
                     </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="px-2.5 py-1 rounded text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       PORT 587 LIVE
                     </span>
                   </div>
@@ -1167,7 +1218,7 @@ export default function App() {
                           type="button"
                           onClick={() => setPlayMode(m)}
                           className={`py-1.5 text-xs font-medium rounded-md transition ${
-                            playMode === m ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                            playMode === m ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'text-slate-400 hover:text-white'
                           }`}
                         >
                           {m === 'otp' ? 'OTP Code' : m === 'html' ? 'Custom HTML' : 'Plain Text'}
@@ -1190,7 +1241,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => setPlayOtp(String(Math.floor(100000 + Math.random() * 900000)))}
-                          className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-slate-300 transition"
+                          className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-slate-300 transition active:scale-[0.98]"
                         >
                           Generate Random
                         </button>
@@ -1272,20 +1323,24 @@ export default function App() {
                       type="button"
                       disabled={isSending}
                       onClick={handleDispatchEmail}
-                      className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-sm transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-500/25"
+                      className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-sm transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-500/25 active:scale-[0.98]"
                     >
                       <Zap className="w-4 h-4" />
                       <span>{isSending ? 'Dispatching via STARTTLS 587...' : '⚡ Send Test Email Now'}</span>
                     </button>
                   </div>
 
-                </div>
+                </SpotlightCard>
 
-                {/* Right Output Console */}
-                <div className="lg:col-span-5 glass-card rounded-xl p-6 border border-white/10 flex flex-col">
+                {/* Right Output Console with Spotlight Glow */}
+                <SpotlightCard
+                  spotlightColor="rgba(16, 185, 129, 0.16)"
+                  borderColor="rgba(16, 185, 129, 0.35)"
+                  className="lg:col-span-5 p-6 flex flex-col"
+                >
                   <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                    <span className="text-xs font-semibold text-white uppercase tracking-wider flex items-center space-x-1.5">
-                      <Terminal className="w-4 h-4 text-indigo-400" />
+                    <span className="text-xs font-semibold text-white uppercase tracking-wider flex items-center space-x-1.5 font-mono">
+                      <Terminal className="w-4 h-4 text-emerald-400" />
                       <span>Live Server Response</span>
                     </span>
                     {lastResponse && (
@@ -1294,7 +1349,7 @@ export default function App() {
                           navigator.clipboard.writeText(JSON.stringify(lastResponse, null, 2));
                           alert('Copied response JSON!');
                         }}
-                        className="text-xs text-slate-400 hover:text-white flex items-center space-x-1"
+                        className="text-xs text-slate-400 hover:text-white flex items-center space-x-1 transition active:scale-[0.98]"
                       >
                         <Copy className="w-3 h-3" />
                         <span>Copy</span>
@@ -1304,7 +1359,7 @@ export default function App() {
 
                   {!lastResponse ? (
                     <div className="flex-1 flex flex-col justify-center items-center text-center p-8 text-slate-500">
-                      <Inbox className="w-10 h-10 mb-2 opacity-50" />
+                      <Inbox className="w-10 h-10 mb-2 opacity-50 text-slate-400" />
                       <div className="text-xs font-medium text-slate-400">No email dispatched yet</div>
                       <div className="text-[11px] text-slate-600 max-w-xs mt-1">
                         Fill out the recipient and click "Send Test Email Now" to see the live delivery response here.
@@ -1345,7 +1400,7 @@ export default function App() {
                       </div>
                     </div>
                   )}
-                </div>
+                </SpotlightCard>
 
               </div>
             )}
@@ -1369,7 +1424,12 @@ export default function App() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {projects.map((p) => (
-                    <div key={p.id} className="glass-card rounded-xl p-5 border border-white/10 space-y-4">
+                    <SpotlightCard
+                      key={p.id}
+                      spotlightColor="rgba(99, 102, 241, 0.16)"
+                      borderColor="rgba(99, 102, 241, 0.35)"
+                      className="p-5 space-y-4"
+                    >
                       <div className="flex items-start justify-between">
                         <div>
                           <h3 className="text-base font-bold text-white">{p.name}</h3>
@@ -1411,7 +1471,7 @@ export default function App() {
                         </div>
                         <div className="space-y-1 text-xs font-mono">
                           {(p.senders || [{ email: p.senderEmail, dailyQuota: 500, emailsSentToday: 0 }]).map((s, idx) => (
-                            <div key={idx} className="p-2 rounded bg-[#12151c] border border-white/5 flex items-center justify-between">
+                            <div key={idx} className="p-2 rounded bg-[#080a0f] border border-white/5 flex items-center justify-between">
                               <span className="text-slate-300">{s.email}</span>
                               <span className="text-[10px] text-slate-500">
                                 {s.emailsSentToday || 0} / {s.dailyQuota || 500}
@@ -1420,7 +1480,7 @@ export default function App() {
                           ))}
                         </div>
                       </div>
-                    </div>
+                    </SpotlightCard>
                   ))}
                 </div>
               </div>
@@ -1430,51 +1490,57 @@ export default function App() {
             {activeTab === 'logs' && (
               <div className="space-y-4">
                 
-                <div className="glass-card rounded-xl p-4 border border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={logSearch}
-                      onChange={(e) => {
-                        setLogSearch(e.target.value);
-                        loadLogs(activeProject?.apiKey, 1, e.target.value, logStatus);
-                      }}
-                      placeholder="Search by recipient email, subject, or tracking ID..."
-                      className="w-full bg-[#12151c] border border-white/10 rounded-lg px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
+                <SpotlightCard
+                  spotlightColor="rgba(99, 102, 241, 0.14)"
+                  borderColor="rgba(99, 102, 241, 0.3)"
+                  className="p-4"
+                >
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={logSearch}
+                        onChange={(e) => {
+                          setLogSearch(e.target.value);
+                          loadLogs(activeProject?.apiKey, 1, e.target.value, logStatus);
+                        }}
+                        placeholder="Search by recipient email, subject, or tracking ID..."
+                        className="w-full bg-[#080a0f] border border-white/10 rounded-lg px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                      />
+                    </div>
 
-                  <div className="flex items-center space-x-2">
-                    <select
-                      value={logStatus}
-                      onChange={(e) => {
-                        setLogStatus(e.target.value);
-                        loadLogs(activeProject?.apiKey, 1, logSearch, e.target.value);
-                      }}
-                      className="bg-[#12151c] border border-white/10 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500"
-                    >
-                      <option value="">All Statuses</option>
-                      <option value="DELIVERED">Delivered</option>
-                      <option value="FAILED">Failed</option>
-                    </select>
-                    <button
-                      onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
-                      className={`inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg border text-xs font-medium transition ${autoRefreshLogs ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-[#12151c] text-slate-400 border-white/10 hover:text-white'}`}
-                      title="Auto-refresh logs every 5 seconds to catch live calls from your project"
-                    >
-                      <Radio className={`w-3.5 h-3.5 ${autoRefreshLogs ? 'animate-pulse text-emerald-400' : 'text-slate-500'}`} />
-                      <span>{autoRefreshLogs ? 'Live Stream: ON' : 'Live Stream'}</span>
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <select
+                        value={logStatus}
+                        onChange={(e) => {
+                          setLogStatus(e.target.value);
+                          loadLogs(activeProject?.apiKey, 1, logSearch, e.target.value);
+                        }}
+                        className="bg-[#080a0f] border border-white/10 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="DELIVERED">Delivered</option>
+                        <option value="FAILED">Failed</option>
+                      </select>
+                      <button
+                        onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
+                        className={`inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg border text-xs font-medium transition ${autoRefreshLogs ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-[#080a0f] text-slate-400 border-white/10 hover:text-white'}`}
+                        title="Auto-refresh logs every 5 seconds to catch live calls from your project"
+                      >
+                        <Radio className={`w-3.5 h-3.5 ${autoRefreshLogs ? 'animate-pulse text-emerald-400' : 'text-slate-500'}`} />
+                        <span>{autoRefreshLogs ? 'Live Stream: ON' : 'Live Stream'}</span>
+                      </button>
 
-                    <button
-                      onClick={() => loadLogs(activeProject?.apiKey, logsPagination.page, logSearch, logStatus)}
-                      className="p-2 rounded-lg bg-[#12151c] hover:bg-white/10 text-slate-300 border border-white/10 transition"
-                      title="Manual Refresh"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${isRefreshingLogs ? 'animate-spin' : ''}`} />
-                    </button>
+                      <button
+                        onClick={() => loadLogs(activeProject?.apiKey, logsPagination.page, logSearch, logStatus)}
+                        className="p-2 rounded-lg bg-[#080a0f] hover:bg-white/10 text-slate-300 border border-white/10 transition"
+                        title="Manual Refresh"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isRefreshingLogs ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </SpotlightCard>
 
                 <div className="glass-card rounded-xl border border-white/10 overflow-hidden">
                   <div className="overflow-x-auto">
@@ -1583,7 +1649,11 @@ export default function App() {
                   ))}
                 </div>
 
-                <div className="glass-card rounded-xl p-5 border border-white/10 space-y-3">
+                <SpotlightCard
+                  spotlightColor="rgba(99, 102, 241, 0.16)"
+                  borderColor="rgba(99, 102, 241, 0.35)"
+                  className="p-5 space-y-3"
+                >
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-white">🔐 Send OTP Verification Code</span>
                     <button
@@ -1638,9 +1708,13 @@ export async function POST(req: Request) {
 }`}
                     </code>
                   </pre>
-                </div>
+                </SpotlightCard>
 
-                <div className="glass-card rounded-xl p-5 border border-white/10 space-y-3">
+                <SpotlightCard
+                  spotlightColor="rgba(16, 185, 129, 0.16)"
+                  borderColor="rgba(16, 185, 129, 0.35)"
+                  className="p-5 space-y-3"
+                >
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-white">📎 Send PDF Notes Attachment</span>
                     <button
@@ -1717,7 +1791,7 @@ export async function POST(req: Request) {
 }`}
                     </code>
                   </pre>
-                </div>
+                </SpotlightCard>
 
               </div>
             )}
