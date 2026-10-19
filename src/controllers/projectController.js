@@ -127,6 +127,8 @@ async function getProjects(req, res) {
         senders: capacity.senders,
         burstPacingMs: p.burstPacingMs || 200,
         webhookUrl: p.webhookUrl,
+        lastApiCallAt: p.lastApiCallAt || null,
+        lastClientIp: p.lastClientIp || null,
         createdAt: p.createdAt,
       };
     });

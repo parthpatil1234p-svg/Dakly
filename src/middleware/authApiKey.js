@@ -28,6 +28,14 @@ async function authenticateApiKey(req, res, next) {
     }
 
     req.project = project;
+
+    // Asynchronously log inbound activity timestamp & caller IP without blocking request
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+    Project.updateOne(
+      { _id: project._id },
+      { $set: { lastApiCallAt: new Date(), lastClientIp: clientIp } }
+    ).exec().catch(() => {});
+
     next();
   } catch (error) {
     console.error('Authentication Error:', error.message);

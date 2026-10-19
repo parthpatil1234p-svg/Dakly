@@ -231,6 +231,51 @@ async function getStatus(req, res) {
 }
 
 /**
+ * Ping & Connection Diagnostics Endpoint
+ * GET /api/ping or POST /api/ping
+ * Headers: { "x-api-key": "..." }
+ */
+async function ping(req, res) {
+  try {
+    const project = req.project;
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+
+    const allSenders = project.getAllSenders ? project.getAllSenders() : [];
+    const capacity = project.getCapacitySummary ? project.getCapacitySummary() : {
+      totalDailyQuota: project.dailyQuota || 500,
+      totalSentToday: project.emailsSentToday || 0,
+      remainingToday: Math.max(0, (project.dailyQuota || 500) - (project.emailsSentToday || 0)),
+      sendersCount: allSenders.length || 1,
+    };
+
+    res.status(200).json({
+      success: true,
+      status: 'ACTIVE',
+      message: '✅ Dakly API Key is valid, authenticated, and ready to accept dispatches!',
+      project: {
+        id: project._id,
+        name: project.name,
+        primarySender: project.senderEmail || (allSenders[0] ? allSenders[0].email : 'Not configured'),
+        activeSendersCount: capacity.sendersCount,
+        dailyQuota: capacity.totalDailyQuota,
+        emailsSentToday: capacity.totalSentToday,
+        remainingToday: capacity.remainingToday,
+        burstPacingMs: project.burstPacingMs || 200,
+        webhookConfigured: !!project.webhookUrl,
+      },
+      diagnostics: {
+        callerIp: clientIp,
+        engineStatus: 'ONLINE',
+        databaseStatus: 'CONNECTED',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
  * Legacy delivery reports endpoint
  * GET /api/reports
  * Headers: { "x-api-key": "..." }
@@ -245,4 +290,5 @@ module.exports = {
   getStats,
   getStatus,
   getReports,
+  ping,
 };

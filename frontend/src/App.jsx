@@ -28,6 +28,10 @@ import {
   Mail,
   KeyRound,
   Sparkles,
+  Activity,
+  Wifi,
+  Radio,
+  AlertCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -41,6 +45,7 @@ import {
   sendEmail,
   createProject,
   addSender,
+  pingApiKey,
 } from './services/api';
 
 export default function App() {
@@ -91,6 +96,12 @@ export default function App() {
   const [selectedAttachment, setSelectedAttachment] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [lastResponse, setLastResponse] = useState(null);
+
+  // Diagnostics & Inbound Pulse State
+  const [pingResult, setPingResult] = useState(null);
+  const [isPinging, setIsPinging] = useState(false);
+  const [autoRefreshLogs, setAutoRefreshLogs] = useState(false);
+  const [curlCopied, setCurlCopied] = useState(false);
 
   // Modals
   const [showNewProjModal, setShowNewProjModal] = useState(false);
@@ -221,6 +232,46 @@ export default function App() {
     setCopiedKey(true);
     setTimeout(() => setCopiedKey(false), 2000);
   }
+
+  function handleCopyCurl() {
+    if (!activeProject) return;
+    const cmd = `curl -H "x-api-key: ${activeProject.apiKey}" ${API_BASE_URL}/api/ping`;
+    navigator.clipboard.writeText(cmd);
+    setCurlCopied(true);
+    setTimeout(() => setCurlCopied(false), 2000);
+  }
+
+  async function handlePingKey() {
+    if (!activeProject?.apiKey) return;
+    setIsPinging(true);
+    setPingResult(null);
+    try {
+      const res = await pingApiKey(activeProject.apiKey);
+      setPingResult(res);
+      if (res.success) {
+        confetti({ particleCount: 35, spread: 65, origin: { y: 0.6 } });
+        if (authToken) loadProjects(authToken);
+        loadStats(activeProject.apiKey);
+      }
+    } catch (err) {
+      setPingResult({ success: false, error: err.message });
+    } finally {
+      setIsPinging(false);
+    }
+  }
+
+  // Auto-refresh logs when enabled
+  useEffect(() => {
+    let interval;
+    if (autoRefreshLogs && activeProject?.apiKey) {
+      interval = setInterval(() => {
+        loadLogs(activeProject.apiKey, logsPagination.page, logSearch, logStatus);
+        loadStats(activeProject.apiKey);
+        if (authToken) loadProjects(authToken);
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [autoRefreshLogs, activeProject?.apiKey, logsPagination.page, logSearch, logStatus, authToken]);
 
   function handleFileUpload(e) {
     const file = e.target.files[0];
@@ -628,18 +679,142 @@ export default function App() {
                 </div>
               </div>
 
-              <button
-                onClick={handleCopyApiKey}
-                className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition"
-              >
-                {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedKey ? 'Copied Key!' : 'Copy API Key'}</span>
-              </button>
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <button
+                  onClick={handlePingKey}
+                  disabled={isPinging}
+                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition shadow-sm"
+                  title="Verify API key connectivity & measure server response time"
+                >
+                  <Activity className={`w-3.5 h-3.5 ${isPinging ? 'animate-spin' : 'text-emerald-300'}`} />
+                  <span>{isPinging ? 'Pinging...' : '⚡ Test API Key'}</span>
+                </button>
+                <button
+                  onClick={handleCopyApiKey}
+                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition"
+                >
+                  {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedKey ? 'Copied Key!' : 'Copy API Key'}</span>
+                </button>
+              </div>
             </div>
 
             {/* TAB 1: OVERVIEW */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
+
+                {/* API Key Connection Diagnostics & Inbound Pulse Card */}
+                <div className="glass-card rounded-xl p-5 border border-indigo-500/20 bg-gradient-to-r from-indigo-950/20 via-[#0d1017] to-purple-950/20">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                    <div className="flex items-start space-x-3">
+                      <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                        <Radio className="w-5 h-5 animate-pulse text-indigo-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-sm font-bold text-white tracking-wide">API Connection Diagnostics & Inbound Traffic</h3>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span>LIVE ENGINE</span>
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Verify whether your external application or script is reaching the Dakly Email Engine in real-time.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handlePingKey}
+                      disabled={isPinging}
+                      className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition self-start md:self-auto shadow-md shadow-indigo-500/20"
+                    >
+                      <Activity className={`w-4 h-4 ${isPinging ? 'animate-spin' : ''}`} />
+                      <span>{isPinging ? 'Testing Key...' : 'Run Live Diagnostic Ping'}</span>
+                    </button>
+                  </div>
+
+                  {/* Diagnostic Columns Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                    
+                    {/* Left Column: Live Traffic Pulse */}
+                    <div className="p-4 rounded-xl bg-[#080a0f] border border-white/5 space-y-3">
+                      <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
+                        <Wifi className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Inbound Request Pulse</span>
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        {activeProject?.lastApiCallAt ? (
+                          <div className="flex items-center space-x-2 text-xs text-emerald-400 font-medium">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>Active: Last request received from IP <code className="bg-white/10 px-1 py-0.5 rounded font-mono text-[11px] text-white">{activeProject.lastClientIp || 'verified'}</code> at {new Date(activeProject.lastApiCallAt).toLocaleTimeString()}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2 text-xs text-amber-400 font-medium">
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                            <span>Waiting for first API request from your external project...</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="text-[11px] text-slate-400 leading-relaxed">
+                        {activeProject?.lastApiCallAt
+                          ? "✅ Your external application has successfully connected to Dakly! Every email dispatch from your project is authenticated and logged."
+                          : "👉 Paste your API Key in your project's .env file and trigger a signup or test call. As soon as a request hits Dakly, this indicator will turn green!"}
+                      </div>
+
+                      {pingResult && (
+                        <div className={`p-3 rounded-lg border text-xs font-mono mt-2 space-y-1 ${pingResult.success ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
+                          <div className="font-semibold flex items-center space-x-1.5">
+                            {pingResult.success ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-rose-400" />}
+                            <span>{pingResult.message || pingResult.error}</span>
+                          </div>
+                          {pingResult.latencyMs && (
+                            <div className="text-[11px] text-slate-400 pl-5">
+                              Latency: <span className="text-white font-bold">{pingResult.latencyMs}ms</span> • Engine: <span className="text-emerald-400">ONLINE</span> • Quota Left: <span className="text-indigo-300">{pingResult.project?.remainingToday ?? 500} emails</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Column: 1-Click Terminal Verification Command */}
+                    <div className="p-4 rounded-xl bg-[#080a0f] border border-white/5 space-y-2.5 flex flex-col justify-between">
+                      <div>
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                          <div className="flex items-center space-x-1.5">
+                            <Terminal className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>Test From Your Terminal / Script</span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 lowercase font-mono">cURL / HTTP</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Run this command in any terminal or cmd to test your API key right now without sending an actual email:
+                        </p>
+                      </div>
+
+                      <div className="p-2.5 rounded-lg bg-[#12151c] border border-white/10 flex items-center justify-between font-mono text-[11px] text-indigo-300">
+                        <span className="truncate pr-2">
+                          curl -H "x-api-key: {activeProject?.apiKey}" {API_BASE_URL}/api/ping
+                        </span>
+                        <button
+                          onClick={handleCopyCurl}
+                          className="text-slate-400 hover:text-white p-1 ml-2 transition flex-shrink-0"
+                          title="Copy command"
+                        >
+                          {curlCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+
+                      <div className="text-[10px] text-slate-500 flex items-center justify-between">
+                        <span>Returns instant JSON status & activates inbound pulse</span>
+                        {curlCopied && <span className="text-emerald-400 font-medium">Copied command!</span>}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
                 
                 {/* 4 Top KPI Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1118,9 +1293,18 @@ export default function App() {
                       <option value="FAILED">Failed</option>
                     </select>
                     <button
+                      onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
+                      className={`inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg border text-xs font-medium transition ${autoRefreshLogs ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-[#12151c] text-slate-400 border-white/10 hover:text-white'}`}
+                      title="Auto-refresh logs every 5 seconds to catch live calls from your project"
+                    >
+                      <Radio className={`w-3.5 h-3.5 ${autoRefreshLogs ? 'animate-pulse text-emerald-400' : 'text-slate-500'}`} />
+                      <span>{autoRefreshLogs ? 'Live Stream: ON' : 'Live Stream'}</span>
+                    </button>
+
+                    <button
                       onClick={() => loadLogs(activeProject?.apiKey, logsPagination.page, logSearch, logStatus)}
                       className="p-2 rounded-lg bg-[#12151c] hover:bg-white/10 text-slate-300 border border-white/10 transition"
-                      title="Refresh"
+                      title="Manual Refresh"
                     >
                       <RefreshCw className={`w-4 h-4 ${isRefreshingLogs ? 'animate-spin' : ''}`} />
                     </button>

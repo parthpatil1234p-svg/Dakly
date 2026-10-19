@@ -144,6 +144,15 @@ const projectSchema = new mongoose.Schema(
       default: null,
       trim: true,
     },
+    // Inbound Activity & Connectivity Tracking
+    lastApiCallAt: {
+      type: Date,
+      default: null,
+    },
+    lastClientIp: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,

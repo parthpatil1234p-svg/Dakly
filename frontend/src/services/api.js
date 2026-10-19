@@ -98,3 +98,17 @@ export async function sendEmail(apiKey, payload) {
   });
   return res.json();
 }
+
+export async function pingApiKey(apiKey) {
+  const start = performance.now();
+  const res = await fetch(`${API_BASE_URL}/api/ping`, {
+    method: 'GET',
+    headers: {
+      'x-api-key': apiKey,
+    },
+  });
+  const data = await res.json();
+  const latencyMs = Math.round(performance.now() - start);
+  return { ...data, latencyMs };
+}
+
