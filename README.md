@@ -21,6 +21,26 @@
 
 ---
 
+## 🌟 What Dakly Can Do For Your Project (Full Capabilities Matrix)
+
+By plugging Dakly into your project, your application instantly gets an enterprise-grade transactional email infrastructure with **zero monthly subscription fees**:
+
+| Feature | What It Does For Your Application | Why It Matters |
+| :--- | :--- | :--- |
+| ⚡ **Sub-Second OTP & Auth Delivery** | Sends 4–6 digit OTPs, magic sign-in links, and password resets in **under 1 second** | Eliminates user drop-off during onboarding and user verification |
+| 🎨 **100% Headless HTML Freedom** | Renders any HTML/CSS layout (welcome cards, receipts, status alerts, newsletters) | Complete design freedom without restrictive email templates |
+| 📎 **Multi-Format Attachment Engine** | Delivers PDFs, Images, Spreadsheets, Word docs, and ZIP files (up to **15MB**) via remote URL or base64 | Perfect for auto-delivering study notes, invoices, receipts, and reports |
+| 🔀 **Dual-Sender Failover Pool** | Automatically switches from Primary Gmail to Backup Gmail when 500 emails/day limit is reached | Doubles free capacity to **1,000+ emails/day** with zero downtime |
+| ⏱️ **Anti-Spam Burst Pacing Queue** | Automatically spaces rapid burst traffic with a 200ms safe spacing queue | Prevents Google rate-limit blocks (`421/454`) and keeps emails out of spam |
+| 🛡️ **Zero-Crash Cloud Reliability** | Uses persistent STARTTLS on Port 587 with connection pooling | Eliminates cloud timeout freezes (`ETIMEDOUT`) on Vercel, Render, AWS, and Heroku |
+| 🔐 **Military-Grade AES-256-GCM** | Encrypts Google App Passwords with unique IVs and authenticated tags | Prevents credential leaks; passwords are never stored in plaintext |
+| 📊 **Real-Time Audit & Tracking Logs** | Generates an immutable tracking ID (`msg_...`) with millisecond latency logging | Instant visibility into delivery success, bounces, and timestamps |
+| 🔔 **HMAC Delivery Webhooks** | Sends asynchronous POST callbacks to your server when emails are delivered or bounce | Keeps your main database updated with two-way delivery status |
+| 👥 **Multi-Tenant Isolation** | Separate projects, API keys, and logs for different apps under one developer account | Cleanly manage multiple startup projects from a single control panel |
+| 💻 **Zero Client Dependencies** | Integrates using standard native `fetch()` without installing `nodemailer` or SDKs | Keeps your client application lightweight, clean, and bug-free |
+
+---
+
 ## 🏗️ How It Works (Architecture)
 
 ```mermaid
