@@ -153,6 +153,33 @@ const projectSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // Brand Logo (Strict 1:1 Square Only, 1 Image Limit per Project)
+    brandLogo: {
+      data: {
+        type: String,
+        default: null,
+      },
+      contentType: {
+        type: String,
+        default: null,
+      },
+      width: {
+        type: Number,
+        default: null,
+      },
+      height: {
+        type: Number,
+        default: null,
+      },
+      sizeBytes: {
+        type: Number,
+        default: 0,
+      },
+      updatedAt: {
+        type: Date,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,

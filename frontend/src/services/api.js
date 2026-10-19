@@ -112,3 +112,29 @@ export async function pingApiKey(apiKey) {
   return { ...data, latencyMs };
 }
 
+export async function uploadProjectLogo(projectId, base64Image, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/logo`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ image: base64Image }),
+  });
+  return res.json();
+}
+
+export async function deleteProjectLogo(projectId, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/logo`, {
+    method: 'DELETE',
+    headers,
+  });
+  return res.json();
+}
+
+

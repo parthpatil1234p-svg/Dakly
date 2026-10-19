@@ -167,9 +167,16 @@ async function sendEmail({ project, to, subject, html, text, otp, attachments = 
   // Convenience OTP fallback
   if (!finalHtml && otp) {
     finalSubject = finalSubject || `${project.name}: Your Verification Code`;
+    const logoHtml = project.brandLogo && project.brandLogo.data
+      ? `<div style="margin-bottom: 20px; display: flex; align-items: center;">
+           <img src="${project.brandLogo.data}" width="48" height="48" alt="${project.name} Logo" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; margin-right: 12px; border: 1px solid #e2e8f0; display: inline-block; vertical-align: middle;" />
+           <span style="font-size: 20px; font-weight: 700; color: #1a202c; vertical-align: middle;">${project.name}</span>
+         </div>`
+      : `<h2 style="margin: 0 0 16px; color: #1a202c; font-size: 20px;">${project.name}</h2>`;
+
     finalHtml = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
-        <h2 style="margin: 0 0 16px; color: #1a202c; font-size: 20px;">${project.name}</h2>
+        ${logoHtml}
         <p style="color: #4a5568; font-size: 15px; line-height: 1.5; margin: 0 0 20px;">Here is your one-time verification code:</p>
         <div style="background: #f7fafc; border: 2px dashed #cbd5e0; border-radius: 8px; padding: 18px; text-align: center; margin: 20px 0;">
           <span style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #2b6cb0;">${otp}</span>

@@ -35,6 +35,9 @@ import {
   ArrowRight,
   Sun,
   Moon,
+  Image as ImageIcon,
+  Camera,
+  Trash2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import SpotlightCard from './components/SpotlightCard';
@@ -50,6 +53,8 @@ import {
   createProject,
   addSender,
   pingApiKey,
+  uploadProjectLogo,
+  deleteProjectLogo,
 } from './services/api';
 
 export default function App() {
@@ -130,6 +135,10 @@ export default function App() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   const [showNewProjModal, setShowNewProjModal] = useState(false);
   const [showAddSenderModal, setShowAddSenderModal] = useState(false);
+  const [showLogoModal, setShowLogoModal] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoModalError, setLogoModalError] = useState('');
   const [newProjForm, setNewProjForm] = useState({ name: '', senderEmail: '', appPassword: '', senderDisplayName: '' });
   const [addSenderForm, setAddSenderForm] = useState({ email: '', appPassword: '', displayName: '' });
   const [modalLoading, setModalLoading] = useState(false);
@@ -421,6 +430,108 @@ export default function App() {
   }
 
   // ==============================================================
+  // BRAND LOGO HANDLERS (1:1 Square Only, 1 Image Limit, Anti-Piracy Guard)
+  // ==============================================================
+  const handleLogoFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLogoModalError('');
+
+    // Anti-Piracy Check: 1.5MB Maximum Size Limit
+    if (file.size > 1.5 * 1024 * 1024) {
+      setLogoModalError('File size exceeds 1.5 MB limit. Please select a genuine logo image under 1.5MB.');
+      setLogoFile(null);
+      return;
+    }
+
+    // Anti-Piracy Check: Disallow executable, torrent, or archive extensions
+    const forbiddenExts = ['.exe', '.dll', '.bat', '.sh', '.torrent', '.zip', '.rar', '.7z', '.mp4', '.mkv'];
+    const lowerName = file.name.toLowerCase();
+    if (forbiddenExts.some((ext) => lowerName.endsWith(ext))) {
+      setLogoModalError('Security Violation: Disallowed or pirated file format detected. Only clean 1:1 image files are permitted.');
+      setLogoFile(null);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUri = event.target.result;
+      const img = new window.Image();
+      img.onload = () => {
+        const width = img.naturalWidth || img.width;
+        const height = img.naturalHeight || img.height;
+        const ratio = width / height;
+        const isSquare = ratio >= 0.93 && ratio <= 1.07;
+
+        if (!isSquare) {
+          setLogoModalError(`Banner rejected! Logo MUST be 1:1 square (width = height, e.g. 256×256 or 512×512). Your image is ${width}×${height} (ratio ${ratio.toFixed(2)}:1).`);
+          setLogoFile({
+            dataUri,
+            width,
+            height,
+            sizeFormatted: (file.size / 1024).toFixed(1) + ' KB',
+            isSquare: false,
+          });
+        } else {
+          setLogoModalError('');
+          setLogoFile({
+            dataUri,
+            width,
+            height,
+            sizeFormatted: (file.size / 1024).toFixed(1) + ' KB',
+            isSquare: true,
+          });
+        }
+      };
+      img.onerror = () => {
+        setLogoModalError('Invalid or corrupted image file.');
+        setLogoFile(null);
+      };
+      img.src = dataUri;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoUploadSubmit = async () => {
+    if (!logoFile || !logoFile.isSquare || !activeProject) return;
+    setIsUploadingLogo(true);
+    setLogoModalError('');
+
+    try {
+      const res = await uploadProjectLogo(activeProject.id, logoFile.dataUri, authToken);
+      if (res.success) {
+        confetti({ particleCount: 35, spread: 60, origin: { y: 0.6 } });
+        await loadProjects(authToken);
+        setShowLogoModal(false);
+        setLogoFile(null);
+      } else {
+        setLogoModalError(res.error || 'Failed to upload logo.');
+      }
+    } catch (err) {
+      setLogoModalError(err.message);
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    if (!activeProject || !confirm('Are you sure you want to remove the brand logo from this project?')) return;
+    try {
+      const res = await deleteProjectLogo(activeProject.id, authToken);
+      if (res.success) {
+        await loadProjects(authToken);
+        setShowLogoModal(false);
+        setLogoFile(null);
+      } else {
+        alert(res.error || 'Failed to remove logo.');
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // ==============================================================
   // MODAL: WHAT DAKLY CAN DO (POPUP MODAL ON VISIT)
   // ==============================================================
   const renderWelcomeModal = () => {
@@ -532,6 +643,16 @@ export default function App() {
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
                 Apne project mein Nodemailer install karne ki zaroorat nahi. Sirf ek native fetch() call se bina koi purana code tode chalega.
+              </p>
+            </SpotlightCard>
+
+            <SpotlightCard spotlightColor="rgba(236, 72, 153, 0.18)" borderColor="rgba(236, 72, 153, 0.3)" className="p-3.5 space-y-1">
+              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
+                <ImageIcon className="w-4 h-4 text-pink-500" />
+                <span>9. 1:1 Brand Logo Storage & Anti-Piracy</span>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                Apne sender emails ke liye 1:1 square brand logo set karein (banner blocked). 1 image limit aur binary magic-byte verification ke saath pirated aur malware files 100% blocked hain.
               </p>
             </SpotlightCard>
 
@@ -890,13 +1011,41 @@ export default function App() {
             >
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center space-x-3.5">
-                  <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shadow-inner">
-                    <Lock className="w-4 h-4" />
+                  <div
+                    className="relative group cursor-pointer"
+                    onClick={() => {
+                      setLogoFile(null);
+                      setLogoModalError('');
+                      setShowLogoModal(true);
+                    }}
+                    title="Click to set or change 1:1 Brand Logo"
+                  >
+                    {activeProject?.brandLogo?.data ? (
+                      <img
+                        src={activeProject.brandLogo.data}
+                        alt="Logo"
+                        className="w-11 h-11 rounded-xl object-cover border-2 border-indigo-500/50 dark:border-indigo-400/50 shadow-sm transition group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shadow-inner flex flex-col items-center justify-center font-bold">
+                        <Camera className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        <span className="text-[8px] font-mono leading-none mt-0.5 font-bold">1:1</span>
+                      </div>
+                    )}
+                    <span className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-indigo-600 text-white shadow-xs">
+                      <Camera className="w-2.5 h-2.5" />
+                    </span>
                   </div>
+
                   <div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center space-x-2">
                       <span>Active Project Key:</span>
                       <span className="text-slate-800 dark:text-white font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 font-mono text-[11px]">{activeProject?.name}</span>
+                      {activeProject?.brandLogo?.data && (
+                        <span className="hidden sm:inline-flex items-center text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20">
+                          1:1 Logo Active
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2.5 mt-1">
                       <span className="font-mono text-xs sm:text-sm text-indigo-600 dark:text-indigo-300 font-semibold tracking-wider bg-slate-100 dark:bg-[#07080c] px-3 py-1 rounded-lg border border-slate-200 dark:border-white/5">
@@ -913,11 +1062,23 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2.5 w-full sm:w-auto">
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:space-x-2.5 w-full sm:w-auto">
+                  <button
+                    onClick={() => {
+                      setLogoFile(null);
+                      setLogoModalError('');
+                      setShowLogoModal(true);
+                    }}
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-lg bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 dark:bg-pink-500/10 dark:hover:bg-pink-500/20 dark:text-pink-300 dark:border-pink-500/20 text-xs font-semibold transition active:scale-[0.98] shadow-xs"
+                    title="Upload or change 1:1 brand logo for this project"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
+                    <span>{activeProject?.brandLogo?.data ? 'Change 1:1 Logo' : '+ Brand Logo (1:1)'}</span>
+                  </button>
                   <button
                     onClick={handlePingKey}
                     disabled={isPinging}
-                    className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition shadow-md shadow-indigo-500/20 active:scale-[0.98]"
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition shadow-md shadow-indigo-500/20 active:scale-[0.98]"
                     title="Verify API key connectivity & measure server response time"
                   >
                     <Activity className={`w-3.5 h-3.5 ${isPinging ? 'animate-spin' : 'text-emerald-300'}`} />
@@ -928,7 +1089,7 @@ export default function App() {
                     className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white text-xs font-medium transition active:scale-[0.98]"
                   >
                     {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedKey ? 'Copied Key!' : 'Copy API Key'}</span>
+                    <span>{copiedKey ? 'Copied Key!' : 'Copy Key'}</span>
                   </button>
                 </div>
               </div>
@@ -1478,13 +1639,49 @@ export default function App() {
                       className="p-5 space-y-4"
                     >
                       <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-base font-bold text-slate-900 dark:text-white">{p.name}</h3>
-                          <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{p.senderEmail}</div>
+                        <div className="flex items-center space-x-3">
+                          {p.brandLogo?.data ? (
+                            <img
+                              src={p.brandLogo.data}
+                              alt="Logo"
+                              className="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-white/10 shadow-xs"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-[10px] font-bold font-mono text-slate-500">
+                              1:1
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                              <span>{p.name}</span>
+                              {p.brandLogo?.data && (
+                                <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20">
+                                  1:1 Logo
+                                </span>
+                              )}
+                            </h3>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{p.senderEmail}</div>
+                          </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
-                          {p.dailyQuota} Daily Limit
-                        </span>
+
+                        <div className="flex flex-col items-end space-y-1.5">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+                            {p.dailyQuota} Daily Limit
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveProject(p);
+                              setLogoFile(null);
+                              setLogoModalError('');
+                              setShowLogoModal(true);
+                            }}
+                            className="text-[11px] text-pink-600 dark:text-pink-400 hover:underline flex items-center space-x-1 font-medium"
+                          >
+                            <ImageIcon className="w-3 h-3" />
+                            <span>{p.brandLogo?.data ? 'Update 1:1 Logo' : 'Set 1:1 Logo'}</span>
+                          </button>
+                        </div>
                       </div>
 
                       <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-white/5 space-y-1">
@@ -1997,6 +2194,195 @@ export async function POST(req: Request) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: BRAND LOGO (1:1 SQUARE ONLY, 1 IMAGE LIMIT, ANTI-PIRACY GUARD) */}
+      {showLogoModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10 max-w-lg w-full space-y-4 shadow-2xl bg-white dark:bg-[#0d1017] my-auto">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20">
+                  <ImageIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Brand Logo for {activeProject?.name}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    1:1 Square Logo • 1 Image Limit • Anti-Piracy Protection
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowLogoModal(false);
+                  setLogoFile(null);
+                  setLogoModalError('');
+                }}
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Anti-Piracy & 1:1 Rules Notice */}
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 space-y-2 text-xs">
+              <div className="flex items-start space-x-2 text-amber-700 dark:text-amber-400 font-medium">
+                <span className="text-sm">⚠️</span>
+                <span>
+                  <b>Strict 1:1 Square Only:</b> Only square logos are accepted (e.g. 200×200, 512×512). Banners and horizontal graphics will be rejected.
+                </span>
+              </div>
+              <div className="flex items-start space-x-2 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                <span>🛡️</span>
+                <span>
+                  <b>Anti-Piracy & Security Guard:</b> Binary magic-byte analysis rejects torrents, executables, scripts, or pirated media files. Max 1.5MB.
+                </span>
+              </div>
+              <div className="flex items-start space-x-2 text-slate-600 dark:text-slate-400 text-[11px]">
+                <span>1️⃣</span>
+                <span>
+                  <b>1 Image Limit:</b> Uploading a new logo automatically replaces any existing logo.
+                </span>
+              </div>
+            </div>
+
+            {/* Error Banner */}
+            {logoModalError && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-medium flex items-start space-x-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-500" />
+                <span>{logoModalError}</span>
+              </div>
+            )}
+
+            {/* Drop Zone / File Picker */}
+            <div>
+              <label className="block border-2 border-dashed border-slate-300 dark:border-white/15 hover:border-indigo-500/60 rounded-xl p-5 text-center transition cursor-pointer bg-slate-50/60 dark:bg-[#12151c]/60">
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  onChange={handleLogoFileSelect}
+                  className="hidden"
+                />
+                <UploadCloud className="w-8 h-8 text-indigo-500 dark:text-indigo-400 mx-auto mb-2" />
+                <div className="text-xs text-slate-800 dark:text-slate-200 font-semibold">
+                  Click or drag to select your 1:1 Square Logo
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  Supported: PNG, JPG, WebP, SVG • Max 1.5 MB • Exactly 1:1 Aspect Ratio
+                </div>
+              </label>
+            </div>
+
+            {/* Preview Section */}
+            {(logoFile || activeProject?.brandLogo?.data) && (
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 space-y-3">
+                <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                  <span>Logo Preview & Dimension Check</span>
+                  {logoFile ? (
+                    <span
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                        logoFile.isSquare
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                      }`}
+                    >
+                      {logoFile.isSquare ? `✅ 1:1 Square Verified (${logoFile.width}×${logoFile.height}px)` : `❌ Rejected (${logoFile.width}×${logoFile.height}px Banner)`}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
+                      Current Active Logo ({activeProject?.brandLogo?.width}×{activeProject?.brandLogo?.height}px)
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  {/* Square Box Preview */}
+                  <div className="w-20 h-20 rounded-2xl border-2 border-indigo-500/40 p-1 bg-white dark:bg-[#080a0f] flex items-center justify-center shadow-inner overflow-hidden flex-shrink-0">
+                    <img
+                      src={logoFile?.dataUri || activeProject?.brandLogo?.data}
+                      alt="1:1 Preview"
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                  </div>
+
+                  {/* Simulated Outgoing Email Header */}
+                  <div className="flex-1 p-2.5 rounded-lg bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/5 text-xs space-y-1">
+                    <div className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">
+                      Simulated Outgoing Email Header:
+                    </div>
+                    <div className="flex items-center space-x-2 pt-0.5">
+                      <img
+                        src={logoFile?.dataUri || activeProject?.brandLogo?.data}
+                        alt="Email Logo"
+                        className="w-6 h-6 rounded-md object-cover border border-slate-200 dark:border-white/10"
+                      />
+                      <span className="font-bold text-slate-800 dark:text-white text-xs">
+                        {activeProject?.name}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono">
+                      Your Verification Code: <b>849201</b>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Footer Buttons */}
+            <div className="pt-2 flex items-center justify-between">
+              {activeProject?.brandLogo?.data ? (
+                <button
+                  type="button"
+                  onClick={handleLogoDelete}
+                  className="px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-400 text-xs font-semibold flex items-center space-x-1 transition"
+                  title="Remove this brand logo"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remove Logo</span>
+                </button>
+              ) : (
+                <div></div>
+              )}
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLogoModal(false);
+                    setLogoFile(null);
+                    setLogoModalError('');
+                  }}
+                  className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-medium text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!logoFile || !logoFile.isSquare || isUploadingLogo}
+                  onClick={handleLogoUploadSubmit}
+                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-semibold text-xs shadow-md shadow-indigo-500/20 active:scale-[0.98] transition flex items-center space-x-1.5"
+                >
+                  {isUploadingLogo ? (
+                    <>
+                      <Activity className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving 1:1 Logo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Save 1:1 Brand Logo</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 const Project = require('../models/Project');
 const { encrypt } = require('../utils/crypto');
 const { invalidateTransporter } = require('../services/emailService');
+const { validateLogoImage } = require('../utils/logoValidator');
 
 /**
  * Register a new project and receive an API Key
@@ -129,6 +130,15 @@ async function getProjects(req, res) {
         webhookUrl: p.webhookUrl,
         lastApiCallAt: p.lastApiCallAt || null,
         lastClientIp: p.lastClientIp || null,
+        brandLogo: p.brandLogo && p.brandLogo.data ? {
+          data: p.brandLogo.data,
+          contentType: p.brandLogo.contentType,
+          width: p.brandLogo.width,
+          height: p.brandLogo.height,
+          sizeBytes: p.brandLogo.sizeBytes,
+          updatedAt: p.brandLogo.updatedAt,
+          url: `/api/projects/${p._id}/logo`,
+        } : null,
         createdAt: p.createdAt,
       };
     });
@@ -347,6 +357,137 @@ async function deleteProject(req, res) {
   }
 }
 
+/**
+ * Upload & Store Brand Logo for Project (1:1 Square Only, 1 Image Limit, Anti-Piracy verification)
+ * POST /api/projects/:id/logo
+ */
+async function uploadLogo(req, res) {
+  try {
+    const { id } = req.params;
+    const { image } = req.body; // Expects base64 data URI or clean base64 string
+
+    if (!image) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide an image payload in base64 data URI format.',
+      });
+    }
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    // Tenant check
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    // Validate 1:1 square aspect ratio + magic-byte anti-piracy check + 1.5MB limit
+    const validated = validateLogoImage(image);
+
+    // Save/replace logo on project (enforces 1 image limit per project)
+    project.brandLogo = {
+      data: validated.dataUri,
+      contentType: validated.contentType,
+      width: validated.width,
+      height: validated.height,
+      sizeBytes: validated.sizeBytes,
+      updatedAt: new Date(),
+    };
+
+    await project.save();
+
+    res.json({
+      success: true,
+      message: `Brand logo uploaded successfully (${validated.width}x${validated.height} 1:1 Square verified)!`,
+      logo: {
+        width: validated.width,
+        height: validated.height,
+        contentType: validated.contentType,
+        sizeBytes: validated.sizeBytes,
+        updatedAt: project.brandLogo.updatedAt,
+        url: `/api/projects/${project._id}/logo`,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * Serves the project's brand logo image binary directly
+ * GET /api/projects/:id/logo
+ */
+async function getLogo(req, res) {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id);
+
+    if (!project || !project.brandLogo || !project.brandLogo.data) {
+      return res.status(404).json({ success: false, error: 'No brand logo configured for this project.' });
+    }
+
+    const dataUri = project.brandLogo.data;
+    const matches = dataUri.match(/^data:([^;]+);base64,(.+)$/);
+
+    if (!matches) {
+      return res.status(500).json({ success: false, error: 'Corrupted logo data.' });
+    }
+
+    const contentType = matches[1];
+    const imageBuffer = Buffer.from(matches[2], 'base64');
+
+    res.set('Content-Type', contentType);
+    res.set('Content-Length', imageBuffer.length);
+    res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24h
+    res.send(imageBuffer);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Deletes the project's brand logo
+ * DELETE /api/projects/:id/logo
+ */
+async function deleteLogo(req, res) {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id);
+
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    // Tenant check
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    project.brandLogo = {
+      data: null,
+      contentType: null,
+      width: null,
+      height: null,
+      sizeBytes: 0,
+      updatedAt: null,
+    };
+
+    await project.save();
+
+    res.json({
+      success: true,
+      message: 'Brand logo removed successfully.',
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   createProject,
   getProjects,
@@ -355,4 +496,7 @@ module.exports = {
   getSenders,
   removeSender,
   deleteProject,
+  uploadLogo,
+  getLogo,
+  deleteLogo,
 };

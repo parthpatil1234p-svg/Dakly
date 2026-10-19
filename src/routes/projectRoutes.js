@@ -8,6 +8,9 @@ const {
   getSenders,
   removeSender,
   deleteProject,
+  uploadLogo,
+  getLogo,
+  deleteLogo,
 } = require('../controllers/projectController');
 const { optionalProtect } = require('../middleware/authJwt');
 
@@ -21,5 +24,10 @@ router.post('/:id/senders', addSender);
 router.get('/:id/senders', getSenders);
 router.delete('/:id/senders/:senderId', removeSender);
 router.delete('/:id', deleteProject);
+
+// Brand Logo Endpoints (1:1 Square Only, 1 Image Limit, Anti-Piracy verification)
+router.post('/:id/logo', uploadLogo);
+router.get('/:id/logo', getLogo);
+router.delete('/:id/logo', deleteLogo);
 
 module.exports = router;
