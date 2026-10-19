@@ -76,9 +76,60 @@ curl -X POST https://dakly-engin.vercel.app/api/projects \
 
 ---
 
-## 📦 Step 2: Implement Dakly in Your Project
+## 🤖 1-Click AI Integration Prompt (Drop-in for Any Project)
 
-You don't need to install `nodemailer` or configure SMTP. Just make a standard `fetch` or HTTP call in your language of choice.
+> [!TIP]
+> **Using an AI Coding Assistant (Cursor, GitHub Copilot, Antigravity, ChatGPT, Claude)?**  
+> You don't need to write or refactor code manually! Just copy the readymade prompt below, replace `<YOUR_DAKLY_API_KEY>` with your key, and paste it into your AI assistant inside your project.  
+> 
+> The AI will automatically inspect your project, detect if you have an existing (broken) email system, replace it without breaking your routes, or create a brand new OTP delivery flow tailored to your tech stack.
+
+```text
+You are a senior backend engineer. I need to integrate fast, reliable OTP email delivery into this project using the Dakly Email Engine microservice.
+
+Here are my Dakly Microservice details:
+- API Endpoint: https://dakly-engin.vercel.app/api/send
+- API Key: <REPLACE_WITH_YOUR_DAKLY_API_KEY>
+- Required Header: "x-api-key: <YOUR_API_KEY>"
+- HTTP Method: POST
+- Payload Schema:
+  {
+    "to": "recipient@email.com",
+    "subject": "Your Verification Code: 123456",
+    "html": "<styled html template>",
+    "text": "Your OTP code is 123456"
+  }
+
+Please execute this integration in my project by following these steps:
+
+1. CODEBASE RECON:
+   - Scan my repository to see if an email sending mechanism already exists (e.g. Nodemailer, SendGrid, custom SMTP) or if auth/OTP routes (signup, login, forgot-password) are defined.
+   - Identify the framework (Express, Next.js, NestJS, FastAPI, Django, Laravel, etc.) and environment setup (.env).
+
+2. ADAPTIVE IMPLEMENTATION:
+   - [SCENARIO A - Existing Email System]: If my codebase already has an email sending function or file (e.g. mailer.js, nodemailer.ts, sendMail.js) that is throwing errors or timeouts, perform a "Drop-in Replacement". Keep the existing function name and parameters so NONE of my existing controllers or routes break, but swap out the broken transport with the Dakly API fetch call.
+   - [SCENARIO B - New Setup]: If no email helper exists, create a clean, modular emailService (or otpService) helper and export a sendOtp(to, otp, name) function.
+
+3. RESPONSIVE OTP HTML TEMPLATE:
+   - Design a modern, clean HTML card with my project's theme containing:
+     - Clear OTP display with styled background, large bold typography, and letter spacing.
+     - 10-minute expiration notice.
+     - Security disclaimer ("Never share this code with anyone").
+
+4. SECRETS & ENVIRONMENT HYGIENE:
+   - Add DAKLY_API_KEY="<YOUR_API_KEY>" and DAKLY_API_URL="https://dakly-engin.vercel.app/api/send" to my .env file (and mirror placeholders in .env.example).
+   - Never hardcode the API key in source code.
+
+5. INTERACTIVE CLARIFICATIONS:
+   - If you are unsure where OTP generation is triggered or which routes handle verification, ask me clarifying questions one by one before modifying any sensitive routes.
+   - Once confirmed, implement the solution and provide a quick test command.
+```
+
+---
+
+## 📦 Step 2: Manual Implementation (Code Snippets)
+
+If you prefer writing the integration manually without an AI assistant, you don't need to install `nodemailer` or configure SMTP. Just make a standard `fetch` or HTTP call in your language of choice.
 
 ### 1. Node.js / Express / Next.js (JavaScript / TypeScript)
 
