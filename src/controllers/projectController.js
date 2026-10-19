@@ -34,6 +34,7 @@ async function createProject(req, res) {
     const { encryptedData, iv, authTag } = encrypt(cleanPassword);
 
     const project = await Project.create({
+      userId: req.user ? req.user._id : null,
       name: name.trim(),
       senderEmail: cleanEmail,
       senderDisplayName: senderDisplayName ? senderDisplayName.trim() : name.trim(),
@@ -95,12 +96,19 @@ async function createProject(req, res) {
 }
 
 /**
- * List all active projects
+ * List all active projects for the authenticated user (Multi-Tenant)
  * GET /api/projects
  */
 async function getProjects(req, res) {
   try {
-    const projects = await Project.find({ isActive: true })
+    const query = { isActive: true };
+
+    if (req.user) {
+      // Return projects belonging to the logged in user, or unclaimed legacy projects
+      query.$or = [{ userId: req.user._id }, { userId: null }, { userId: { $exists: false } }];
+    }
+
+    const projects = await Project.find(query)
       .select('+encryptedPassword +iv +authTag +senders.encryptedPassword +senders.iv +senders.authTag')
       .sort({ createdAt: -1 });
 
@@ -145,6 +153,15 @@ async function updateProject(req, res) {
     const project = await Project.findById(id);
     if (!project) {
       return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    // Tenant check
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    if (!project.userId && req.user) {
+      project.userId = req.user._id;
     }
 
     if (name !== undefined) project.name = name.trim();
@@ -196,6 +213,15 @@ async function addSender(req, res) {
       return res.status(404).json({ success: false, error: 'Project not found.' });
     }
 
+    // Tenant check
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    if (!project.userId && req.user) {
+      project.userId = req.user._id;
+    }
+
     await project.addSender({
       email,
       appPassword,
@@ -233,6 +259,11 @@ async function getSenders(req, res) {
       return res.status(404).json({ success: false, error: 'Project not found.' });
     }
 
+    // Tenant check
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
     const capacity = project.getCapacitySummary();
     res.json({
       success: true,
@@ -257,6 +288,11 @@ async function removeSender(req, res) {
 
     if (!project) {
       return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    // Tenant check
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
     }
 
     if (project.senders && project.senders.length > 0) {
@@ -288,6 +324,11 @@ async function deleteProject(req, res) {
 
     if (!project) {
       return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    // Tenant check
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
     }
 
     project.isActive = false;

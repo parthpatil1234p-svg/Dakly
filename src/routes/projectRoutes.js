@@ -9,6 +9,10 @@ const {
   removeSender,
   deleteProject,
 } = require('../controllers/projectController');
+const { optionalProtect } = require('../middleware/authJwt');
+
+// Apply optional JWT authentication to all project routes
+router.use(optionalProtect);
 
 router.post('/', createProject);
 router.get('/', getProjects);

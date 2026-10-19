@@ -5,6 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const connectDB = require('./config/db');
 
+const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const emailRoutes = require('./routes/emailRoutes');
 
@@ -110,6 +111,7 @@ app.get('/', (req, res) => {
 });
 
 // Mount Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api', emailRoutes);
 
