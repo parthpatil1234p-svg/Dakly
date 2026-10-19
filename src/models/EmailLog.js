@@ -14,11 +14,17 @@ const emailLogSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+    senderEmail: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     to: {
       type: String,
       required: true,
       lowercase: true,
       trim: true,
+      index: true,
     },
     subject: {
       type: String,
@@ -43,9 +49,19 @@ const emailLogSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    executionTimeMs: {
+      type: Number,
+      default: 0,
+    },
+    webhookStatus: {
+      type: String,
+      enum: ['NOT_CONFIGURED', 'SENT', 'FAILED', 'SKIPPED'],
+      default: 'NOT_CONFIGURED',
+    },
     sentAt: {
       type: Date,
       default: Date.now,
+      index: true,
     },
   },
   {
@@ -53,7 +69,8 @@ const emailLogSchema = new mongoose.Schema(
   }
 );
 
-// Index for fast query of recent logs per project
+// Compound indexes for high-performance dashboard searches
 emailLogSchema.index({ projectId: 1, createdAt: -1 });
+emailLogSchema.index({ projectId: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model('EmailLog', emailLogSchema);

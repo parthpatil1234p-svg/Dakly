@@ -2,18 +2,22 @@ const nodemailer = require('nodemailer');
 const EmailLog = require('../models/EmailLog');
 const Project = require('../models/Project');
 const { generateTrackingId } = require('../utils/crypto');
+const { processAttachments } = require('../utils/attachmentHelper');
+const { paceSender } = require('./pacingService');
+const { dispatchWebhook } = require('./webhookService');
 
 // In-memory cache for Nodemailer transports with connection pooling
-// Cache Key: projectId -> Transporter instance
+// Cache Key: `${projectId}_${senderEmail}` -> Transporter instance
 const transporterCache = new Map();
 
 /**
- * Gets or creates a pooled Nodemailer transporter for a project
+ * Gets or creates a pooled Nodemailer transporter for a sender
  * @param {Object} project - Mongoose Project document
+ * @param {Object} sender - Sender subdocument or legacy sender
  * @param {string} decryptedPassword - Plain-text Google App Password
  */
-function getTransporter(project, decryptedPassword) {
-  const cacheKey = project._id.toString();
+function getTransporter(project, sender, decryptedPassword) {
+  const cacheKey = `${project._id.toString()}_${sender.email.toLowerCase()}`;
 
   // Return existing pooled connection if available
   if (transporterCache.has(cacheKey)) {
@@ -21,19 +25,18 @@ function getTransporter(project, decryptedPassword) {
   }
 
   // Create cloud-compatible transporter for Gmail SMTP (Port 587 with STARTTLS)
-  // Cloud providers like Render restrict port 465/25, whereas Port 587 is universally open
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
     secure: false, // Must be false for 587 (uses STARTTLS)
     requireTLS: true,
     auth: {
-      user: project.senderEmail,
+      user: sender.email,
       pass: decryptedPassword,
     },
     connectionTimeout: 10000, // 10s connection timeout
     greetingTimeout: 5000,    // 5s greeting timeout
-    socketTimeout: 15000,    // 15s socket timeout
+    socketTimeout: 15000,     // 15s socket timeout
     tls: {
       rejectUnauthorized: true,
     },
@@ -44,23 +47,40 @@ function getTransporter(project, decryptedPassword) {
 }
 
 /**
- * Invalidate transporter cache when project credentials change
+ * Invalidate transporter cache when project or sender credentials change
  */
-function invalidateTransporter(projectId) {
-  const key = projectId.toString();
-  if (transporterCache.has(key)) {
-    const transporter = transporterCache.get(key);
-    try {
-      transporter.close();
-    } catch (err) {
-      // Ignore close error
+function invalidateTransporter(projectId, senderEmail) {
+  const prefix = projectId.toString();
+  for (const [key, transporter] of transporterCache.entries()) {
+    if (key.startsWith(prefix)) {
+      if (!senderEmail || key.includes(senderEmail.toLowerCase())) {
+        try {
+          transporter.close();
+        } catch {
+          // ignore close error
+        }
+        transporterCache.delete(key);
+      }
     }
-    transporterCache.delete(key);
   }
 }
 
 /**
- * Sends an email using the project's Gmail account
+ * Detects if an error is due to Gmail daily quota or temporary sending limits
+ */
+function isQuotaOrAuthLimitError(errorMsg = '') {
+  const lower = errorMsg.toLowerCase();
+  return (
+    lower.includes('daily user sending limit exceeded') ||
+    lower.includes('rate limit') ||
+    lower.includes('quota') ||
+    lower.includes('550 5.4.5') ||
+    lower.includes('too many messages')
+  );
+}
+
+/**
+ * Sends an email using Multi-Account Failover, Anti-Spam Pacing, and Attachment Engine
  * @param {Object} options
  * @param {Object} options.project - Project document from DB
  * @param {string} options.to - Recipient email
@@ -69,14 +89,45 @@ function invalidateTransporter(projectId) {
  * @param {string} [options.text] - Plain text fallback
  * @param {string} [options.otp] - Convenience OTP string if no full HTML provided
  * @param {Array} [options.attachments] - Array of attachments (URLs, base64, or files)
- * @returns {Promise<{ success: boolean, trackingId: string, status: string, error?: string }>}
+ * @returns {Promise<{ success: boolean, trackingId: string, status: string, error?: string, sender?: string }>}
  */
 async function sendEmail({ project, to, subject, html, text, otp, attachments = [] }) {
+  const startTime = Date.now();
   const trackingId = generateTrackingId();
 
-  // 1. Check daily quota
-  if (!project.canSendEmail()) {
-    const quotaError = `Daily quota limit reached (${project.dailyQuota} emails/day). Resets at 00:00 UTC.`;
+  // 1. Process and validate attachments (URLs, base64, 15MB limit)
+  let processedAttachments = [];
+  try {
+    processedAttachments = await processAttachments(attachments);
+  } catch (err) {
+    const errorMsg = `Attachment Error: ${err.message}`;
+    await EmailLog.create({
+      projectId: project._id,
+      trackingId,
+      to,
+      subject: subject || 'No Subject',
+      status: 'FAILED',
+      error: errorMsg,
+      hasAttachments: attachments.length > 0,
+      attachmentsCount: attachments.length,
+      executionTimeMs: Date.now() - startTime,
+    });
+
+    return {
+      success: false,
+      status: 'FAILED',
+      trackingId,
+      error: errorMsg,
+    };
+  }
+
+  // 2. Select Active Sender with Failover (Primary -> Backup 1 -> Backup 2)
+  let activeSender = project.getActiveSender();
+
+  if (!activeSender) {
+    const quotaSummary = project.getCapacitySummary();
+    const quotaError = `Daily quota reached across all ${quotaSummary.sendersCount} configured Gmail account(s) (${quotaSummary.totalSentToday}/${quotaSummary.totalDailyQuota} sent today). Resets at 00:00 UTC.`;
+
     await EmailLog.create({
       projectId: project._id,
       trackingId,
@@ -84,9 +135,22 @@ async function sendEmail({ project, to, subject, html, text, otp, attachments = 
       subject: subject || 'No Subject',
       status: 'FAILED',
       error: quotaError,
-      hasAttachments: attachments.length > 0,
-      attachmentsCount: attachments.length,
+      hasAttachments: processedAttachments.length > 0,
+      attachmentsCount: processedAttachments.length,
+      executionTimeMs: Date.now() - startTime,
     });
+
+    dispatchWebhook(project, {
+      event: 'email.failed',
+      trackingId,
+      projectId: project._id,
+      projectName: project.name,
+      recipient: to,
+      subject: subject || 'No Subject',
+      status: 'FAILED',
+      error: quotaError,
+      timestamp: new Date().toISOString(),
+    }).catch(() => {});
 
     return {
       success: false,
@@ -96,11 +160,11 @@ async function sendEmail({ project, to, subject, html, text, otp, attachments = 
     };
   }
 
-  // 2. Prepare HTML & Subject
+  // 3. Prepare HTML & Subject
   let finalHtml = html;
   let finalSubject = subject;
 
-  // Convenience fallback if caller only passed OTP without custom HTML
+  // Convenience OTP fallback
   if (!finalHtml && otp) {
     finalSubject = finalSubject || `${project.name}: Your Verification Code`;
     finalHtml = `
@@ -119,68 +183,140 @@ async function sendEmail({ project, to, subject, html, text, otp, attachments = 
     throw new Error('Either "html", "text", or "otp" must be provided in the request body.');
   }
 
-  // 3. Decrypt App Password and get pooled transporter
-  const decryptedPassword = project.getDecryptedPassword();
-  const transporter = getTransporter(project, decryptedPassword);
+  // 4. Send with Multi-Account Failover & Anti-Spam Pacing
+  let currentSender = activeSender;
+  let attempts = 0;
+  const maxAttempts = 2; // Allow 1 automatic failover retry if primary hits rate limit
 
-  const displayName = project.senderDisplayName || project.name;
-  const mailOptions = {
-    from: `"${displayName}" <${project.senderEmail}>`,
-    to,
-    subject: finalSubject || `${project.name} Notification`,
-    html: finalHtml,
-    text: text || undefined,
-    attachments: attachments && attachments.length > 0 ? attachments : undefined,
-  };
+  while (attempts < maxAttempts && currentSender) {
+    attempts++;
+    const senderEmail = currentSender.email;
+    const displayName = currentSender.displayName || project.senderDisplayName || project.name;
 
-  // 4. Dispatch Email with Timeout Protection
-  try {
-    const info = await transporter.sendMail(mailOptions);
+    try {
+      // Phase 1.3: Anti-Spam Burst Pacing
+      await paceSender(senderEmail, project.burstPacingMs || 200);
 
-    // Save successful log in MongoDB
-    await EmailLog.create({
-      projectId: project._id,
-      trackingId,
-      to,
-      subject: mailOptions.subject,
-      status: 'DELIVERED',
-      hasAttachments: attachments.length > 0,
-      attachmentsCount: attachments.length,
-    });
+      // Decrypt credentials for this sender
+      const decryptedPassword = project.getDecryptedPassword(currentSender);
+      const transporter = getTransporter(project, currentSender, decryptedPassword);
 
-    // Increment today's count
-    await project.incrementSentCount();
+      const mailOptions = {
+        from: `"${displayName}" <${senderEmail}>`,
+        to,
+        subject: finalSubject || `${project.name} Notification`,
+        html: finalHtml,
+        text: text || undefined,
+        attachments: processedAttachments.length > 0 ? processedAttachments : undefined,
+      };
 
-    return {
-      success: true,
-      status: 'DELIVERED',
-      trackingId,
-      messageId: info.messageId,
-      recipient: to,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error) {
-    console.error(`❌ Dakly Dispatch Error [${project.name} -> ${to}]:`, error.message);
+      const info = await transporter.sendMail(mailOptions);
+      const executionTimeMs = Date.now() - startTime;
 
-    // Log failure in MongoDB
-    await EmailLog.create({
-      projectId: project._id,
-      trackingId,
-      to,
-      subject: mailOptions.subject,
-      status: 'FAILED',
-      error: error.message,
-      hasAttachments: attachments.length > 0,
-      attachmentsCount: attachments.length,
-    });
+      // Increment sent counter on DB
+      await project.incrementSenderSent(senderEmail);
 
-    return {
-      success: false,
-      status: 'FAILED',
-      trackingId,
-      error: error.message,
-    };
+      // Save successful delivery log
+      await EmailLog.create({
+        projectId: project._id,
+        trackingId,
+        senderEmail,
+        to,
+        subject: mailOptions.subject,
+        status: 'DELIVERED',
+        hasAttachments: processedAttachments.length > 0,
+        attachmentsCount: processedAttachments.length,
+        executionTimeMs,
+      });
+
+      // Phase 1.4: Asynchronous Webhook Dispatch
+      dispatchWebhook(project, {
+        event: 'email.delivered',
+        trackingId,
+        projectId: project._id,
+        projectName: project.name,
+        sender: senderEmail,
+        recipient: to,
+        subject: mailOptions.subject,
+        status: 'DELIVERED',
+        hasAttachments: processedAttachments.length > 0,
+        attachmentsCount: processedAttachments.length,
+        executionTimeMs,
+        timestamp: new Date().toISOString(),
+      }).catch(() => {});
+
+      return {
+        success: true,
+        status: 'DELIVERED',
+        trackingId,
+        messageId: info.messageId,
+        sender: senderEmail,
+        recipient: to,
+        executionTimeMs,
+        hasAttachments: processedAttachments.length > 0,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.warn(`⚠️ Dispatch attempt ${attempts} failed on sender [${senderEmail}]: ${error.message}`);
+
+      // Check if this error warrants failing over to the backup sender
+      if (isQuotaOrAuthLimitError(error.message) && attempts < maxAttempts) {
+        console.log(`🔄 Auto-failing over: Marking [${senderEmail}] as exhausted and switching to backup sender...`);
+        await project.markSenderExhausted(senderEmail);
+        currentSender = project.getActiveSender();
+        if (currentSender) {
+          // Loop will retry with next sender
+          continue;
+        }
+      }
+
+      // If no failover was possible or retry also failed:
+      const executionTimeMs = Date.now() - startTime;
+
+      await EmailLog.create({
+        projectId: project._id,
+        trackingId,
+        senderEmail,
+        to,
+        subject: finalSubject || `${project.name} Notification`,
+        status: 'FAILED',
+        error: error.message,
+        hasAttachments: processedAttachments.length > 0,
+        attachmentsCount: processedAttachments.length,
+        executionTimeMs,
+      });
+
+      dispatchWebhook(project, {
+        event: 'email.failed',
+        trackingId,
+        projectId: project._id,
+        projectName: project.name,
+        sender: senderEmail,
+        recipient: to,
+        subject: finalSubject || `${project.name} Notification`,
+        status: 'FAILED',
+        error: error.message,
+        executionTimeMs,
+        timestamp: new Date().toISOString(),
+      }).catch(() => {});
+
+      return {
+        success: false,
+        status: 'FAILED',
+        trackingId,
+        sender: senderEmail,
+        error: error.message,
+        executionTimeMs,
+      };
+    }
   }
+
+  return {
+    success: false,
+    status: 'FAILED',
+    trackingId,
+    error: 'All sender accounts failed to deliver the message.',
+  };
 }
 
 module.exports = {

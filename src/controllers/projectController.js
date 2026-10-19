@@ -8,7 +8,16 @@ const { invalidateTransporter } = require('../services/emailService');
  */
 async function createProject(req, res) {
   try {
-    const { name, senderEmail, appPassword, senderDisplayName, dailyQuota } = req.body;
+    const {
+      name,
+      senderEmail,
+      appPassword,
+      senderDisplayName,
+      dailyQuota,
+      burstPacingMs,
+      webhookUrl,
+      webhookSecret,
+    } = req.body;
 
     if (!name || !senderEmail || !appPassword) {
       return res.status(400).json({
@@ -19,18 +28,34 @@ async function createProject(req, res) {
 
     // Google App Passwords often have spaces (e.g. "abcd efgh ijkl mnop"). Strip spaces.
     const cleanPassword = appPassword.replace(/\s+/g, '');
+    const cleanEmail = senderEmail.trim().toLowerCase();
 
     // Encrypt the Google App Password
     const { encryptedData, iv, authTag } = encrypt(cleanPassword);
 
     const project = await Project.create({
       name: name.trim(),
-      senderEmail: senderEmail.trim().toLowerCase(),
+      senderEmail: cleanEmail,
       senderDisplayName: senderDisplayName ? senderDisplayName.trim() : name.trim(),
       encryptedPassword: encryptedData,
       iv,
       authTag,
       dailyQuota: dailyQuota || 500,
+      burstPacingMs: burstPacingMs !== undefined ? burstPacingMs : 200,
+      webhookUrl: webhookUrl || null,
+      webhookSecret: webhookSecret || null,
+      senders: [
+        {
+          email: cleanEmail,
+          displayName: senderDisplayName ? senderDisplayName.trim() : name.trim(),
+          encryptedPassword: encryptedData,
+          iv,
+          authTag,
+          dailyQuota: dailyQuota || 500,
+          priority: 0,
+          isActive: true,
+        },
+      ],
     });
 
     res.status(201).json({
@@ -43,6 +68,8 @@ async function createProject(req, res) {
         senderDisplayName: project.senderDisplayName,
         apiKey: project.apiKey,
         dailyQuota: project.dailyQuota,
+        burstPacingMs: project.burstPacingMs,
+        webhookConfigured: !!project.webhookUrl,
       },
       quickStart: {
         method: 'POST',
@@ -73,24 +100,177 @@ async function createProject(req, res) {
  */
 async function getProjects(req, res) {
   try {
-    const projects = await Project.find({ isActive: true }).sort({ createdAt: -1 });
+    const projects = await Project.find({ isActive: true })
+      .select('+encryptedPassword +iv +authTag +senders.encryptedPassword +senders.iv +senders.authTag')
+      .sort({ createdAt: -1 });
 
-    const sanitized = projects.map((p) => ({
-      id: p._id,
-      name: p.name,
-      senderEmail: p.senderEmail,
-      senderDisplayName: p.senderDisplayName,
-      apiKey: p.apiKey,
-      dailyQuota: p.dailyQuota,
-      emailsSentToday: p.emailsSentToday,
-      remainingToday: Math.max(0, p.dailyQuota - p.emailsSentToday),
-      createdAt: p.createdAt,
-    }));
+    const sanitized = projects.map((p) => {
+      const capacity = p.getCapacitySummary();
+      return {
+        id: p._id,
+        name: p.name,
+        senderEmail: p.senderEmail,
+        senderDisplayName: p.senderDisplayName,
+        apiKey: p.apiKey,
+        dailyQuota: capacity.totalDailyQuota,
+        emailsSentToday: capacity.totalSentToday,
+        remainingToday: capacity.remainingToday,
+        activeSendersCount: capacity.sendersCount,
+        senders: capacity.senders,
+        burstPacingMs: p.burstPacingMs || 200,
+        webhookUrl: p.webhookUrl,
+        createdAt: p.createdAt,
+      };
+    });
 
     res.json({
       success: true,
       count: sanitized.length,
       projects: sanitized,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Update project settings (Webhooks, pacing, display name)
+ * PATCH /api/projects/:id
+ */
+async function updateProject(req, res) {
+  try {
+    const { id } = req.params;
+    const { name, senderDisplayName, burstPacingMs, webhookUrl, webhookSecret } = req.body;
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (name !== undefined) project.name = name.trim();
+    if (senderDisplayName !== undefined) project.senderDisplayName = senderDisplayName.trim();
+    if (burstPacingMs !== undefined) project.burstPacingMs = Math.max(0, parseInt(burstPacingMs, 10));
+    if (webhookUrl !== undefined) project.webhookUrl = webhookUrl ? webhookUrl.trim() : null;
+    if (webhookSecret !== undefined) project.webhookSecret = webhookSecret ? webhookSecret.trim() : null;
+
+    await project.save();
+
+    res.json({
+      success: true,
+      message: 'Project settings updated successfully.',
+      project: {
+        id: project._id,
+        name: project.name,
+        senderDisplayName: project.senderDisplayName,
+        burstPacingMs: project.burstPacingMs,
+        webhookUrl: project.webhookUrl,
+        webhookSecretConfigured: !!project.webhookSecret,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Add a secondary/backup Gmail sender to double the daily limit
+ * POST /api/projects/:id/senders
+ */
+async function addSender(req, res) {
+  try {
+    const { id } = req.params;
+    const { email, appPassword, displayName, dailyQuota, priority } = req.body;
+
+    if (!email || !appPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide email and appPassword for the sender account.',
+      });
+    }
+
+    const project = await Project.findById(id).select(
+      '+encryptedPassword +iv +authTag +senders.encryptedPassword +senders.iv +senders.authTag'
+    );
+
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    await project.addSender({
+      email,
+      appPassword,
+      displayName,
+      dailyQuota: dailyQuota || 500,
+      priority: priority !== undefined ? priority : (project.senders ? project.senders.length : 1),
+    });
+
+    invalidateTransporter(project._id);
+
+    const capacity = project.getCapacitySummary();
+
+    res.status(201).json({
+      success: true,
+      message: `Sender [${email}] added successfully to project "${project.name}"!`,
+      capacity,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * List all senders for a project
+ * GET /api/projects/:id/senders
+ */
+async function getSenders(req, res) {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id).select(
+      '+encryptedPassword +iv +authTag +senders.encryptedPassword +senders.iv +senders.authTag'
+    );
+
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const capacity = project.getCapacitySummary();
+    res.json({
+      success: true,
+      projectName: project.name,
+      ...capacity,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Remove / deactivate a sender
+ * DELETE /api/projects/:id/senders/:senderId
+ */
+async function removeSender(req, res) {
+  try {
+    const { id, senderId } = req.params;
+    const project = await Project.findById(id).select(
+      '+encryptedPassword +iv +authTag +senders.encryptedPassword +senders.iv +senders.authTag'
+    );
+
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.senders && project.senders.length > 0) {
+      const sender = project.senders.id(senderId);
+      if (sender) {
+        sender.isActive = false;
+        await project.save();
+        invalidateTransporter(project._id, sender.email);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Sender deactivated successfully.',
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -127,5 +307,9 @@ async function deleteProject(req, res) {
 module.exports = {
   createProject,
   getProjects,
+  updateProject,
+  addSender,
+  getSenders,
+  removeSender,
   deleteProject,
 };

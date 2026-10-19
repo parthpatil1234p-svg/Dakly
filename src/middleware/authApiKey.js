@@ -1,7 +1,8 @@
 const Project = require('../models/Project');
 
 /**
- * Middleware to authenticate requests using x-api-key header
+ * Middleware to authenticate requests using x-api-key header or query param
+ * Loads all encrypted credentials needed for email dispatching
  */
 async function authenticateApiKey(req, res, next) {
   const apiKey = req.headers['x-api-key'] || req.query.apiKey;
@@ -14,9 +15,9 @@ async function authenticateApiKey(req, res, next) {
   }
 
   try {
-    // Select encryptedPassword, iv, authTag explicitly as they have select: false
+    // Select encryptedPassword, iv, authTag for both legacy and multi-sender pool
     const project = await Project.findOne({ apiKey, isActive: true }).select(
-      '+encryptedPassword +iv +authTag'
+      '+encryptedPassword +iv +authTag +senders.encryptedPassword +senders.iv +senders.authTag'
     );
 
     if (!project) {

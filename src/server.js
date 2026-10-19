@@ -76,8 +76,13 @@ app.get('/', (req, res) => {
       healthCheck: 'GET /health',
       createProject: 'POST /api/projects',
       listProjects: 'GET /api/projects',
+      updateProject: 'PATCH /api/projects/:id',
+      addSender: 'POST /api/projects/:id/senders',
+      listSenders: 'GET /api/projects/:id/senders',
       sendEmail: 'POST /api/send (Headers: { x-api-key })',
       checkStatus: 'GET /api/status/:trackingId',
+      deliveryAuditLogs: 'GET /api/logs (Headers: { x-api-key })',
+      dashboardStats: 'GET /api/stats (Headers: { x-api-key })',
       deliveryReports: 'GET /api/reports (Headers: { x-api-key })',
     },
   });
@@ -106,7 +111,7 @@ app.use((err, req, res, next) => {
 
 
 // Connect to MongoDB and Start Server locally (or in Docker/VPS)
-if (!process.env.VERCEL) {
+if (!process.env.VERCEL && require.main === module) {
   connectDB().then(() => {
     app.listen(PORT, () => {
       console.log(`\n=================================================`);

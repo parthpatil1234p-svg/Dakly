@@ -45,6 +45,154 @@ async function send(req, res) {
 }
 
 /**
+ * Searchable, Paginated Audit Logs for Dashboard
+ * GET /api/logs
+ * Headers: { "x-api-key": "..." }
+ * Query: search, status, page, limit, from, to
+ */
+async function getLogs(req, res) {
+  try {
+    const projectId = req.project._id;
+    const { search, status, from, to } = req.query;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const skip = (page - 1) * limit;
+
+    const query = { projectId };
+
+    if (status && ['DELIVERED', 'FAILED', 'QUEUED'].includes(status.toUpperCase())) {
+      query.status = status.toUpperCase();
+    }
+
+    if (search && search.trim()) {
+      const term = search.trim();
+      query.$or = [
+        { to: { $regex: term, $options: 'i' } },
+        { subject: { $regex: term, $options: 'i' } },
+        { trackingId: { $regex: term, $options: 'i' } },
+      ];
+    }
+
+    if (from || to) {
+      query.createdAt = {};
+      if (from) query.createdAt.$gte = new Date(from);
+      if (to) query.createdAt.$lte = new Date(to);
+    }
+
+    const [total, logs] = await Promise.all([
+      EmailLog.countDocuments(query),
+      EmailLog.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    ]);
+
+    res.json({
+      success: true,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+      logs: logs.map((l) => ({
+        trackingId: l.trackingId,
+        senderEmail: l.senderEmail,
+        to: l.to,
+        subject: l.subject,
+        status: l.status,
+        error: l.error,
+        hasAttachments: l.hasAttachments,
+        attachmentsCount: l.attachmentsCount,
+        executionTimeMs: l.executionTimeMs,
+        webhookStatus: l.webhookStatus,
+        sentAt: l.sentAt || l.createdAt,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Full Dashboard Analytics & Capacity Stats
+ * GET /api/stats
+ * Headers: { "x-api-key": "..." }
+ */
+async function getStats(req, res) {
+  try {
+    const project = req.project;
+    const projectId = project._id;
+
+    // Today's boundaries in UTC
+    const startOfToday = new Date();
+    startOfToday.setUTCHours(0, 0, 0, 0);
+
+    const [
+      totalSent,
+      totalDelivered,
+      totalFailed,
+      todayDelivered,
+      todayFailed,
+      recentAvgTimeResult,
+    ] = await Promise.all([
+      EmailLog.countDocuments({ projectId }),
+      EmailLog.countDocuments({ projectId, status: 'DELIVERED' }),
+      EmailLog.countDocuments({ projectId, status: 'FAILED' }),
+      EmailLog.countDocuments({ projectId, status: 'DELIVERED', createdAt: { $gte: startOfToday } }),
+      EmailLog.countDocuments({ projectId, status: 'FAILED', createdAt: { $gte: startOfToday } }),
+      EmailLog.aggregate([
+        { $match: { projectId, status: 'DELIVERED', executionTimeMs: { $gt: 0 } } },
+        { $sort: { createdAt: -1 } },
+        { $limit: 100 },
+        { $group: { _id: null, avgTime: { $avg: '$executionTimeMs' } } },
+      ]),
+    ]);
+
+    const capacity = project.getCapacitySummary();
+    const todaySent = todayDelivered + todayFailed;
+    const avgExecutionTimeMs =
+      recentAvgTimeResult.length > 0 ? Math.round(recentAvgTimeResult[0].avgTime) : 0;
+
+    res.json({
+      success: true,
+      project: {
+        id: project._id,
+        name: project.name,
+        apiKey: project.apiKey,
+        burstPacingMs: project.burstPacingMs || 200,
+        webhookConfigured: !!project.webhookUrl,
+        webhookUrl: project.webhookUrl,
+      },
+      capacity: {
+        totalDailyQuota: capacity.totalDailyQuota,
+        sentToday: capacity.totalSentToday,
+        remainingToday: capacity.remainingToday,
+        activeSendersCount: capacity.sendersCount,
+        senders: capacity.senders,
+      },
+      metrics: {
+        allTime: {
+          totalSent,
+          totalDelivered,
+          totalFailed,
+          successRate: totalSent > 0 ? `${((totalDelivered / totalSent) * 100).toFixed(1)}%` : '100%',
+        },
+        today: {
+          sentToday: todaySent,
+          deliveredToday: todayDelivered,
+          failedToday: todayFailed,
+          successRate: todaySent > 0 ? `${((todayDelivered / todaySent) * 100).toFixed(1)}%` : '100%',
+        },
+        performance: {
+          avgExecutionTimeMs,
+          status: avgExecutionTimeMs < 3000 ? 'EXCELLENT' : 'NORMAL',
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
  * Get status of an email by trackingId
  * GET /api/status/:trackingId
  */
@@ -65,14 +213,16 @@ async function getStatus(req, res) {
       log: {
         trackingId: log.trackingId,
         project: log.projectId ? log.projectId.name : 'Unknown',
-        sender: log.projectId ? log.projectId.senderEmail : '',
+        senderEmail: log.senderEmail || (log.projectId ? log.projectId.senderEmail : ''),
         to: log.to,
         subject: log.subject,
         status: log.status,
         error: log.error,
         hasAttachments: log.hasAttachments,
         attachmentsCount: log.attachmentsCount,
-        sentAt: log.sentAt,
+        executionTimeMs: log.executionTimeMs,
+        webhookStatus: log.webhookStatus,
+        sentAt: log.sentAt || log.createdAt,
       },
     });
   } catch (error) {
@@ -81,55 +231,18 @@ async function getStatus(req, res) {
 }
 
 /**
- * Get delivery report & history for the authenticated project
+ * Legacy delivery reports endpoint
  * GET /api/reports
  * Headers: { "x-api-key": "..." }
  */
 async function getReports(req, res) {
-  try {
-    const projectId = req.project._id;
-    const limit = parseInt(req.query.limit, 10) || 50;
-
-    const [totalSent, totalDelivered, totalFailed, recentLogs] = await Promise.all([
-      EmailLog.countDocuments({ projectId }),
-      EmailLog.countDocuments({ projectId, status: 'DELIVERED' }),
-      EmailLog.countDocuments({ projectId, status: 'FAILED' }),
-      EmailLog.find({ projectId }).sort({ createdAt: -1 }).limit(limit),
-    ]);
-
-    res.json({
-      success: true,
-      project: {
-        id: req.project._id,
-        name: req.project.name,
-        senderEmail: req.project.senderEmail,
-        dailyQuota: req.project.dailyQuota,
-        sentToday: req.project.emailsSentToday,
-        remainingToday: Math.max(0, req.project.dailyQuota - req.project.emailsSentToday),
-      },
-      stats: {
-        totalSent,
-        totalDelivered,
-        totalFailed,
-        successRate: totalSent > 0 ? `${((totalDelivered / totalSent) * 100).toFixed(1)}%` : '100%',
-      },
-      recentLogs: recentLogs.map((l) => ({
-        trackingId: l.trackingId,
-        to: l.to,
-        subject: l.subject,
-        status: l.status,
-        error: l.error,
-        hasAttachments: l.hasAttachments,
-        sentAt: l.sentAt,
-      })),
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+  return getStats(req, res);
 }
 
 module.exports = {
   send,
+  getLogs,
+  getStats,
   getStatus,
   getReports,
 };
