@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const EmailLog = require('../models/EmailLog');
 const Project = require('../models/Project');
-const { isSafeRemoteUrl } = require('../utils/ssrfHelper');
+const { isSafeRemoteUrl, isPrivateIp } = require('../utils/ssrfHelper');
 
 /**
  * Verifies an incoming webhook HMAC signature
@@ -64,11 +64,32 @@ async function dispatchWebhook(project, payload) {
     return { dispatched: false, status: 'EVENT_NOT_SUBSCRIBED' };
   }
 
-  const webhookUrl = project.webhookUrl;
-  if (!webhookUrl || !isSafeRemoteUrl(webhookUrl)) {
-    return { dispatched: false, status: 'UNSAFE_OR_INVALID_URL', reason: 'Disallowed or unsafe destination.' };
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(project.webhookUrl);
+  } catch {
+    return { dispatched: false, status: 'UNSAFE_OR_INVALID_URL', reason: 'Invalid URL format.' };
   }
 
+  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+    return { dispatched: false, status: 'UNSAFE_OR_INVALID_URL', reason: 'Disallowed protocol.' };
+  }
+
+  const host = parsedUrl.hostname.toLowerCase();
+  if (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '0.0.0.0' ||
+    host === '169.254.169.254' ||
+    host.endsWith('.localhost') ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal') ||
+    (/^(\d{1,3}\.){3}\d{1,3}$/.test(host) && isPrivateIp(host))
+  ) {
+    return { dispatched: false, status: 'UNSAFE_OR_INVALID_URL', reason: 'Disallowed private or loopback destination.' };
+  }
+
+  const safeWebhookUrl = parsedUrl.href;
   const timestamp = new Date().toISOString();
   const enhancedPayload = {
     ...payload,
@@ -97,7 +118,7 @@ async function dispatchWebhook(project, payload) {
   const startTime = Date.now();
 
   try {
-    const response = await fetch(webhookUrl, {
+    const response = await fetch(safeWebhookUrl, {
       method: 'POST',
       headers,
       body: bodyString,
@@ -175,12 +196,48 @@ async function dispatchWebhook(project, payload) {
  * @returns {Promise<{ success: boolean, httpStatus?: number, latencyMs?: number, responseText?: string, error?: string }>}
  */
 async function sendTestWebhook(project) {
-  if (!project.webhookUrl || !isSafeRemoteUrl(project.webhookUrl)) {
+  if (!project.webhookUrl) {
     return {
       success: false,
-      error: 'Please enter a valid, public Webhook Destination URL (localhost and internal private IPs are not allowed).',
+      error: 'Please enter a valid Webhook Destination URL first.',
     };
   }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(project.webhookUrl);
+  } catch {
+    return {
+      success: false,
+      error: 'Invalid Webhook Destination URL format.',
+    };
+  }
+
+  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+    return {
+      success: false,
+      error: 'Only http: and https: protocols are permitted for webhooks.',
+    };
+  }
+
+  const host = parsedUrl.hostname.toLowerCase();
+  if (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '0.0.0.0' ||
+    host === '169.254.169.254' ||
+    host.endsWith('.localhost') ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal') ||
+    (/^(\d{1,3}\.){3}\d{1,3}$/.test(host) && isPrivateIp(host))
+  ) {
+    return {
+      success: false,
+      error: 'Disallowed Webhook Destination: localhost and private network addresses are blocked for security.',
+    };
+  }
+
+  const safeWebhookUrl = parsedUrl.href;
 
   const testPayload = {
     event: 'webhook.test',
@@ -213,7 +270,7 @@ async function sendTestWebhook(project) {
   const startTime = Date.now();
 
   try {
-    const response = await fetch(project.webhookUrl, {
+    const response = await fetch(safeWebhookUrl, {
       method: 'POST',
       headers,
       body: bodyString,

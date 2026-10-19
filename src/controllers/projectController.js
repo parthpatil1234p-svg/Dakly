@@ -642,14 +642,19 @@ async function addSuppression(req, res) {
       return res.status(403).json({ success: false, error: 'Access denied to this project.' });
     }
 
+    const cleanReason = typeof reason === 'string' ? String(reason).trim().slice(0, 100) : 'MANUAL_BLOCK';
+    const cleanDetails = typeof details === 'string' ? String(details).trim().slice(0, 500) : 'Manually added by workspace operator';
+
     const suppression = await Suppression.findOneAndUpdate(
       { projectId: project._id, email: cleanEmail },
       {
-        projectId: project._id,
-        email: cleanEmail,
-        reason: reason || 'MANUAL_BLOCK',
-        details: details || 'Manually added by workspace operator',
-        lastAttemptedAt: new Date(),
+        $set: {
+          projectId: project._id,
+          email: cleanEmail,
+          reason: cleanReason,
+          details: cleanDetails,
+          lastAttemptedAt: new Date(),
+        },
       },
       { upsert: true, new: true }
     );

@@ -4,7 +4,7 @@
  * Enforces a strict 15MB size limit to prevent SMTP timeouts and memory exhaustion.
  */
 
-const { isSafeRemoteUrl } = require('./ssrfHelper');
+const { isSafeRemoteUrl, isPrivateIp } = require('./ssrfHelper');
 
 const MAX_SINGLE_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
 const MAX_TOTAL_ATTACHMENT_SIZE = 20 * 1024 * 1024; // 20 MB
@@ -53,15 +53,37 @@ async function processAttachments(attachments = []) {
     const remoteUrl = url || (typeof path === 'string' && /^https?:\/\//i.test(path) ? path : null);
 
     if (remoteUrl) {
-      if (!isSafeRemoteUrl(remoteUrl)) {
-        throw new Error(`Attachment "${filename || i}": URL is not allowed or points to an unsafe/private address.`);
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(remoteUrl);
+      } catch {
+        throw new Error(`Attachment "${filename || i}": Invalid URL format.`);
       }
 
-      filename = filename || extractFilenameFromUrl(remoteUrl, `attachment_${i + 1}.pdf`);
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        throw new Error(`Attachment "${filename || i}": Only http/https URLs are supported.`);
+      }
+
+      const host = parsedUrl.hostname.toLowerCase();
+      if (
+        host === 'localhost' ||
+        host === '127.0.0.1' ||
+        host === '0.0.0.0' ||
+        host === '169.254.169.254' ||
+        host.endsWith('.localhost') ||
+        host.endsWith('.local') ||
+        host.endsWith('.internal') ||
+        (/^(\d{1,3}\.){3}\d{1,3}$/.test(host) && isPrivateIp(host))
+      ) {
+        throw new Error(`Attachment "${filename || i}": URL points to a blocked private or loopback host.`);
+      }
+
+      const safeFetchUrl = parsedUrl.href;
+      filename = filename || extractFilenameFromUrl(safeFetchUrl, `attachment_${i + 1}.pdf`);
 
       let response;
       try {
-        response = await fetch(remoteUrl, {
+        response = await fetch(safeFetchUrl, {
           signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
           headers: {
             'User-Agent': 'Dakly-Email-Engine/1.0',
