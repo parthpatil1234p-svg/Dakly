@@ -1,15 +1,16 @@
 const { sendEmail } = require('../services/emailService');
 const EmailLog = require('../models/EmailLog');
+const { compileTemplate, getCatalogList } = require('../utils/templateEngine');
 
 /**
  * Universal headless send endpoint
  * POST /api/send
  * Headers: { "x-api-key": "..." }
- * Body: { to, subject, html, text, otp, attachments }
+ * Body: { to, subject, html, text, otp, template, vars, attachments }
  */
 async function send(req, res) {
   try {
-    const { to, subject, html, text, otp, attachments } = req.body;
+    const { to, subject, html, text, otp, template, vars, attachments } = req.body;
 
     if (!to) {
       return res.status(400).json({
@@ -18,14 +19,43 @@ async function send(req, res) {
       });
     }
 
+    let resolvedHtml = html;
+    let resolvedText = text;
+    let resolvedSubject = subject ? subject.trim() : '';
+    let usedTemplateId = null;
+
+    // Compile pre-built template if requested
+    if (template) {
+      try {
+        const compiled = compileTemplate({
+          template,
+          vars: vars || {},
+          project: req.project,
+        });
+        resolvedHtml = compiled.html;
+        resolvedText = compiled.text;
+        usedTemplateId = compiled.templateId;
+        if (!resolvedSubject) {
+          resolvedSubject = compiled.defaultSubject;
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+          supportedTemplates: getCatalogList().map((t) => t.id),
+        });
+      }
+    }
+
     // Dispatch email through project-specific pooled transport
     const result = await sendEmail({
       project: req.project,
       to: to.trim().toLowerCase(),
-      subject: subject ? subject.trim() : '',
-      html,
-      text,
+      subject: resolvedSubject,
+      html: resolvedHtml,
+      text: resolvedText,
       otp,
+      template: usedTemplateId,
       attachments: Array.isArray(attachments) ? attachments : [],
     });
 
@@ -64,12 +94,17 @@ async function getLogs(req, res) {
       query.status = status.toUpperCase();
     }
 
+    if (req.query.template && req.query.template.trim()) {
+      query.template = req.query.template.trim().toLowerCase();
+    }
+
     if (search && search.trim()) {
       const term = search.trim();
       query.$or = [
         { to: { $regex: term, $options: 'i' } },
         { subject: { $regex: term, $options: 'i' } },
         { trackingId: { $regex: term, $options: 'i' } },
+        { template: { $regex: term, $options: 'i' } },
       ];
     }
 
@@ -284,6 +319,59 @@ async function getReports(req, res) {
   return getStats(req, res);
 }
 
+/**
+ * Returns available pre-built templates and their schemas
+ * GET /api/templates
+ */
+async function getTemplates(req, res) {
+  try {
+    const templates = getCatalogList();
+    res.json({
+      success: true,
+      count: templates.length,
+      templates,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Renders a preview of a template with given vars without sending an email
+ * POST /api/templates/preview
+ * Headers: optional { "x-api-key": "..." }
+ * Body: { template, vars }
+ */
+async function previewTemplate(req, res) {
+  try {
+    const { template, vars } = req.body;
+    if (!template) {
+      return res.status(400).json({
+        success: false,
+        error: 'Field "template" is required.',
+        supportedTemplates: getCatalogList().map((t) => t.id),
+      });
+    }
+
+    const project = req.project || { name: 'Preview App' };
+    const compiled = compileTemplate({ template, vars: vars || {}, project });
+
+    res.json({
+      success: true,
+      template: compiled.templateId,
+      defaultSubject: compiled.defaultSubject,
+      html: compiled.html,
+      text: compiled.text,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+      supportedTemplates: getCatalogList().map((t) => t.id),
+    });
+  }
+}
+
 module.exports = {
   send,
   getLogs,
@@ -291,4 +379,6 @@ module.exports = {
   getStatus,
   getReports,
   ping,
+  getTemplates,
+  previewTemplate,
 };

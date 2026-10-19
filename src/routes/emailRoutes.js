@@ -1,7 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const { send, getStatus, getReports, getLogs, getStats, ping } = require('../controllers/emailController');
+const {
+  send,
+  getStatus,
+  getReports,
+  getLogs,
+  getStats,
+  ping,
+  getTemplates,
+  previewTemplate,
+} = require('../controllers/emailController');
 const authenticateApiKey = require('../middleware/authApiKey');
+
+// Pre-built email templates catalog & preview
+router.get('/templates', getTemplates);
+router.post('/templates/preview', authenticateApiKey.optional, previewTemplate);
 
 // Health Ping & API Key connection tester (Authenticated via x-api-key)
 router.get('/ping', authenticateApiKey, ping);
@@ -23,3 +36,4 @@ router.get('/reports', authenticateApiKey, getReports);
 router.get('/status/:trackingId', getStatus);
 
 module.exports = router;
+

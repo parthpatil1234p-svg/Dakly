@@ -41,6 +41,12 @@ const emailLogSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    template: {
+      type: String,
+      default: null,
+      trim: true,
+      index: true,
+    },
     hasAttachments: {
       type: Boolean,
       default: false,

@@ -137,4 +137,22 @@ export async function deleteProjectLogo(projectId, token) {
   return res.json();
 }
 
+export async function fetchTemplates() {
+  const res = await fetch(`${API_BASE_URL}/api/templates`);
+  return res.json();
+}
+
+export async function previewTemplate(template, vars, apiKey) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiKey) {
+    headers['x-api-key'] = apiKey;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/templates/preview`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ template, vars }),
+  });
+  return res.json();
+}
+
 

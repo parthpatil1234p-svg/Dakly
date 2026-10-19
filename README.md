@@ -38,6 +38,7 @@ By plugging Dakly into your project, your application instantly gets an enterpri
 | 🔔 **HMAC Delivery Webhooks** | Sends asynchronous POST callbacks to your server when emails are delivered or bounce | Keeps your main database updated with two-way delivery status |
 | 👥 **Multi-Tenant Isolation** | Separate projects, API keys, and logs for different apps under one developer account | Cleanly manage multiple startup projects from a single control panel |
 | 🖼️ **1:1 Brand Logo & Anti-Piracy Guard** | Strict 1:1 square brand logo (1 per project) with magic-byte anti-malware/piracy inspection | Renders high-trust brand logo in outgoing emails while blocking fake media/torrents |
+| 📧 **Pre-built Templates & Variable Engine** | 5 built-in responsive templates (OTP, Welcome, Password Reset, College Notes, Receipts) with dynamic `vars` | Zero HTML design work needed; dynamic interpolation with project branding |
 | 💻 **Zero Client Dependencies** | Integrates using standard native `fetch()` without installing `nodemailer` or SDKs | Keeps your client application lightweight, clean, and bug-free |
 
 ---
@@ -296,11 +297,52 @@ Dispatches a transactional email synchronously.
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `to` | `string` | **Yes** | Recipient email address (e.g. `user@example.com`) |
-| `subject` | `string` | **Yes** | Subject line of the email |
-| `html` | `string` | Optional* | Rich HTML body (*either `html` or `text` is required) |
+| `subject` | `string` | **Yes** | Subject line of the email (auto-generated if using pre-built templates) |
+| `html` | `string` | Optional* | Rich HTML body (*either `html`, `text`, or `template` is required) |
 | `text` | `string` | Optional* | Plain text fallback |
+| `template` | `string` | Optional | Name of pre-built template (`otp`, `welcome`, `password_reset`, `notes_delivery`, `receipt`) |
+| `vars` | `object` | Optional | Key-value pairs of dynamic variables interpolated into the template |
 | `attachments` | `array` | Optional | Array of attachments: `[{ filename: "file.pdf", path: "https://..." }]` |
 | `replyTo` | `string` | Optional | Custom reply-to address |
+
+---
+
+### 📧 Pre-built Email Templates & Dynamic Variable Engine
+
+Instead of hand-crafting HTML/CSS for every email, Dakly provides **5 built-in, mobile-responsive email templates**. Simply pass the `template` identifier and dynamic `vars`. Dakly automatically handles layout, typography, dark/light email clients, and embeds your project's **1:1 verified brand logo** in the header.
+
+| Template ID | Use Case | Key Variables (`vars`) | Auto-Generated Subject |
+| :--- | :--- | :--- | :--- |
+| `otp` | 4–6 digit verification code, 2FA, passwordless login | `code`, `name`, `validMinutes`, `actionName` | `{{code}} is your {{projectName}} verification code` |
+| `welcome` | New user onboarding, signup greeting with CTA button | `name`, `actionUrl`, `actionText`, `introMessage`, `features` | `Welcome to {{projectName}}! 🎉` |
+| `password_reset` | Account recovery, credentials reset link with raw link fallback | `name`, `resetUrl`, `validMinutes`, `ipAddress`, `deviceInfo` | `Reset your {{projectName}} password` |
+| `notes_delivery` | College notes, PDF study guides, lecture summaries | `studentName`, `subject`, `notesTitle`, `semester`, `downloadUrl` | `📚 {{notesTitle}} - {{projectName}}` |
+| `receipt` | Payment confirmations, invoices, subscription renewals | `customerName`, `invoiceNumber`, `amount`, `date`, `planName`, `items` | `Receipt #{{invoiceNumber}} from {{projectName}}` |
+
+#### Dispatching a Pre-built Template via API:
+```javascript
+// Native JavaScript / TypeScript (Node.js, Next.js, Cloudflare Workers, Express)
+const response = await fetch("https://dakly-engin.vercel.app/api/send", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": "gkey_live_YOUR_KEY"
+  },
+  body: JSON.stringify({
+    to: "student@example.com",
+    template: "welcome",
+    vars: {
+      name: "Rahul",
+      actionUrl: "https://myapp.com/dashboard",
+      actionText: "Launch Console"
+    }
+  })
+});
+
+const result = await response.json();
+console.log("Delivered in < 1s:", result.trackingId);
+```
+
 
 #### Attachments Support:
 - **Remote URLs:** Links to public files on Firebase Storage, AWS S3, Cloudinary, etc.

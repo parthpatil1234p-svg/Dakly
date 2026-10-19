@@ -46,4 +46,21 @@ async function authenticateApiKey(req, res, next) {
   }
 }
 
+async function optionalApiKey(req, res, next) {
+  const apiKey = req.headers['x-api-key'] || req.query.apiKey;
+  if (!apiKey) {
+    req.project = null;
+    return next();
+  }
+  try {
+    const project = await Project.findOne({ apiKey, isActive: true });
+    req.project = project || null;
+  } catch {
+    req.project = null;
+  }
+  next();
+}
+
+authenticateApiKey.optional = optionalApiKey;
+
 module.exports = authenticateApiKey;

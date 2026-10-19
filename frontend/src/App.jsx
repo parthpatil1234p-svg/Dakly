@@ -55,7 +55,119 @@ import {
   pingApiKey,
   uploadProjectLogo,
   deleteProjectLogo,
+  fetchTemplates,
+  previewTemplate,
 } from './services/api';
+
+const DEFAULT_TEMPLATES = [
+  {
+    id: 'otp',
+    name: 'Modern OTP & Auth Code',
+    badge: 'Security',
+    badgeColor: 'border-blue-500/30 text-blue-600 bg-blue-500/10 dark:text-blue-400',
+    description: 'Crisp one-time verification code card with security alerts, expiry time, and brand logo.',
+    sampleVars: {
+      name: 'Rahul',
+      code: '849201',
+      validMinutes: 10,
+      actionName: 'sign in to your dashboard',
+    },
+    fields: [
+      { key: 'name', label: 'User Name', placeholder: 'Rahul' },
+      { key: 'code', label: 'OTP Code', placeholder: '849201' },
+      { key: 'validMinutes', label: 'Expiry (Minutes)', placeholder: '10', type: 'number' },
+      { key: 'actionName', label: 'Action Description', placeholder: 'sign in to your dashboard' },
+    ],
+  },
+  {
+    id: 'welcome',
+    name: 'Welcome & Onboarding',
+    badge: 'Marketing',
+    badgeColor: 'border-emerald-500/30 text-emerald-600 bg-emerald-500/10 dark:text-emerald-400',
+    description: 'High-energy welcome letter with feature highlights list and primary CTA button.',
+    sampleVars: {
+      name: 'Aman',
+      actionUrl: 'https://dakly.vercel.app/dashboard',
+      actionText: 'Get Started Now',
+      introMessage: 'We are thrilled to welcome you! Your account is active and ready to roll.',
+    },
+    fields: [
+      { key: 'name', label: 'User Name', placeholder: 'Aman' },
+      { key: 'actionUrl', label: 'CTA Button URL', placeholder: 'https://yourwebsite.com/dashboard' },
+      { key: 'actionText', label: 'CTA Button Text', placeholder: 'Get Started Now' },
+      { key: 'introMessage', label: 'Intro Greeting Message', placeholder: 'We are thrilled to welcome you...', isTextarea: true },
+    ],
+  },
+  {
+    id: 'password_reset',
+    name: 'Secure Password Reset',
+    badge: 'Auth',
+    badgeColor: 'border-rose-500/30 text-rose-600 bg-rose-500/10 dark:text-rose-400',
+    description: 'Security-first password recovery with prominent action button, raw link fallback, and IP notice.',
+    sampleVars: {
+      name: 'Priya',
+      resetUrl: 'https://dakly.vercel.app/reset-password?token=sec_984129',
+      validMinutes: 15,
+      ipAddress: '103.21.144.92',
+      deviceInfo: 'Chrome on macOS',
+    },
+    fields: [
+      { key: 'name', label: 'User Name', placeholder: 'Priya' },
+      { key: 'resetUrl', label: 'Reset Link URL', placeholder: 'https://yourwebsite.com/reset?token=...' },
+      { key: 'validMinutes', label: 'Expiry (Minutes)', placeholder: '15', type: 'number' },
+      { key: 'ipAddress', label: 'Requester IP (Optional)', placeholder: '103.21.144.92' },
+      { key: 'deviceInfo', label: 'Device / Browser (Optional)', placeholder: 'Chrome on macOS' },
+    ],
+  },
+  {
+    id: 'notes_delivery',
+    name: 'College Notes & Study Material',
+    badge: 'Education',
+    badgeColor: 'border-violet-500/30 text-violet-600 bg-violet-500/10 dark:text-violet-400',
+    description: 'Academic resource card with course details, semester pill, and PDF attachment badge.',
+    sampleVars: {
+      studentName: 'Sneha',
+      subject: 'Data Structures & Algorithms',
+      notesTitle: 'Unit 3: Trees, Binary Search & Graph Algorithms',
+      semester: 'Semester 4',
+      description: 'Comprehensive handwritten revision notes with solved university question papers.',
+      downloadUrl: 'https://dakly.vercel.app',
+    },
+    fields: [
+      { key: 'studentName', label: 'Student Name', placeholder: 'Sneha' },
+      { key: 'subject', label: 'Subject / Course', placeholder: 'Data Structures & Algorithms' },
+      { key: 'notesTitle', label: 'Notes Chapter / Title', placeholder: 'Unit 3: Trees & Graphs' },
+      { key: 'semester', label: 'Semester / Class', placeholder: 'Semester 4' },
+      { key: 'downloadUrl', label: 'Direct Download Link (Optional)', placeholder: 'https://...' },
+      { key: 'description', label: 'Summary / Topic List', placeholder: 'Comprehensive handwritten revision notes...', isTextarea: true },
+    ],
+  },
+  {
+    id: 'receipt',
+    name: 'Invoice & Payment Receipt',
+    badge: 'Billing',
+    badgeColor: 'border-amber-500/30 text-amber-600 bg-amber-500/10 dark:text-amber-400',
+    description: 'Clean financial receipt with itemized line items, amount charged card, and paid badge.',
+    sampleVars: {
+      customerName: 'Vikram Sharma',
+      invoiceNumber: 'INV-2026-941',
+      amount: '₹1,499.00',
+      date: '19 Oct 2026',
+      paymentMethod: 'UPI / Card',
+      planName: 'Dakly Pro Developer Pass',
+      receiptUrl: 'https://dakly.vercel.app',
+    },
+    fields: [
+      { key: 'customerName', label: 'Customer Name', placeholder: 'Vikram Sharma' },
+      { key: 'invoiceNumber', label: 'Invoice Number', placeholder: 'INV-2026-941' },
+      { key: 'amount', label: 'Total Amount', placeholder: '₹1,499.00' },
+      { key: 'date', label: 'Payment Date', placeholder: '19 Oct 2026' },
+      { key: 'paymentMethod', label: 'Payment Method', placeholder: 'UPI / Card' },
+      { key: 'planName', label: 'Item / Plan Name', placeholder: 'Dakly Pro Developer Pass' },
+      { key: 'receiptUrl', label: 'Tax Invoice Link (Optional)', placeholder: 'https://...' },
+    ],
+  },
+];
 
 export default function App() {
   // Theme State: 'light' (white background) by default, or 'dark'
@@ -131,6 +243,20 @@ export default function App() {
   const [autoRefreshLogs, setAutoRefreshLogs] = useState(false);
   const [curlCopied, setCurlCopied] = useState(false);
 
+  // Templates Tab State
+  const [selectedTemplateId, setSelectedTemplateId] = useState('otp');
+  const [templateVars, setTemplateVars] = useState(() => ({ ...DEFAULT_TEMPLATES[0].sampleVars }));
+  const [templateRecipient, setTemplateRecipient] = useState('');
+  const [templateSubjectOverride, setTemplateSubjectOverride] = useState('');
+  const [templatePreviewHtml, setTemplatePreviewHtml] = useState('');
+  const [templatePreviewSubject, setTemplatePreviewSubject] = useState('');
+  const [isRenderingPreview, setIsRenderingPreview] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState('desktop'); // 'desktop' | 'mobile'
+  const [isSendingTemplate, setIsSendingTemplate] = useState(false);
+  const [templateSendResult, setTemplateSendResult] = useState(null);
+  const [templateCodeLang, setTemplateCodeLang] = useState('curl'); // 'curl' | 'fetch' | 'node'
+  const [copiedTemplateCode, setCopiedTemplateCode] = useState(false);
+
   // Modals
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   const [showNewProjModal, setShowNewProjModal] = useState(false);
@@ -168,6 +294,118 @@ export default function App() {
       loadLogs(activeProject.apiKey, 1, logSearch, logStatus);
     }
   }, [activeProject]);
+
+  // Auto-render template preview when selected template, vars, or active project changes
+  useEffect(() => {
+    let isCancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        setIsRenderingPreview(true);
+        const res = await previewTemplate(selectedTemplateId, templateVars, activeProject?.apiKey);
+        if (!isCancelled && res.success) {
+          setTemplatePreviewHtml(res.html);
+          setTemplatePreviewSubject(res.defaultSubject);
+        }
+      } catch (err) {
+        console.error('Template preview error:', err);
+      } finally {
+        if (!isCancelled) setIsRenderingPreview(false);
+      }
+    }, 150);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [selectedTemplateId, templateVars, activeProject]);
+
+  const handleSendTemplate = async (e) => {
+    if (e) e.preventDefault();
+    if (!templateRecipient.trim()) {
+      alert('Please enter a recipient email address.');
+      return;
+    }
+    if (!activeProject?.apiKey) {
+      alert('Please select or create a project with an active API key.');
+      return;
+    }
+
+    try {
+      setIsSendingTemplate(true);
+      setTemplateSendResult(null);
+
+      const payload = {
+        to: templateRecipient.trim(),
+        template: selectedTemplateId,
+        vars: templateVars,
+      };
+
+      if (templateSubjectOverride.trim()) {
+        payload.subject = templateSubjectOverride.trim();
+      }
+
+      const res = await sendEmail(activeProject.apiKey, payload);
+      setTemplateSendResult(res);
+
+      if (res.success) {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.7 },
+        });
+        loadStats(activeProject.apiKey);
+        loadLogs(activeProject.apiKey, 1, logSearch, logStatus);
+      }
+    } catch (err) {
+      setTemplateSendResult({ success: false, error: err.message });
+    } finally {
+      setIsSendingTemplate(false);
+    }
+  };
+
+  const getTemplateSnippet = () => {
+    const key = activeProject?.apiKey || 'gkey_live_...';
+    const rec = templateRecipient || 'user@example.com';
+    const subj = templateSubjectOverride.trim() ? `, "subject": "${templateSubjectOverride.trim()}"` : '';
+
+    if (templateCodeLang === 'curl') {
+      return `curl -X POST https://dakly-engin.vercel.app/api/send \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: ${key}" \\
+  -d '{
+    "to": "${rec}",
+    "template": "${selectedTemplateId}"${subj},
+    "vars": ${JSON.stringify(templateVars, null, 4).replace(/\n/g, '\n    ')}
+  }'`;
+    }
+
+    if (templateCodeLang === 'fetch') {
+      return `const response = await fetch('https://dakly-engin.vercel.app/api/send', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-api-key': '${key}',
+  },
+  body: JSON.stringify({
+    to: '${rec}',
+    template: '${selectedTemplateId}',${templateSubjectOverride.trim() ? `\n    subject: '${templateSubjectOverride.trim()}',` : ''}
+    vars: ${JSON.stringify(templateVars, null, 4).replace(/\n/g, '\n    ')},
+  }),
+});
+
+const data = await response.json();
+console.log('Delivered:', data.trackingId);`;
+    }
+
+    return `// Using Dakly Headless API
+import { sendEmail } from './mailer.js';
+
+await sendEmail({
+  to: '${rec}',
+  template: '${selectedTemplateId}',${templateSubjectOverride.trim() ? `\n  subject: '${templateSubjectOverride.trim()}',` : ''}
+  vars: ${JSON.stringify(templateVars, null, 2).replace(/\n/g, '\n  ')},
+});`;
+  };
 
   async function loadProjects(token) {
     try {
@@ -656,6 +894,16 @@ export default function App() {
               </p>
             </SpotlightCard>
 
+            <SpotlightCard spotlightColor="rgba(59, 130, 246, 0.18)" borderColor="rgba(59, 130, 246, 0.3)" className="p-3.5 space-y-1">
+              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
+                <Mail className="w-4 h-4 text-blue-500" />
+                <span>10. Pre-built Templates & Variable System</span>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                OTP, Welcome, Password Reset, College Notes/PDF, aur Receipts ke ready-made responsive templates. Bas template aur variables pass karein aur dynamic email deliver karein.
+              </p>
+            </SpotlightCard>
+
           </div>
 
           {/* Footer CTA */}
@@ -955,6 +1203,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-2 overflow-x-auto border-t border-slate-200/80 dark:border-white/5 py-1.5">
           {[
             { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+            { id: 'templates', label: 'Email Templates', icon: Mail, badge: 'NEW' },
             { id: 'playground', label: 'Live Playground', icon: PlayCircle },
             { id: 'senders', label: 'Senders & Quotas', icon: Server },
             { id: 'logs', label: 'Audit Logs', icon: FileText },
@@ -966,7 +1215,7 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium flex items-center space-x-2 transition ${
+                className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium flex items-center space-x-2 transition shrink-0 ${
                   isActive
                     ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/60 dark:bg-white/10 dark:text-white dark:border-transparent font-semibold shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5'
@@ -974,6 +1223,11 @@ export default function App() {
               >
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
+                {tab.badge && (
+                  <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-600 text-white shadow-xs">
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -1368,6 +1622,357 @@ export default function App() {
                   </div>
                 </SpotlightCard>
 
+              </div>
+            )}
+
+            {/* TAB: PRE-BUILT EMAIL TEMPLATES & STUDIO */}
+            {activeTab === 'templates' && (
+              <div className="space-y-6">
+                {/* Header Banner */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/10">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                        <Mail className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                        <span>Pre-built Transactional Email Templates</span>
+                      </h2>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60">
+                        5 Ready-to-Use
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                      Zero HTML coding needed. Pass <code className="text-indigo-600 dark:text-indigo-400 font-mono">template</code> &amp; <code className="text-indigo-600 dark:text-indigo-400 font-mono">vars</code> to the API. Dakly automatically interpolates dynamic variables and injects your project's 1:1 brand logo.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        const cur = DEFAULT_TEMPLATES.find((t) => t.id === selectedTemplateId);
+                        if (cur) setTemplateVars({ ...cur.sampleVars });
+                      }}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#12151c] text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition"
+                    >
+                      Reset Variables
+                    </button>
+                  </div>
+                </div>
+
+                {/* 5 Template Selector Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  {DEFAULT_TEMPLATES.map((t) => {
+                    const isSelected = selectedTemplateId === t.id;
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => {
+                          setSelectedTemplateId(t.id);
+                          setTemplateVars({ ...t.sampleVars });
+                          setTemplateSendResult(null);
+                        }}
+                        className={`cursor-pointer rounded-xl p-3.5 border transition relative ${
+                          isSelected
+                            ? 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-500 shadow-sm ring-1 ring-indigo-500'
+                            : 'bg-white dark:bg-[#0c0e14] border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${t.badgeColor}`}>
+                            {t.badge}
+                          </span>
+                          {isSelected && <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold">● Active</span>}
+                        </div>
+                        <div className="text-xs font-bold text-slate-900 dark:text-white leading-tight mb-1">
+                          {t.name}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                          {t.description}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Split Studio: Form / Controls (Left) & Real Device Preview (Right) */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  
+                  {/* Left Column: Variable Editor & Send Test Form */}
+                  <SpotlightCard
+                    spotlightColor="rgba(99, 102, 241, 0.16)"
+                    borderColor="rgba(99, 102, 241, 0.35)"
+                    className="lg:col-span-6 p-5 sm:p-6 space-y-5"
+                  >
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center space-x-2">
+                          <span>Dynamic Variables Editor</span>
+                        </h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Edit variables below — the preview on the right updates instantly in real time.
+                        </p>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        template: "{selectedTemplateId}"
+                      </span>
+                    </div>
+
+                    <form onSubmit={handleSendTemplate} className="space-y-4">
+                      {/* Recipient */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Recipient Email ("to") <span className="text-rose-500">*</span>
+                          </label>
+                          {currentUser?.email && (
+                            <button
+                              type="button"
+                              onClick={() => setTemplateRecipient(currentUser.email)}
+                              className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline"
+                            >
+                              Fill my email ({currentUser.email})
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          type="email"
+                          required
+                          value={templateRecipient}
+                          onChange={(e) => setTemplateRecipient(e.target.value)}
+                          placeholder="e.g. user@gmail.com"
+                          className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                        />
+                      </div>
+
+                      {/* Custom Subject Override (Optional) */}
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                          Custom Subject Override <span className="text-slate-400 font-normal">(Optional — defaults to smart template subject)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={templateSubjectOverride}
+                          onChange={(e) => setTemplateSubjectOverride(e.target.value)}
+                          placeholder={`Default: ${templatePreviewSubject || 'Smart Subject'}`}
+                          className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
+                        />
+                      </div>
+
+                      {/* Template Specific Dynamic Fields */}
+                      <div className="pt-2 border-t border-slate-200 dark:border-white/10 space-y-3">
+                        <div className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-mono">
+                          Template Variables (`vars`)
+                        </div>
+
+                        {DEFAULT_TEMPLATES.find((t) => t.id === selectedTemplateId)?.fields.map((f) => (
+                          <div key={f.key}>
+                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                              {f.label} <span className="text-slate-400 font-mono text-[10px]">(`vars.{f.key}`)</span>
+                            </label>
+                            {f.isTextarea ? (
+                              <textarea
+                                rows={2}
+                                value={templateVars[f.key] || ''}
+                                onChange={(e) =>
+                                  setTemplateVars((prev) => ({
+                                    ...prev,
+                                    [f.key]: e.target.value,
+                                  }))
+                                }
+                                placeholder={f.placeholder}
+                                className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs leading-relaxed"
+                              />
+                            ) : (
+                              <input
+                                type={f.type || 'text'}
+                                value={templateVars[f.key] || ''}
+                                onChange={(e) =>
+                                  setTemplateVars((prev) => ({
+                                    ...prev,
+                                    [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value,
+                                  }))
+                                }
+                                placeholder={f.placeholder}
+                                className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Send Test Button */}
+                      <button
+                        type="submit"
+                        disabled={isSendingTemplate || !activeProject}
+                        className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-500/25 active:scale-[0.98]"
+                      >
+                        {isSendingTemplate ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Delivering Template Email...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" />
+                            <span>Send Live Test Template Email</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
+
+                    {/* Dispatch Response Alert */}
+                    {templateSendResult && (
+                      <div
+                        className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${
+                          templateSendResult.success
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300'
+                        }`}
+                      >
+                        <div className="font-bold flex items-center justify-between">
+                          <span>{templateSendResult.success ? '✅ Email Delivered Successfully' : '❌ Dispatch Failed'}</span>
+                          {templateSendResult.executionTimeMs && (
+                            <span className="font-mono text-[10px]">{templateSendResult.executionTimeMs}ms</span>
+                          )}
+                        </div>
+                        {templateSendResult.trackingId && (
+                          <div className="font-mono text-[11px] text-slate-600 dark:text-slate-400">
+                            Tracking ID: <span className="font-semibold">{templateSendResult.trackingId}</span>
+                          </div>
+                        )}
+                        {templateSendResult.sender && (
+                          <div className="font-mono text-[11px] text-slate-600 dark:text-slate-400">
+                            Sent From: {templateSendResult.sender}
+                          </div>
+                        )}
+                        {templateSendResult.error && (
+                          <div className="text-[11px]">{templateSendResult.error}</div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Code Snippet Box */}
+                    <div className="pt-3 border-t border-slate-200 dark:border-white/10 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1.5">
+                          {['curl', 'fetch', 'node'].map((lang) => (
+                            <button
+                              key={lang}
+                              type="button"
+                              onClick={() => setTemplateCodeLang(lang)}
+                              className={`px-2.5 py-1 text-[11px] font-mono rounded-md transition ${
+                                templateCodeLang === lang
+                                  ? 'bg-indigo-600 text-white font-semibold'
+                                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-white/5'
+                              }`}
+                            >
+                              {lang === 'curl' ? 'cURL' : lang === 'fetch' ? 'JavaScript' : 'Node.js'}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(getTemplateSnippet());
+                            setCopiedTemplateCode(true);
+                            setTimeout(() => setCopiedTemplateCode(false), 2000);
+                          }}
+                          className="inline-flex items-center space-x-1 text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-mono"
+                        >
+                          {copiedTemplateCode ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedTemplateCode ? 'Copied!' : 'Copy Code'}</span>
+                        </button>
+                      </div>
+
+                      <pre className="p-3 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto max-h-44 leading-relaxed shadow-inner">
+                        {getTemplateSnippet()}
+                      </pre>
+                    </div>
+                  </SpotlightCard>
+
+                  {/* Right Column: Live Responsive Email Preview Device */}
+                  <SpotlightCard
+                    spotlightColor="rgba(16, 185, 129, 0.16)"
+                    borderColor="rgba(16, 185, 129, 0.35)"
+                    className="lg:col-span-6 p-5 sm:p-6 space-y-4"
+                  >
+                    {/* Device Bar & Header Info */}
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                          <Eye className="w-4 h-4 text-emerald-500" />
+                          <span>Live In-Memory Device Preview</span>
+                          {isRenderingPreview && <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />}
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-0.5 max-w-xs truncate">
+                          Subject: <span className="font-medium text-slate-700 dark:text-slate-300">{templateSubjectOverride || templatePreviewSubject || 'Verification Code'}</span>
+                        </div>
+                      </div>
+
+                      {/* Device Switcher */}
+                      <div className="flex items-center space-x-1 bg-slate-100 dark:bg-[#12151c] p-1 rounded-lg border border-slate-200 dark:border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDevice('desktop')}
+                          className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition ${
+                            previewDevice === 'desktop'
+                              ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-xs font-semibold'
+                              : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                          }`}
+                        >
+                          🖥️ Desktop
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDevice('mobile')}
+                          className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition ${
+                            previewDevice === 'mobile'
+                              ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-xs font-semibold'
+                              : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                          }`}
+                        >
+                          📱 Mobile
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* From Meta Bar */}
+                    <div className="flex items-center justify-between text-[11px] px-3 py-2 rounded-lg bg-slate-100/70 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-mono">
+                      <div className="flex items-center space-x-2 truncate">
+                        <span>From:</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                          "{activeProject?.senderDisplayName || activeProject?.name || 'Dakly Service'}" &lt;{activeProject?.senderEmail || 'sender@gmail.com'}&gt;
+                        </span>
+                      </div>
+                      {activeProject?.brandLogo?.data && (
+                        <span className="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold shrink-0">
+                          1:1 Logo Active
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Sandboxed Iframe Container */}
+                    <div className="flex justify-center bg-slate-100 dark:bg-[#07080c] p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden shadow-inner min-h-[560px]">
+                      <iframe
+                        title="Template Live Preview"
+                        srcDoc={templatePreviewHtml || '<div style="padding: 40px; text-align: center; color: #64748b; font-family: sans-serif;">Rendering preview...</div>'}
+                        style={{
+                          width: previewDevice === 'mobile' ? '375px' : '100%',
+                          height: '560px',
+                          border: 'none',
+                          borderRadius: '12px',
+                          background: '#ffffff',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                          transition: 'width 0.2s ease',
+                        }}
+                      />
+                    </div>
+
+                    <div className="text-[11px] text-slate-500 text-center font-mono">
+                      ⚡ Fully responsive &bull; Inline CSS &bull; Gmail, iOS &amp; Android tested
+                    </div>
+                  </SpotlightCard>
+
+                </div>
               </div>
             )}
 
@@ -1796,6 +2401,7 @@ export default function App() {
                       <thead className="bg-slate-100/80 dark:bg-[#12151c]/80 border-b border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 uppercase tracking-wider font-mono">
                         <tr>
                           <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4">Template</th>
                           <th className="py-3 px-4">Recipient</th>
                           <th className="py-3 px-4">Subject</th>
                           <th className="py-3 px-4">Sender</th>
@@ -1807,7 +2413,7 @@ export default function App() {
                       <tbody className="divide-y divide-slate-100 dark:divide-white/5 font-sans">
                         {logs.length === 0 ? (
                           <tr>
-                            <td colSpan={7} className="text-center py-8 text-slate-500">
+                            <td colSpan={8} className="text-center py-8 text-slate-500">
                               No logs found for this project.
                             </td>
                           </tr>
@@ -1824,6 +2430,15 @@ export default function App() {
                                 >
                                   {l.status}
                                 </span>
+                              </td>
+                              <td className="py-3 px-4 font-mono text-[11px]">
+                                {l.template ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
+                                    🏷️ {l.template}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 dark:text-slate-600 text-[10px]">custom</span>
+                                )}
                               </td>
                               <td className="py-3 px-4 font-mono font-medium text-slate-900 dark:text-slate-200">{l.to}</td>
                               <td className="py-3 px-4 text-slate-700 dark:text-slate-300 max-w-xs truncate">{l.subject}</td>

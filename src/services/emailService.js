@@ -88,10 +88,11 @@ function isQuotaOrAuthLimitError(errorMsg = '') {
  * @param {string} [options.html] - Custom HTML content provided by caller project
  * @param {string} [options.text] - Plain text fallback
  * @param {string} [options.otp] - Convenience OTP string if no full HTML provided
+ * @param {string} [options.template] - Pre-built template ID if used
  * @param {Array} [options.attachments] - Array of attachments (URLs, base64, or files)
  * @returns {Promise<{ success: boolean, trackingId: string, status: string, error?: string, sender?: string }>}
  */
-async function sendEmail({ project, to, subject, html, text, otp, attachments = [] }) {
+async function sendEmail({ project, to, subject, html, text, otp, template, attachments = [] }) {
   const startTime = Date.now();
   const trackingId = generateTrackingId();
 
@@ -107,6 +108,7 @@ async function sendEmail({ project, to, subject, html, text, otp, attachments = 
       to,
       subject: subject || 'No Subject',
       status: 'FAILED',
+      template: template || null,
       error: errorMsg,
       hasAttachments: attachments.length > 0,
       attachmentsCount: attachments.length,
@@ -134,6 +136,7 @@ async function sendEmail({ project, to, subject, html, text, otp, attachments = 
       to,
       subject: subject || 'No Subject',
       status: 'FAILED',
+      template: template || null,
       error: quotaError,
       hasAttachments: processedAttachments.length > 0,
       attachmentsCount: processedAttachments.length,
@@ -231,6 +234,7 @@ async function sendEmail({ project, to, subject, html, text, otp, attachments = 
         to,
         subject: mailOptions.subject,
         status: 'DELIVERED',
+        template: template || null,
         hasAttachments: processedAttachments.length > 0,
         attachmentsCount: processedAttachments.length,
         executionTimeMs,
@@ -287,6 +291,7 @@ async function sendEmail({ project, to, subject, html, text, otp, attachments = 
         to,
         subject: finalSubject || `${project.name} Notification`,
         status: 'FAILED',
+        template: template || null,
         error: error.message,
         hasAttachments: processedAttachments.length > 0,
         attachmentsCount: processedAttachments.length,
