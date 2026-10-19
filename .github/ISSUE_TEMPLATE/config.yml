@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "💬 Community & Q&A Discussions"
+    url: "https://github.com/parthpatil1234p-svg/Dakly/discussions"
+    about: "Ask questions, share templates, or discuss how to use Dakly."
+  - name: "🔒 Security Vulnerability Report"
+    url: "https://github.com/parthpatil1234p-svg/Dakly/security/advisories/new"
+    about: "Privately disclose a security issue to the core maintainers."
+  - name: "📖 Official Documentation"
+    url: "https://github.com/parthpatil1234p-svg/Dakly#readme"
+    about: "Read setup guides, REST API endpoints, and SDK references."

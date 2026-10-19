@@ -5,8 +5,19 @@
 
 [![CI Pipeline](https://github.com/parthpatil1234p-svg/Dakly/actions/workflows/ci.yml/badge.svg)](https://github.com/parthpatil1234p-svg/Dakly/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-20.x%20%7C%2022.x-green.svg)](https://nodejs.org)
-[![Security: AES-256-GCM](https://img.shields.io/badge/Security-AES--256--GCM-red.svg)](https://nodejs.org/api/crypto.html)
+[![Docs](https://img.shields.io/badge/docs-Architecture%20%7C%20API%20%7C%20Webhooks%20%7C%20SDK-purple.svg)](docs/)
+[![Contributing](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Security Policy](https://img.shields.io/badge/Security-Policy-red.svg)](SECURITY.md)
+
+---
+
+### 📚 Official Documentation
+- 🏛️ **[System Architecture](docs/ARCHITECTURE.md)**: Deep dive into pacing, queues, encryption & data models.
+- 📡 **[REST API Reference](docs/API_REFERENCE.md)**: Comprehensive endpoint catalog, schemas & status codes.
+- 🔔 **[Webhooks Guide](docs/WEBHOOKS.md)**: Event catalog, HMAC-SHA256 signature verification & multi-language examples.
+- ⚡ **[Developer SDK Guide](docs/SDK_GUIDE.md)**: Node.js (`npm i dakly`) & Python (`pip install dakly`) setup.
+- 🤝 **[Contributing Guidelines](CONTRIBUTING.md)**: Dev setup, testing workflows, and PR submission rules.
+- 📜 **[Changelog](CHANGELOG.md)**: Semantic release history & feature updates.
 
 ---
 
