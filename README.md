@@ -41,7 +41,8 @@ By plugging Dakly into your project, your application instantly gets an enterpri
 | 📧 **Pre-built Templates & Variable Engine** | 5 built-in responsive templates (OTP, Welcome, Password Reset, College Notes, Receipts) with dynamic `vars` | Zero HTML design work needed; dynamic interpolation with project branding |
 | 📊 **Open & Click Tracking Analytics** | 1x1 zero-latency transparent pixel + phishing-safe link redirects + device breakdown (Mobile vs Desktop) | Real-time engagement telemetry & webhooks (`email.opened`, `email.clicked`) without 3rd-party dependencies |
 | 🛡️ **Smart Warm-up & Bounce Protection** | Progressive 6-day ramp ladder (25 -> 500) + automatic hard-bounce suppression list | Protects Gmail account health, sender reputation, and avoids Google SMTP rate bans |
-| 💻 **Zero Client Dependencies** | Integrates using standard native `fetch()` without installing `nodemailer` or SDKs | Keeps your client application lightweight, clean, and bug-free |
+| ⚡ **Official Zero-Dependency SDKs** | Official Node.js/TypeScript (`npm i dakly`) and Python (`pip install dakly`) libraries + single-file drop-ins | Type-safe autocomplete, 1-liner OTPs, auto-retries, and instant error handling |
+| 💻 **Raw Fetch / Zero Overhead Option** | Full headless flexibility: send emails using raw `fetch()` or `curl` with 0 package dependencies | Keeps your client application lightweight, clean, and bug-free |
 
 ---
 
@@ -151,9 +152,79 @@ Please execute this integration in my project by following these steps:
 
 ---
 
-## 📦 Step 2: Manual Implementation (Code Snippets)
+## ⚡ Official Dakly SDK (Node.js, TypeScript & Python)
 
-If you prefer writing the integration manually without an AI assistant, you don't need to install `nodemailer` or configure SMTP. Just make a standard `fetch` or HTTP call in your language of choice.
+Dakly provides zero-dependency official client libraries with TypeScript autocomplete, automatic retry, and built-in bounce suppression error handling.
+
+### 📦 Node.js / TypeScript (`npm i dakly`)
+```bash
+npm install dakly
+```
+
+```javascript
+import { Dakly, DaklySuppressedError } from 'dakly';
+
+const dakly = new Dakly(process.env.DAKLY_API_KEY || 'gkey_live_...');
+
+// 1. Send OTP Verification Code (1-Liner)
+const otpRes = await dakly.sendOtp({
+  to: 'user@example.com',
+  code: '849201',
+  appName: 'CampusPortal',
+  expiresInMinutes: 10
+});
+console.log('Delivered! Tracking ID:', otpRes.trackingId);
+
+// 2. Pre-Built Responsive Email Templates (Welcome, Reset, Invoice, Notes)
+await dakly.sendWelcome({
+  to: 'founder@startup.com',
+  name: 'Rahul Sharma',
+  appName: 'Dakly Cloud',
+  loginUrl: 'https://dakly.vercel.app/login'
+});
+
+// 3. College Notes & PDF Attachment Delivery
+await dakly.sendNotes({
+  to: 'student@college.edu',
+  studentName: 'Amit',
+  subjectName: 'Computer Networks',
+  notesTitle: 'Unit 3: TCP Congestion Control',
+  downloadUrl: 'https://college.edu/notes/cn-unit3.pdf',
+  attachments: [{ filename: 'CN_Notes.pdf', path: 'https://college.edu/notes/cn-unit3.pdf' }]
+});
+
+// 4. Ping Connection & Live Quota
+const ping = await dakly.ping();
+console.log('Remaining emails today:', ping.capacity.remainingToday, '/', ping.capacity.totalDailyQuota);
+```
+
+### 🐍 Python 3.8+ (`pip install dakly`)
+```bash
+pip install dakly
+```
+
+```python
+from dakly import Dakly, DaklySuppressedError
+
+dakly = Dakly("gkey_live_...")
+
+# 1-Liner OTP
+res = dakly.send_otp(to="student@example.com", code="849201", app_name="StudyHub")
+print("Delivered! Tracking ID:", res["trackingId"])
+
+# Welcome Onboarding
+dakly.send_welcome(to="newuser@example.com", name="Rahul", app_name="StudyHub")
+
+# Health Ping
+ping = dakly.ping()
+print("Remaining quota today:", ping["capacity"]["remainingToday"])
+```
+
+---
+
+## 📦 Step 2: Raw Fetch / HTTP Implementation (Zero Dependencies)
+
+If you prefer calling the raw REST API without installing an SDK, you don't need `nodemailer` or SMTP. Just make a standard `fetch` or HTTP call in your language of choice.
 
 ### 1. Node.js / Express / Next.js (JavaScript / TypeScript)
 

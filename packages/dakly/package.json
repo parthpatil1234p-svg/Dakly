@@ -1,0 +1,54 @@
+{
+  "name": "dakly",
+  "version": "1.0.0",
+  "description": "Official Node.js & TypeScript SDK for Dakly - The High-Performance Free Gmail Microservice for Developers",
+  "main": "./index.js",
+  "module": "./index.mjs",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.mjs",
+    "index.d.ts",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node ../../tests/testSdk.js"
+  },
+  "keywords": [
+    "dakly",
+    "gmail",
+    "smtp",
+    "microservice",
+    "email",
+    "transactional-email",
+    "otp",
+    "nodemailer",
+    "email-api",
+    "sdk",
+    "developer-tools"
+  ],
+  "author": "Dakly Technologies (https://dakly.vercel.app)",
+  "license": "MIT",
+  "homepage": "https://dakly.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/parthpatil1234p-svg/Dakly.git",
+    "directory": "packages/dakly"
+  },
+  "bugs": {
+    "url": "https://github.com/parthpatil1234p-svg/Dakly/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

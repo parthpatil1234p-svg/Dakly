@@ -265,7 +265,7 @@ export default function App() {
   const [previewDevice, setPreviewDevice] = useState('desktop'); // 'desktop' | 'mobile'
   const [isSendingTemplate, setIsSendingTemplate] = useState(false);
   const [templateSendResult, setTemplateSendResult] = useState(null);
-  const [templateCodeLang, setTemplateCodeLang] = useState('curl'); // 'curl' | 'fetch' | 'node'
+  const [templateCodeLang, setTemplateCodeLang] = useState('node'); // 'node' | 'python' | 'fetch' | 'curl'
   const [copiedTemplateCode, setCopiedTemplateCode] = useState(false);
 
   // Modals
@@ -291,8 +291,15 @@ export default function App() {
   const [isAddingSuppression, setIsAddingSuppression] = useState(false);
   const [suppressionActionMsg, setSuppressionActionMsg] = useState('');
 
-  // Snippets
+  // Snippets & SDK Showcase
   const [snippetLang, setSnippetLang] = useState('node');
+  const [copiedSnippetKey, setCopiedSnippetKey] = useState(null);
+
+  const handleCopySnippet = (key, text) => {
+    navigator.clipboard.writeText(text);
+    setCopiedSnippetKey(key);
+    setTimeout(() => setCopiedSnippetKey(null), 2000);
+  };
 
   // Verify Auth on Mount
   useEffect(() => {
@@ -419,14 +426,34 @@ const data = await response.json();
 console.log('Delivered:', data.trackingId);`;
     }
 
-    return `// Using Dakly Headless API
-import { sendEmail } from './mailer.js';
+    if (templateCodeLang === 'python') {
+      return `# pip install dakly
+from dakly import Dakly
 
-await sendEmail({
+dakly = Dakly('${key}')
+
+res = dakly.send_template(
+    to='${rec}',
+    template='${selectedTemplateId}',${templateSubjectOverride.trim() ? `\n    subject='${templateSubjectOverride.trim()}',` : ''}
+    vars=${JSON.stringify(templateVars, null, 4).replace(/\n/g, '\n    ')}
+)
+
+print('Delivered! Tracking ID:', res['trackingId'])`;
+    }
+
+    // Default: 'node' (Official Node.js / TypeScript SDK - npm i dakly)
+    return `// npm i dakly
+import { Dakly } from 'dakly';
+
+const dakly = new Dakly('${key}');
+
+const result = await dakly.sendTemplate({
   to: '${rec}',
   template: '${selectedTemplateId}',${templateSubjectOverride.trim() ? `\n  subject: '${templateSubjectOverride.trim()}',` : ''}
   vars: ${JSON.stringify(templateVars, null, 2).replace(/\n/g, '\n  ')},
-});`;
+});
+
+console.log('Delivered! Tracking ID:', result.trackingId);`;
   };
 
   async function loadProjects(token) {
@@ -2174,7 +2201,7 @@ await sendEmail({
                     <div className="pt-3 border-t border-slate-200 dark:border-white/10 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-1.5">
-                          {['curl', 'fetch', 'node'].map((lang) => (
+                          {['node', 'python', 'fetch', 'curl'].map((lang) => (
                             <button
                               key={lang}
                               type="button"
@@ -2185,7 +2212,7 @@ await sendEmail({
                                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-white/5'
                               }`}
                             >
-                              {lang === 'curl' ? 'cURL' : lang === 'fetch' ? 'JavaScript' : 'Node.js'}
+                              {lang === 'node' ? 'Node SDK' : lang === 'python' ? 'Python SDK' : lang === 'fetch' ? 'Fetch API' : 'cURL'}
                             </button>
                           ))}
                         </div>
@@ -2856,52 +2883,232 @@ await sendEmail({
               </div>
             )}
 
-            {/* TAB 5: SNIPPETS */}
+            {/* TAB 5: SNIPPETS & SDK SHOWCASE */}
             {activeTab === 'snippets' && (
               <div className="space-y-6">
-                <div className="pb-2 border-b border-slate-200 dark:border-white/10">
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white">Client Snippets (Pre-configured)</h2>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Copy and paste these snippets into your College Notes or PDF app.</p>
+                {/* Header & Quick Install Banners */}
+                <div className="pb-4 border-b border-slate-200 dark:border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
+                        ⚡ Official Client Libraries
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                        Zero Dependencies
+                      </span>
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1.5">Official Dakly SDK & Code Snippets</h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                      Type-safe, production-ready client libraries for Node.js, Next.js, and Python with automatic retry and bounce suppression protection.
+                    </p>
+                  </div>
+
+                  {/* Fast Install Cards */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 font-mono text-xs shadow-sm">
+                      <Terminal className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>npm i dakly</span>
+                      <button
+                        onClick={() => handleCopySnippet('install_npm', 'npm i dakly')}
+                        className="ml-2 text-slate-400 hover:text-white transition p-1 hover:bg-white/10 rounded"
+                        title="Copy NPM command"
+                      >
+                        {copiedSnippetKey === 'install_npm' ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 font-mono text-xs shadow-sm">
+                      <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>pip install dakly</span>
+                      <button
+                        onClick={() => handleCopySnippet('install_pip', 'pip install dakly')}
+                        className="ml-2 text-slate-400 hover:text-white transition p-1 hover:bg-white/10 rounded"
+                        title="Copy Pip command"
+                      >
+                        {copiedSnippetKey === 'install_pip' ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex space-x-2 border-b border-slate-200 dark:border-white/10 pb-2">
-                  {['node', 'curl', 'python', 'nextjs'].map((lang) => (
+                {/* Language Switcher Tabs */}
+                <div className="flex space-x-2 border-b border-slate-200 dark:border-white/10 pb-2 overflow-x-auto">
+                  {[
+                    { id: 'node', label: 'Node.js / TS (npm i dakly)', badge: 'Recommended ⭐' },
+                    { id: 'python', label: 'Python (pip install dakly)' },
+                    { id: 'nextjs', label: 'Next.js App Router' },
+                    { id: 'express', label: 'Express.js Backend' },
+                    { id: 'fetch', label: 'Raw JavaScript fetch' },
+                    { id: 'curl', label: 'cURL CLI' },
+                  ].map((tab) => (
                     <button
-                      key={lang}
-                      onClick={() => setSnippetLang(lang)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                        snippetLang === lang
-                          ? 'bg-indigo-600 text-white shadow-sm'
+                      key={tab.id}
+                      onClick={() => setSnippetLang(tab.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 shrink-0 ${
+                        snippetLang === tab.id
+                          ? 'bg-indigo-600 text-white shadow-sm font-semibold'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5'
                       }`}
                     >
-                      {lang === 'node' ? 'Node.js / Express' : lang === 'curl' ? 'cURL' : lang === 'python' ? 'Python' : 'Next.js App Router'}
+                      <span>{tab.label}</span>
+                      {tab.badge && (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">
+                          {tab.badge}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
 
+                {/* 1. Quick Setup & Ping */}
                 <SpotlightCard
                   spotlightColor="rgba(99, 102, 241, 0.16)"
                   borderColor="rgba(99, 102, 241, 0.35)"
                   className="p-5 space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-900 dark:text-white">🔐 Send OTP Verification Code</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white">🚀 1. Client Setup & Quota Diagnostics</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Ping & Authenticate</span>
+                    </div>
                     <button
                       onClick={() => {
-                        const code = document.getElementById('snippetOtpCode').innerText;
-                        navigator.clipboard.writeText(code);
-                        alert('Copied snippet!');
+                        const code = document.getElementById('snippetSetupCode').innerText;
+                        handleCopySnippet('setup', code);
                       }}
                       className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
                     >
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Copy</span>
+                      {copiedSnippetKey === 'setup' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedSnippetKey === 'setup' ? 'Copied!' : 'Copy Snippet'}</span>
+                    </button>
+                  </div>
+                  <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
+                    <code id="snippetSetupCode">
+{snippetLang === 'node' && `// npm i dakly
+import { Dakly } from 'dakly';
+
+// Initialize with your Project API Key (or set process.env.DAKLY_API_KEY)
+const dakly = new Dakly('${activeProject?.apiKey || 'gkey_live_...'}');
+
+// Test connection and check remaining quota for today
+const ping = await dakly.ping();
+console.log('Connected to:', ping.project);
+console.log('Remaining Today:', ping.capacity.remainingToday, '/', ping.capacity.totalDailyQuota);`}
+{snippetLang === 'python' && `# pip install dakly
+from dakly import Dakly
+
+# Initialize client
+dakly = Dakly("${activeProject?.apiKey || 'gkey_live_...'}")
+
+# Test connection and check remaining quota
+ping = dakly.ping()
+print("Connected to:", ping["project"])
+print("Remaining Today:", ping["capacity"]["remainingToday"], "/", ping["capacity"]["totalDailyQuota"])`}
+{snippetLang === 'nextjs' && `// lib/dakly.ts
+import { Dakly } from 'dakly';
+
+// Re-usable singleton instance for Next.js Edge & Node.js runtimes
+export const dakly = new Dakly(process.env.DAKLY_API_KEY || '${activeProject?.apiKey || 'gkey_live_...'}');`}
+{snippetLang === 'express' && `// config/mailer.js
+const { Dakly } = require('dakly');
+
+const dakly = new Dakly(process.env.DAKLY_API_KEY || '${activeProject?.apiKey || 'gkey_live_...'}');
+
+module.exports = { dakly };`}
+{snippetLang === 'fetch' && `const response = await fetch('${API_BASE_URL}/api/ping', {
+  headers: {
+    'x-api-key': '${activeProject?.apiKey || 'gkey_live_...'}'
+  }
+});
+const ping = await response.json();
+console.log('Project:', ping.project, '| Remaining:', ping.capacity.remainingToday);`}
+{snippetLang === 'curl' && `curl -H "x-api-key: ${activeProject?.apiKey || 'gkey_live_...'}" \\
+  "${API_BASE_URL}/api/ping"`}
+                    </code>
+                  </pre>
+                </SpotlightCard>
+
+                {/* 2. One-Liner OTP Verification */}
+                <SpotlightCard
+                  spotlightColor="rgba(245, 158, 11, 0.16)"
+                  borderColor="rgba(245, 158, 11, 0.35)"
+                  className="p-5 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white">🔐 2. One-Liner OTP Verification Code</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">Fast 1-Liner</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const code = document.getElementById('snippetOtpCode').innerText;
+                        handleCopySnippet('otp', code);
+                      }}
+                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
+                    >
+                      {copiedSnippetKey === 'otp' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedSnippetKey === 'otp' ? 'Copied!' : 'Copy Snippet'}</span>
                     </button>
                   </div>
                   <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
                     <code id="snippetOtpCode">
-{snippetLang === 'node' && `const response = await fetch('${API_BASE_URL}/api/send', {
+{snippetLang === 'node' && `// Sends pre-rendered security OTP email with zero HTML coding
+const result = await dakly.sendOtp({
+  to: 'student@example.com',
+  code: '849201',
+  appName: '${activeProject?.name || 'Dakly App'}',
+  expiresInMinutes: 10
+});
+
+console.log('Delivered in:', result.executionTimeMs, 'ms | Tracking ID:', result.trackingId);`}
+{snippetLang === 'python' && `# Sends pre-rendered security OTP email
+res = dakly.send_otp(
+    to="student@example.com",
+    code="849201",
+    app_name="${activeProject?.name || 'Dakly App'}",
+    expires_in_minutes=10
+)
+print("Delivered in:", res.get("executionTimeMs"), "ms | Tracking ID:", res["trackingId"])`}
+{snippetLang === 'nextjs' && `// app/api/auth/send-otp/route.ts
+import { NextResponse } from 'next/server';
+import { dakly } from '@/lib/dakly';
+
+export async function POST(req: Request) {
+  const { email } = await req.json();
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const result = await dakly.sendOtp({
+    to: email,
+    code,
+    appName: '${activeProject?.name || 'Dakly SaaS'}',
+    expiresInMinutes: 10
+  });
+
+  return NextResponse.json({ success: true, trackingId: result.trackingId });
+}`}
+{snippetLang === 'express' && `// routes/auth.js
+app.post('/api/auth/send-otp', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    const result = await dakly.sendOtp({
+      to: email,
+      code,
+      appName: '${activeProject?.name || 'Backend App'}',
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});`}
+{snippetLang === 'fetch' && `const response = await fetch('${API_BASE_URL}/api/send', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -2918,51 +3125,212 @@ console.log('Delivered in:', result.executionTimeMs, 'ms');`}
   -H "Content-Type: application/json" \\
   -H "x-api-key: ${activeProject?.apiKey || 'gkey_live_...'}" \\
   -d '{"to": "student@example.com", "otp": "849201"}'`}
-{snippetLang === 'python' && `import requests
-res = requests.post(
-    "${API_BASE_URL}/api/send",
-    headers={"x-api-key": "${activeProject?.apiKey || 'gkey_live_...'}"},
-    json={"to": "student@example.com", "otp": "849201"}
-)
-print(res.json())`}
-{snippetLang === 'nextjs' && `// app/api/auth/route.ts
-import { NextResponse } from 'next/server';
-
-export async function POST(req: Request) {
-  const { email, otp } = await req.json();
-  const res = await fetch('${API_BASE_URL}/api/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.DAKLY_API_KEY! },
-    body: JSON.stringify({ to: email, otp })
-  });
-  return NextResponse.json(await res.json());
-}`}
                     </code>
                   </pre>
                 </SpotlightCard>
 
+                {/* 3. Pre-Built Email Templates */}
                 <SpotlightCard
                   spotlightColor="rgba(16, 185, 129, 0.16)"
                   borderColor="rgba(16, 185, 129, 0.35)"
                   className="p-5 space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-900 dark:text-white">📎 Send PDF Notes Attachment</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white">📧 3. Pre-Built Responsive Templates (Welcome, Reset, Invoice)</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">Zero HTML Required</span>
+                    </div>
                     <button
                       onClick={() => {
-                        const code = document.getElementById('snippetPdfCode').innerText;
-                        navigator.clipboard.writeText(code);
-                        alert('Copied snippet!');
+                        const code = document.getElementById('snippetTemplatesCode').innerText;
+                        handleCopySnippet('templates', code);
                       }}
                       className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
                     >
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Copy</span>
+                      {copiedSnippetKey === 'templates' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedSnippetKey === 'templates' ? 'Copied!' : 'Copy Snippet'}</span>
+                    </button>
+                  </div>
+                  <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
+                    <code id="snippetTemplatesCode">
+{snippetLang === 'node' && `// 1. Welcome / Onboarding Email
+await dakly.sendWelcome({
+  to: 'founder@startup.com',
+  name: 'Rahul Sharma',
+  appName: '${activeProject?.name || 'CloudPortal'}',
+  loginUrl: 'https://myapp.com/login'
+});
+
+// 2. Password Reset Link with Token
+await dakly.sendPasswordReset({
+  to: 'user@example.com',
+  name: 'Priya',
+  resetUrl: 'https://myapp.com/reset-password?token=sec_9841',
+  expiresInMinutes: 15
+});
+
+// 3. Billing Invoice / Receipt
+await dakly.sendInvoice({
+  to: 'client@company.com',
+  invoiceNumber: 'INV-2026-042',
+  amount: '$149.00',
+  dueDate: 'Oct 31, 2026',
+  downloadUrl: 'https://myapp.com/invoices/042.pdf'
+});`}
+{snippetLang === 'python' && `# 1. Welcome / Onboarding Email
+dakly.send_welcome(
+    to="founder@startup.com",
+    name="Rahul Sharma",
+    app_name="${activeProject?.name || 'CloudPortal'}",
+    login_url="https://myapp.com/login"
+)
+
+# 2. Password Reset Link
+dakly.send_password_reset(
+    to="user@example.com",
+    name="Priya",
+    reset_url="https://myapp.com/reset-password?token=sec_9841",
+    expires_in_minutes=15
+)
+
+# 3. Invoice / Receipt
+dakly.send_invoice(
+    to="client@company.com",
+    invoice_number="INV-2026-042",
+    amount="$149.00",
+    due_date="Oct 31, 2026"
+)`}
+{snippetLang === 'nextjs' && `// app/api/auth/welcome/route.ts
+import { NextResponse } from 'next/server';
+import { dakly } from '@/lib/dakly';
+
+export async function POST(req: Request) {
+  const { email, name } = await req.json();
+
+  const result = await dakly.sendWelcome({
+    to: email,
+    name,
+    appName: 'SaaS Platform',
+    loginUrl: 'https://mysaas.com/dashboard'
+  });
+
+  return NextResponse.json(result);
+}`}
+{snippetLang === 'express' && `// Express Route for Welcome Email
+app.post('/api/welcome', async (req, res) => {
+  const result = await dakly.sendWelcome({
+    to: req.body.email,
+    name: req.body.name,
+    appName: '${activeProject?.name || 'Our Service'}',
+    loginUrl: 'https://myapp.com/login'
+  });
+  res.json(result);
+});`}
+{snippetLang === 'fetch' && `await fetch('${API_BASE_URL}/api/send', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'x-api-key': '${activeProject?.apiKey || 'gkey_live_...'}' },
+  body: JSON.stringify({
+    to: 'founder@startup.com',
+    template: 'welcome',
+    vars: { name: 'Rahul', appName: 'MySaaS', loginUrl: 'https://mysaas.com/login' }
+  })
+});`}
+{snippetLang === 'curl' && `curl -X POST "${API_BASE_URL}/api/send" \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: ${activeProject?.apiKey || 'gkey_live_...'}" \\
+  -d '{
+    "to": "founder@startup.com",
+    "template": "welcome",
+    "vars": {"name": "Rahul", "appName": "MySaaS", "loginUrl": "https://mysaas.com/login"}
+  }'`}
+                    </code>
+                  </pre>
+                </SpotlightCard>
+
+                {/* 4. College Lecture Notes & PDF Attachments */}
+                <SpotlightCard
+                  spotlightColor="rgba(59, 130, 246, 0.16)"
+                  borderColor="rgba(59, 130, 246, 0.35)"
+                  className="p-5 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white">📎 4. College Notes & PDF Attachment Delivery</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">15MB Max Support</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const code = document.getElementById('snippetPdfCode').innerText;
+                        handleCopySnippet('pdf', code);
+                      }}
+                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
+                    >
+                      {copiedSnippetKey === 'pdf' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedSnippetKey === 'pdf' ? 'Copied!' : 'Copy Snippet'}</span>
                     </button>
                   </div>
                   <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
                     <code id="snippetPdfCode">
-{snippetLang === 'node' && `const response = await fetch('${API_BASE_URL}/api/send', {
+{snippetLang === 'node' && `// College Notes Delivery with PDF attachment and dynamic variables
+const result = await dakly.sendNotes({
+  to: 'student@college.edu',
+  studentName: 'Amit Verma',
+  subjectName: 'Computer Networks',
+  notesTitle: 'Unit 3: TCP Flow & Congestion Control',
+  downloadUrl: 'https://college.edu/cdn/cn-unit3.pdf',
+  attachments: [
+    {
+      filename: 'Computer_Networks_Unit3.pdf',
+      path: 'https://college.edu/cdn/cn-unit3.pdf' // or local path / base64 content
+    }
+  ]
+});
+
+console.log('Delivered PDF Notes! Tracking ID:', result.trackingId);`}
+{snippetLang === 'python' && `# College Notes delivery with PDF attachment
+res = dakly.send_notes(
+    to="student@college.edu",
+    student_name="Amit Verma",
+    subject_name="Computer Networks",
+    notes_title="Unit 3: TCP Flow & Congestion Control",
+    download_url="https://college.edu/cdn/cn-unit3.pdf",
+    attachments=[
+        {
+            "filename": "Computer_Networks_Unit3.pdf",
+            "path": "https://college.edu/cdn/cn-unit3.pdf"
+        }
+    ]
+)
+print("Delivered PDF Notes! Tracking ID:", res["trackingId"])`}
+{snippetLang === 'nextjs' && `// app/api/send-notes/route.ts
+import { NextResponse } from 'next/server';
+import { dakly } from '@/lib/dakly';
+
+export async function POST(req: Request) {
+  const { studentEmail, subject, title, pdfUrl } = await req.json();
+
+  const result = await dakly.sendNotes({
+    to: studentEmail,
+    subjectName: subject,
+    notesTitle: title,
+    downloadUrl: pdfUrl,
+    attachments: [{ filename: \`\${title}.pdf\`, path: pdfUrl }]
+  });
+
+  return NextResponse.json(result);
+}`}
+{snippetLang === 'express' && `app.post('/api/notes/deliver', async (req, res) => {
+  const { to, subjectName, notesTitle, pdfUrl } = req.body;
+  const result = await dakly.sendNotes({
+    to,
+    subjectName,
+    notesTitle,
+    downloadUrl: pdfUrl,
+    attachments: [{ filename: \`\${notesTitle}.pdf\`, path: pdfUrl }]
+  });
+  res.json(result);
+});`}
+{snippetLang === 'fetch' && `const response = await fetch('${API_BASE_URL}/api/send', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -2970,12 +3338,12 @@ export async function POST(req: Request) {
   },
   body: JSON.stringify({
     to: 'student@example.com',
-    subject: 'College Lecture Notes Unit 1',
+    subject: 'College Lecture Notes Unit 3',
     html: '<h3>Your requested notes are attached.</h3>',
     attachments: [
       {
-        filename: 'College_Notes_Unit1.pdf',
-        url: 'https://example.com/files/unit1.pdf'
+        filename: 'College_Notes_Unit3.pdf',
+        path: 'https://example.com/files/unit3.pdf'
       }
     ]
   })
@@ -2989,37 +3357,114 @@ console.log('Result:', result.status, result.trackingId);`}
     "to": "student@example.com",
     "subject": "Semester 4 Notes",
     "html": "<p>Attached below</p>",
-    "attachments": [{"filename": "notes.pdf", "url": "https://example.com/notes.pdf"}]
+    "attachments": [{"filename": "notes.pdf", "path": "https://example.com/notes.pdf"}]
   }'`}
-{snippetLang === 'python' && `import requests
-res = requests.post(
-    "${API_BASE_URL}/api/send",
-    headers={"x-api-key": "${activeProject?.apiKey || 'gkey_live_...'}"},
-    json={
-        "to": "student@example.com",
-        "subject": "Semester Notes",
-        "html": "<p>PDF notes attached</p>",
-        "attachments": [{"filename": "notes.pdf", "url": "https://example.com/notes.pdf"}]
-    }
-)
-print(res.json())`}
-{snippetLang === 'nextjs' && `// app/api/send-pdf/route.ts
-import { NextResponse } from 'next/server';
+                    </code>
+                  </pre>
+                </SpotlightCard>
 
-export async function POST(req: Request) {
-  const { email, pdfUrl, title } = await req.json();
-  const res = await fetch('${API_BASE_URL}/api/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.DAKLY_API_KEY! },
-    body: JSON.stringify({
-      to: email,
-      subject: title,
-      html: \`<p>Attached: <b>\${title}</b></p>\`,
-      attachments: [{ filename: \`\${title}.pdf\`, url: pdfUrl }]
-    })
-  });
-  return NextResponse.json(await res.json());
+                {/* 5. Bounce Protection & Error Handling */}
+                <SpotlightCard
+                  spotlightColor="rgba(239, 68, 68, 0.16)"
+                  borderColor="rgba(239, 68, 68, 0.35)"
+                  className="p-5 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white">🛡️ 5. Bounce Suppression & Exception Handling</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300">Account Protection</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const code = document.getElementById('snippetErrorsCode').innerText;
+                        handleCopySnippet('errors', code);
+                      }}
+                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
+                    >
+                      {copiedSnippetKey === 'errors' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedSnippetKey === 'errors' ? 'Copied!' : 'Copy Snippet'}</span>
+                    </button>
+                  </div>
+                  <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
+                    <code id="snippetErrorsCode">
+{snippetLang === 'node' && `import { 
+  Dakly, 
+  DaklySuppressedError, 
+  DaklyRateLimitError, 
+  DaklyAuthenticationError 
+} from 'dakly';
+
+const dakly = new Dakly();
+
+try {
+  await dakly.sendOtp({ to: 'bounced@invalid-domain.xyz', code: '123456' });
+} catch (err) {
+  if (err instanceof DaklySuppressedError) {
+    // Dakly blocked sending to protect your Gmail reputation!
+    console.warn('Blocked by Bounce Guard:', err.reason, err.trackingId);
+  } else if (err instanceof DaklyRateLimitError) {
+    console.error('All daily sender quotas reached (500/day limit)!');
+  } else if (err instanceof DaklyAuthenticationError) {
+    console.error('Invalid or revoked API Key!');
+  } else {
+    console.error('Delivery failure:', err.message);
+  }
 }`}
+{snippetLang === 'python' && `from dakly import (
+    Dakly, 
+    DaklySuppressedError, 
+    DaklyRateLimitError, 
+    DaklyAuthenticationError
+)
+
+dakly = Dakly()
+
+try:
+    dakly.send_otp(to="bounced@invalid-domain.xyz", code="123456")
+except DaklySuppressedError as err:
+    # Dakly intercepted and blocked to protect your Gmail score!
+    print(f"Blocked by Bounce Guard: {err.reason} ({err.tracking_id})")
+except DaklyRateLimitError as err:
+    print("Daily sender quota reached!")
+except DaklyAuthenticationError as err:
+    print("Invalid API Key!")
+except Exception as err:
+    print("Failed to dispatch:", str(err))`}
+{snippetLang === 'nextjs' && `import { DaklySuppressedError } from 'dakly';
+import { dakly } from '@/lib/dakly';
+
+try {
+  await dakly.sendOtp({ to: email, code });
+} catch (err) {
+  if (err instanceof DaklySuppressedError) {
+    return NextResponse.json({ error: 'This email is unverified or hard bounced previously.' }, { status: 400 });
+  }
+  return NextResponse.json({ error: err.message }, { status: 500 });
+}`}
+{snippetLang === 'express' && `const { DaklySuppressedError } = require('dakly');
+
+try {
+  await dakly.sendOtp({ to: req.body.email, code: req.body.code });
+} catch (err) {
+  if (err instanceof DaklySuppressedError) {
+    return res.status(400).json({ error: 'Recipient address is suppressed due to bounce.' });
+  }
+  res.status(500).json({ error: err.message });
+}`}
+{snippetLang === 'fetch' && `const res = await fetch('${API_BASE_URL}/api/send', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'x-api-key': '${activeProject?.apiKey || 'gkey_live_...'}' },
+  body: JSON.stringify({ to: 'bounced@invalid.xyz', otp: '123456' })
+});
+const data = await res.json();
+if (data.status === 'BLOCKED_SUPPRESSED') {
+  console.warn('Blocked by suppression guard:', data.reason);
+}`}
+{snippetLang === 'curl' && `# If suppressed, Dakly returns status: "BLOCKED_SUPPRESSED" without reaching Google
+curl -X POST "${API_BASE_URL}/api/send" \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: ${activeProject?.apiKey || 'gkey_live_...'}" \\
+  -d '{"to": "bounced@invalid.xyz", "otp": "123456"}'`}
                     </code>
                   </pre>
                 </SpotlightCard>
