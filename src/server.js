@@ -33,6 +33,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// Database connection middleware (ensures DB is connected on Vercel serverless invocations)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('DB Connection Middleware Error:', err.message);
+    res.status(500).json({ success: false, error: `Database connection error: ${err.message}` });
+  }
+});
+
 // Health Check Endpoint (For Render / Vercel / UptimeRobot keep-awake)
 app.get('/health', async (req, res) => {
   const mongoose = require('mongoose');
@@ -93,16 +104,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Database connection middleware (ensures DB is connected on Vercel serverless invocations)
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (err) {
-    console.error('DB Connection Middleware Error:', err);
-    res.status(500).json({ success: false, error: 'Database connection failed' });
-  }
-});
 
 // Connect to MongoDB and Start Server locally (or in Docker/VPS)
 if (!process.env.VERCEL) {
