@@ -1,6 +1,7 @@
 const { sendEmail } = require('../services/emailService');
 const EmailLog = require('../models/EmailLog');
 const { compileTemplate, getCatalogList } = require('../utils/templateEngine');
+const { TRANSPARENT_GIF_BUFFER, detectDeviceType } = require('../utils/trackingHelper');
 
 /**
  * Universal headless send endpoint
@@ -134,6 +135,12 @@ async function getLogs(req, res) {
         subject: l.subject,
         status: l.status,
         error: l.error,
+        template: l.template,
+        openedAt: l.openedAt,
+        opensCount: l.opensCount || 0,
+        clickedAt: l.clickedAt,
+        clicksCount: l.clicksCount || 0,
+        deviceType: l.deviceType,
         hasAttachments: l.hasAttachments,
         attachmentsCount: l.attachmentsCount,
         executionTimeMs: l.executionTimeMs,
@@ -167,6 +174,10 @@ async function getStats(req, res) {
       todayDelivered,
       todayFailed,
       recentAvgTimeResult,
+      totalOpened,
+      totalClicked,
+      mobileOpens,
+      desktopOpens,
     ] = await Promise.all([
       EmailLog.countDocuments({ projectId }),
       EmailLog.countDocuments({ projectId, status: 'DELIVERED' }),
@@ -179,12 +190,25 @@ async function getStats(req, res) {
         { $limit: 100 },
         { $group: { _id: null, avgTime: { $avg: '$executionTimeMs' } } },
       ]),
+      EmailLog.countDocuments({ projectId, opensCount: { $gt: 0 } }),
+      EmailLog.countDocuments({ projectId, clicksCount: { $gt: 0 } }),
+      EmailLog.countDocuments({ projectId, opensCount: { $gt: 0 }, deviceType: 'MOBILE' }),
+      EmailLog.countDocuments({ projectId, opensCount: { $gt: 0 }, deviceType: 'DESKTOP' }),
     ]);
 
     const capacity = project.getCapacitySummary();
     const todaySent = todayDelivered + todayFailed;
     const avgExecutionTimeMs =
       recentAvgTimeResult.length > 0 ? Math.round(recentAvgTimeResult[0].avgTime) : 0;
+
+    // Tracking analytics calculations
+    const openRateNum = totalDelivered > 0 ? (totalOpened / totalDelivered) * 100 : 0;
+    const clickRateNum = totalDelivered > 0 ? (totalClicked / totalDelivered) * 100 : 0;
+    const otherOpens = Math.max(0, totalOpened - (mobileOpens + desktopOpens));
+    const totalKnownDevices = mobileOpens + desktopOpens + otherOpens;
+    const mobilePercent = totalKnownDevices > 0 ? Math.round((mobileOpens / totalKnownDevices) * 100) : 0;
+    const desktopPercent = totalKnownDevices > 0 ? Math.round((desktopOpens / totalKnownDevices) * 100) : 0;
+    const otherPercent = totalKnownDevices > 0 ? Math.max(0, 100 - (mobilePercent + desktopPercent)) : 0;
 
     res.json({
       success: true,
@@ -219,6 +243,20 @@ async function getStats(req, res) {
         performance: {
           avgExecutionTimeMs,
           status: avgExecutionTimeMs < 3000 ? 'EXCELLENT' : 'NORMAL',
+        },
+        tracking: {
+          totalOpened,
+          totalClicked,
+          openRate: `${openRateNum.toFixed(1)}%`,
+          clickRate: `${clickRateNum.toFixed(1)}%`,
+          devices: {
+            mobile: mobileOpens,
+            desktop: desktopOpens,
+            other: otherOpens,
+            mobilePercent,
+            desktopPercent,
+            otherPercent,
+          },
         },
       },
     });
@@ -372,6 +410,136 @@ async function previewTemplate(req, res) {
   }
 }
 
+/**
+ * Serves 1x1 transparent tracking pixel and records email open event
+ * GET /api/track/open/:trackingId.png
+ */
+async function trackOpen(req, res) {
+  try {
+    // 1. Immediately send 1x1 transparent GIF with aggressive zero-cache headers
+    res.set({
+      'Content-Type': 'image/gif',
+      'Content-Length': TRANSPARENT_GIF_BUFFER.length,
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Access-Control-Allow-Origin': '*',
+    });
+    res.end(TRANSPARENT_GIF_BUFFER);
+
+    // 2. Extract tracking ID (strips optional .png/.gif extension)
+    const rawId = req.params.trackingId || '';
+    const trackingId = rawId.replace(/\.(png|gif|jpg|jpeg)$/i, '').trim();
+    if (!trackingId) return;
+
+    const userAgent = req.headers['user-agent'] || '';
+    const deviceType = detectDeviceType(userAgent);
+
+    // 3. Record open in database asynchronously
+    const log = await EmailLog.findOne({ trackingId });
+    if (!log) return;
+
+    const isFirstOpen = !log.openedAt;
+    log.openedAt = log.openedAt || new Date();
+    log.opensCount = (log.opensCount || 0) + 1;
+    if (!log.deviceType) log.deviceType = deviceType;
+    if (!log.userAgent) log.userAgent = userAgent.slice(0, 300);
+
+    await log.save();
+
+    // 4. Dispatch webhook on first open
+    if (isFirstOpen) {
+      const Project = require('../models/Project');
+      const project = await Project.findById(log.projectId);
+      if (project && project.webhookUrl) {
+        const { dispatchWebhook } = require('../services/webhookService');
+        dispatchWebhook(project, {
+          event: 'email.opened',
+          trackingId: log.trackingId,
+          projectId: project._id,
+          projectName: project.name,
+          recipient: log.to,
+          subject: log.subject,
+          deviceType,
+          openedAt: log.openedAt.toISOString(),
+          timestamp: new Date().toISOString(),
+        }).catch(() => {});
+      }
+    }
+  } catch (error) {
+    console.error('Track Open Error:', error.message);
+  }
+}
+
+/**
+ * Records link click event and redirects recipient to target destination URL
+ * GET /api/track/click/:trackingId
+ * Query: url (target URL)
+ */
+async function trackClick(req, res) {
+  try {
+    const rawId = req.params.trackingId || '';
+    const trackingId = rawId.trim();
+    const targetUrl = req.query.url ? decodeURIComponent(req.query.url).trim() : '';
+
+    // Safety check: only redirect to valid http/https URLs to prevent javascript: or file: exploits
+    if (!targetUrl || (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://'))) {
+      return res.redirect(302, 'https://dakly.vercel.app');
+    }
+
+    const userAgent = req.headers['user-agent'] || '';
+    const deviceType = detectDeviceType(userAgent);
+
+    // Record click event in background
+    if (trackingId) {
+      EmailLog.findOne({ trackingId }).then(async (log) => {
+        if (!log) return;
+
+        const isFirstClick = !log.clickedAt;
+        log.clickedAt = log.clickedAt || new Date();
+        log.clicksCount = (log.clicksCount || 0) + 1;
+        log.openedAt = log.openedAt || new Date(); // Clicking a link confirms email was opened
+        log.opensCount = Math.max(log.opensCount || 0, 1);
+        if (!log.deviceType) log.deviceType = deviceType;
+
+        log.clicks.push({
+          url: targetUrl.slice(0, 500),
+          clickedAt: new Date(),
+          userAgent: userAgent.slice(0, 300),
+        });
+
+        await log.save();
+
+        if (isFirstClick) {
+          const Project = require('../models/Project');
+          const project = await Project.findById(log.projectId);
+          if (project && project.webhookUrl) {
+            const { dispatchWebhook } = require('../services/webhookService');
+            dispatchWebhook(project, {
+              event: 'email.clicked',
+              trackingId: log.trackingId,
+              projectId: project._id,
+              projectName: project.name,
+              recipient: log.to,
+              subject: log.subject,
+              url: targetUrl,
+              deviceType,
+              clickedAt: log.clickedAt.toISOString(),
+              timestamp: new Date().toISOString(),
+            }).catch(() => {});
+          }
+        }
+      }).catch((err) => console.error('Track Click DB Error:', err.message));
+    }
+
+    // Immediate 302 Redirect to destination
+    return res.redirect(302, targetUrl);
+  } catch (error) {
+    console.error('Track Click Error:', error.message);
+    res.redirect(302, 'https://dakly.vercel.app');
+  }
+}
+
 module.exports = {
   send,
   getLogs,
@@ -381,4 +549,7 @@ module.exports = {
   ping,
   getTemplates,
   previewTemplate,
+  trackOpen,
+  trackClick,
 };
+

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "node -c src/utils/crypto.js src/utils/attachmentHelper.js src/utils/logoValidator.js src/utils/templateEngine.js src/services/emailService.js src/services/pacingService.js src/services/webhookService.js src/controllers/authController.js src/controllers/emailController.js src/controllers/projectController.js src/routes/authRoutes.js src/middleware/authJwt.js src/models/User.js src/models/Project.js src/models/EmailLog.js src/server.js"
+    "test": "node -c src/utils/crypto.js src/utils/attachmentHelper.js src/utils/logoValidator.js src/utils/templateEngine.js src/utils/trackingHelper.js src/services/emailService.js src/services/pacingService.js src/services/webhookService.js src/controllers/authController.js src/controllers/emailController.js src/controllers/projectController.js src/routes/authRoutes.js src/routes/emailRoutes.js src/middleware/authJwt.js src/models/User.js src/models/Project.js src/models/EmailLog.js src/server.js && node tests/testTracking.js"
   },
   "keywords": [
     "email",

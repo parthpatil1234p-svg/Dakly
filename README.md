@@ -39,6 +39,7 @@ By plugging Dakly into your project, your application instantly gets an enterpri
 | 👥 **Multi-Tenant Isolation** | Separate projects, API keys, and logs for different apps under one developer account | Cleanly manage multiple startup projects from a single control panel |
 | 🖼️ **1:1 Brand Logo & Anti-Piracy Guard** | Strict 1:1 square brand logo (1 per project) with magic-byte anti-malware/piracy inspection | Renders high-trust brand logo in outgoing emails while blocking fake media/torrents |
 | 📧 **Pre-built Templates & Variable Engine** | 5 built-in responsive templates (OTP, Welcome, Password Reset, College Notes, Receipts) with dynamic `vars` | Zero HTML design work needed; dynamic interpolation with project branding |
+| 📊 **Open & Click Tracking Analytics** | 1x1 zero-latency transparent pixel + phishing-safe link redirects + device breakdown (Mobile vs Desktop) | Real-time engagement telemetry & webhooks (`email.opened`, `email.clicked`) without 3rd-party dependencies |
 | 💻 **Zero Client Dependencies** | Integrates using standard native `fetch()` without installing `nodemailer` or SDKs | Keeps your client application lightweight, clean, and bug-free |
 
 ---
@@ -342,6 +343,43 @@ const response = await fetch("https://dakly-engin.vercel.app/api/send", {
 const result = await response.json();
 console.log("Delivered in < 1s:", result.trackingId);
 ```
+
+---
+
+### 📊 Open & Click Tracking Telemetry (Zero-Setup Analytics)
+
+Every outgoing HTML email is automatically instrumented with zero-friction engagement telemetry:
+
+1. **Email Open Tracking:**
+   - Injects an invisible 1x1 transparent tracking pixel before `</body>`.
+   - Returns a 42-byte GIF with aggressive zero-cache headers (`Cache-Control: no-store, no-cache, max-age=0`).
+   - Automatically detects recipient device type (`MOBILE` vs `DESKTOP` vs `OTHER`).
+   - Dispatches a real-time `email.opened` webhook on the first open.
+
+2. **Link Click Tracking:**
+   - Automatically detects and rewrites outgoing `<a href="...">` links through Dakly's secure redirect engine (`/api/track/click/:trackingId?url=...`).
+   - Validates destination URLs against open-redirect exploits (enforces `http://` / `https://`).
+   - Increments click counters, records target URLs and timestamps, and safely issues a `302 Found` redirect.
+   - Dispatches an `email.clicked` webhook on the first click.
+
+3. **Dashboard & API Analytics:**
+   - Call `GET /api/stats` (with `x-api-key`) to receive live open rates, click-through rates, and device breakdown:
+   ```json
+   "tracking": {
+     "totalOpened": 142,
+     "totalClicked": 38,
+     "openRate": "48.6%",
+     "clickRate": "13.0%",
+     "devices": {
+       "mobile": 92,
+       "desktop": 45,
+       "other": 5,
+       "mobilePercent": 65,
+       "desktopPercent": 32,
+       "otherPercent": 3
+     }
+   }
+   ```
 
 
 #### Attachments Support:

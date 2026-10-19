@@ -9,6 +9,8 @@ const {
   ping,
   getTemplates,
   previewTemplate,
+  trackOpen,
+  trackClick,
 } = require('../controllers/emailController');
 const authenticateApiKey = require('../middleware/authApiKey');
 
@@ -31,6 +33,10 @@ router.get('/stats', authenticateApiKey, getStats);
 
 // Legacy reports endpoint (Authenticated via x-api-key)
 router.get('/reports', authenticateApiKey, getReports);
+
+// Open & Click tracking endpoints (Publicly accessed by email clients and link redirects)
+router.get('/track/open/:trackingId', trackOpen);
+router.get('/track/click/:trackingId', trackClick);
 
 // Public status check by trackingId
 router.get('/status/:trackingId', getStatus);

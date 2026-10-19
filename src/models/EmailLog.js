@@ -64,6 +64,41 @@ const emailLogSchema = new mongoose.Schema(
       enum: ['NOT_CONFIGURED', 'SENT', 'FAILED', 'SKIPPED'],
       default: 'NOT_CONFIGURED',
     },
+    // Open & Click Tracking Analytics
+    openedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    opensCount: {
+      type: Number,
+      default: 0,
+    },
+    clickedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    clicksCount: {
+      type: Number,
+      default: 0,
+    },
+    deviceType: {
+      type: String,
+      enum: ['MOBILE', 'DESKTOP', 'OTHER', null],
+      default: null,
+    },
+    userAgent: {
+      type: String,
+      default: null,
+    },
+    clicks: [
+      {
+        url: { type: String, trim: true },
+        clickedAt: { type: Date, default: Date.now },
+        userAgent: { type: String, default: null },
+      },
+    ],
     sentAt: {
       type: Date,
       default: Date.now,

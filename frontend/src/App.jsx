@@ -38,6 +38,10 @@ import {
   Image as ImageIcon,
   Camera,
   Trash2,
+  BarChart3,
+  MousePointerClick,
+  Smartphone,
+  Monitor,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import SpotlightCard from './components/SpotlightCard';
@@ -1557,6 +1561,182 @@ await sendEmail({
 
                 </div>
 
+                {/* Real-time Email Open & Click-Through Tracking Analytics Card */}
+                <SpotlightCard
+                  spotlightColor="rgba(99, 102, 241, 0.16)"
+                  borderColor="rgba(99, 102, 241, 0.35)"
+                  className="p-6 space-y-6"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/10">
+                    <div className="flex items-start space-x-3">
+                      <div className="p-2.5 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                        <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-base font-bold text-slate-900 dark:text-white">Email Open & Click Tracking Telemetry</h3>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+                            Zero-Latency Pixel + Safe Link Redirects
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                          Automatically measures read receipts and link engagements for all transactional emails without any external third-party tracker.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 self-start sm:self-auto text-xs font-mono">
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300">
+                        {stats?.metrics?.tracking?.totalOpened ?? 0} Opens Recorded
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300">
+                        {stats?.metrics?.tracking?.totalClicked ?? 0} Clicks Recorded
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Dual Metrics: Open Rate & CTR Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Open Rate Sub-card */}
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200/80 dark:border-white/5 space-y-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold flex items-center space-x-1.5">
+                          <Eye className="w-4 h-4 text-emerald-500" />
+                          <span>Email Open Rate</span>
+                        </span>
+                        <span className="text-[11px] font-mono text-slate-500">
+                          {stats?.metrics?.tracking?.totalOpened ?? 0} / {stats?.metrics?.allTime?.totalDelivered ?? 0} delivered
+                        </span>
+                      </div>
+                      <div className="flex items-baseline space-x-2">
+                        <span className="text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                          {stats?.metrics?.tracking?.openRate ?? '0.0%'}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">recipients opened</span>
+                      </div>
+                      <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-emerald-500 h-2 rounded-full transition-all duration-700 shadow-xs"
+                          style={{
+                            width: `${Math.min(100, parseFloat(stats?.metrics?.tracking?.openRate || '0'))}%`,
+                          }}
+                        ></div>
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                        <span>Apple Mail & Gmail protected</span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">Live Telemetry Active</span>
+                      </div>
+                    </div>
+
+                    {/* CTR Sub-card */}
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200/80 dark:border-white/5 space-y-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold flex items-center space-x-1.5">
+                          <MousePointerClick className="w-4 h-4 text-indigo-500" />
+                          <span>Click-Through Rate (CTR)</span>
+                        </span>
+                        <span className="text-[11px] font-mono text-slate-500">
+                          {stats?.metrics?.tracking?.totalClicked ?? 0} clicked
+                        </span>
+                      </div>
+                      <div className="flex items-baseline space-x-2">
+                        <span className="text-3xl font-bold font-mono text-indigo-600 dark:text-indigo-400">
+                          {stats?.metrics?.tracking?.clickRate ?? '0.0%'}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">link engagement</span>
+                      </div>
+                      <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-indigo-600 dark:bg-indigo-500 h-2 rounded-full transition-all duration-700 shadow-xs"
+                          style={{
+                            width: `${Math.min(100, parseFloat(stats?.metrics?.tracking?.clickRate || '0'))}%`,
+                          }}
+                        ></div>
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                        <span>Safe 302 redirect filter</span>
+                        <span className="font-semibold text-indigo-600 dark:text-indigo-400">Phishing Protected</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Device & Client Breakdown Bar */}
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200/80 dark:border-white/5 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-mono text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">
+                        Client Device Distribution
+                      </span>
+                      <span className="text-[11px] text-slate-500 font-mono">
+                        User-Agent Telemetry
+                      </span>
+                    </div>
+
+                    {/* Multi-segment progress bar */}
+                    <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-3 flex overflow-hidden p-0.5">
+                      <div
+                        className="bg-indigo-500 h-full rounded-l-full transition-all duration-500"
+                        style={{
+                          width: `${stats?.metrics?.tracking?.devices?.mobilePercent || 0}%`,
+                        }}
+                        title={`Mobile: ${stats?.metrics?.tracking?.devices?.mobilePercent || 0}%`}
+                      ></div>
+                      <div
+                        className="bg-sky-500 h-full transition-all duration-500"
+                        style={{
+                          width: `${stats?.metrics?.tracking?.devices?.desktopPercent || 0}%`,
+                        }}
+                        title={`Desktop: ${stats?.metrics?.tracking?.devices?.desktopPercent || 0}%`}
+                      ></div>
+                      <div
+                        className="bg-purple-500 h-full rounded-r-full transition-all duration-500"
+                        style={{
+                          width: `${stats?.metrics?.tracking?.devices?.otherPercent || 0}%`,
+                        }}
+                        title={`Other / Proxy: ${stats?.metrics?.tracking?.devices?.otherPercent || 0}%`}
+                      ></div>
+                    </div>
+
+                    {/* Breakdown legend */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 flex-shrink-0"></div>
+                        <Smartphone className="w-3.5 h-3.5 text-indigo-500" />
+                        <span className="text-slate-600 dark:text-slate-400 font-medium">Mobile:</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">
+                          {stats?.metrics?.tracking?.devices?.mobilePercent ?? 0}%
+                        </span>
+                        <span className="text-slate-400 text-[11px]">
+                          ({stats?.metrics?.tracking?.devices?.mobile ?? 0})
+                        </span>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-sky-500 flex-shrink-0"></div>
+                        <Monitor className="w-3.5 h-3.5 text-sky-500" />
+                        <span className="text-slate-600 dark:text-slate-400 font-medium">Desktop:</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">
+                          {stats?.metrics?.tracking?.devices?.desktopPercent ?? 0}%
+                        </span>
+                        <span className="text-slate-400 text-[11px]">
+                          ({stats?.metrics?.tracking?.devices?.desktop ?? 0})
+                        </span>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-purple-500 flex-shrink-0"></div>
+                        <ShieldCheck className="w-3.5 h-3.5 text-purple-500" />
+                        <span className="text-slate-600 dark:text-slate-400 font-medium">Other / Mail Proxy:</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">
+                          {stats?.metrics?.tracking?.devices?.otherPercent ?? 0}%
+                        </span>
+                        <span className="text-slate-400 text-[11px]">
+                          ({stats?.metrics?.tracking?.devices?.other ?? 0})
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </SpotlightCard>
+
                 {/* Senders & Failover Status with Spotlight Glow */}
                 <SpotlightCard
                   spotlightColor="rgba(139, 92, 246, 0.16)"
@@ -2404,6 +2584,7 @@ await sendEmail({
                           <th className="py-3 px-4">Template</th>
                           <th className="py-3 px-4">Recipient</th>
                           <th className="py-3 px-4">Subject</th>
+                          <th className="py-3 px-4">Engagement</th>
                           <th className="py-3 px-4">Sender</th>
                           <th className="py-3 px-4">Attachment</th>
                           <th className="py-3 px-4">Speed</th>
@@ -2413,7 +2594,7 @@ await sendEmail({
                       <tbody className="divide-y divide-slate-100 dark:divide-white/5 font-sans">
                         {logs.length === 0 ? (
                           <tr>
-                            <td colSpan={8} className="text-center py-8 text-slate-500">
+                            <td colSpan={9} className="text-center py-8 text-slate-500">
                               No logs found for this project.
                             </td>
                           </tr>
@@ -2442,6 +2623,46 @@ await sendEmail({
                               </td>
                               <td className="py-3 px-4 font-mono font-medium text-slate-900 dark:text-slate-200">{l.to}</td>
                               <td className="py-3 px-4 text-slate-700 dark:text-slate-300 max-w-xs truncate">{l.subject}</td>
+                              <td className="py-3 px-4">
+                                <div className="flex flex-col space-y-1">
+                                  {l.openedAt ? (
+                                    <div className="flex items-center space-x-1.5 flex-wrap gap-1">
+                                      <span
+                                        className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono flex items-center space-x-1"
+                                        title={`Opened at ${new Date(l.openedAt).toLocaleString()}`}
+                                      >
+                                        <Eye className="w-3 h-3 text-emerald-500" />
+                                        <span>Opened{l.opensCount > 1 ? ` (${l.opensCount}x)` : ''}</span>
+                                      </span>
+                                      {l.deviceType && (
+                                        <span className="text-[10px] font-mono text-slate-500 flex items-center space-x-0.5">
+                                          {l.deviceType === 'MOBILE' ? (
+                                            <Smartphone className="w-2.5 h-2.5 text-indigo-500" />
+                                          ) : (
+                                            <Monitor className="w-2.5 h-2.5 text-sky-500" />
+                                          )}
+                                          <span>{l.deviceType === 'MOBILE' ? 'Mobile' : l.deviceType === 'DESKTOP' ? 'Desktop' : 'Proxy'}</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400 dark:text-slate-600 text-[10px] font-mono">
+                                      {l.status === 'DELIVERED' ? '⏳ Unopened' : '—'}
+                                    </span>
+                                  )}
+                                  {l.clicksCount > 0 && (
+                                    <div className="flex items-center space-x-1">
+                                      <span
+                                        className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-mono flex items-center space-x-1"
+                                        title={`Last click at ${l.clickedAt ? new Date(l.clickedAt).toLocaleString() : ''}`}
+                                      >
+                                        <MousePointerClick className="w-2.5 h-2.5 text-indigo-500" />
+                                        <span>{l.clicksCount} click{l.clicksCount > 1 ? 's' : ''}</span>
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
                               <td className="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">{l.senderEmail || 'Primary'}</td>
                               <td className="py-3 px-4 text-[11px]">
                                 {l.hasAttachments ? (

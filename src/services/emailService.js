@@ -3,6 +3,7 @@ const EmailLog = require('../models/EmailLog');
 const Project = require('../models/Project');
 const { generateTrackingId } = require('../utils/crypto');
 const { processAttachments } = require('../utils/attachmentHelper');
+const { processEmailHtmlForTracking } = require('../utils/trackingHelper');
 const { paceSender } = require('./pacingService');
 const { dispatchWebhook } = require('./webhookService');
 
@@ -193,6 +194,13 @@ async function sendEmail({ project, to, subject, html, text, otp, template, atta
     throw new Error('Either "html", "text", or "otp" must be provided in the request body.');
   }
 
+  // 3.5 Instrument HTML for Open & Click Tracking
+  let finalHtmlWithTracking = finalHtml;
+  if (finalHtml) {
+    const baseUrl = process.env.APP_URL || process.env.DAKLY_API_URL || 'https://dakly-engin.vercel.app';
+    finalHtmlWithTracking = processEmailHtmlForTracking(finalHtml, trackingId, baseUrl);
+  }
+
   // 4. Send with Multi-Account Failover & Anti-Spam Pacing
   let currentSender = activeSender;
   let attempts = 0;
@@ -215,7 +223,7 @@ async function sendEmail({ project, to, subject, html, text, otp, template, atta
         from: `"${displayName}" <${senderEmail}>`,
         to,
         subject: finalSubject || `${project.name} Notification`,
-        html: finalHtml,
+        html: finalHtmlWithTracking,
         text: text || undefined,
         attachments: processedAttachments.length > 0 ? processedAttachments : undefined,
       };
