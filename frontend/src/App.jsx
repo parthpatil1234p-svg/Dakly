@@ -1253,8 +1253,10 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
               <span>Dakly System Capabilities & Features</span>
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center space-x-2.5">
-              <img src="/gemini-svg.svg" alt="Dakly Logo" className="w-7 h-7 rounded-lg inline-block shadow-sm object-contain" />
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center space-x-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 shadow-md p-1.5 flex items-center justify-center flex-shrink-0">
+                <img src="/logo-square-animated.svg" alt="Dakly Logo" className="w-full h-full object-contain" />
+              </div>
               <span>Yeh System Aapke Project Ke Liye Kya Kar Sakta Hai?</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
@@ -1419,14 +1421,14 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
           
           {/* Logo Brand */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 mb-3 shadow-xl shadow-indigo-500/20 p-2 overflow-hidden">
+            <div className="inline-flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 mb-4 shadow-2xl shadow-indigo-500/30 p-2.5 overflow-hidden hover:scale-105 transition-transform duration-300">
               <img src="/logo-square-animated.svg" alt="Dakly Logo" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center justify-center space-x-2">
+            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight flex items-center justify-center space-x-2.5">
               <span>Dakly</span>
-              <span className="text-indigo-600 dark:text-indigo-400 font-mono text-xs px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">ENGINE</span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-mono text-xs sm:text-sm px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 font-bold tracking-wider">ENGINE</span>
             </h1>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5 font-medium">
               Multi-tenant transactional email & OTP engine for developers.
             </p>
             <div className="mt-3">
@@ -1575,20 +1577,22 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
 
       {/* Top Header Navbar */}
       <header className="sticky top-0 z-40 border-b border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-[#07080c]/80 backdrop-blur-md transition-colors">
-        <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 h-20 flex items-center justify-between">
+        <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 h-20 sm:h-24 flex items-center justify-between">
           
           {/* Logo & Live Status */}
           <div className="flex items-center space-x-5">
-            <div className="flex items-center space-x-3">
-              <img src="/logo-square-animated.svg" alt="Dakly Logo" className="w-10 h-10 rounded-xl shadow-md shadow-indigo-500/20 object-contain" />
-              <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center">
-                Dakly<span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-xs sm:text-sm ml-2 px-2.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 font-mono">ENGINE</span>
+            <div className="flex items-center space-x-3.5">
+              <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/25 p-1.5 flex items-center justify-center overflow-hidden flex-shrink-0 hover:scale-105 transition-transform duration-200">
+                <img src="/logo-square-animated.svg" alt="Dakly Logo" className="w-full h-full object-contain" />
+              </div>
+              <span className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white flex items-center">
+                Dakly<span className="text-indigo-600 dark:text-indigo-400 font-black text-xs sm:text-sm ml-2.5 px-3 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 font-mono tracking-wider">ENGINE</span>
               </span>
             </div>
             <div className="hidden md:flex items-center space-x-2.5 pl-5 border-l border-slate-200 dark:border-white/10 text-xs sm:text-sm">
-              <span className="relative flex h-3 w-3">
+              <span className="relative flex h-3.5 w-3.5">
                 <span className="radar-beacon absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-sm shadow-emerald-400"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 shadow-sm shadow-emerald-400"></span>
               </span>
               <span className="text-slate-600 dark:text-slate-300 font-mono text-xs sm:text-sm font-semibold tracking-wide">
                 Gmail Cluster: <span className="text-emerald-500 dark:text-emerald-400 font-bold">100% OPERATIONAL</span>
@@ -1741,12 +1745,12 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                       <img
                         src={activeProject.brandLogo.data}
                         alt="Logo"
-                        className="w-14 h-14 rounded-2xl object-cover border-2 border-indigo-500/50 dark:border-indigo-400/50 shadow-sm transition group-hover:scale-105"
+                        className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-indigo-500/50 dark:border-indigo-400/50 shadow-md transition group-hover:scale-105"
                       />
                     ) : (
-                      <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shadow-inner flex flex-col items-center justify-center font-bold">
-                        <Camera className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                        <span className="text-[10px] font-mono leading-none mt-1 font-bold">1:1</span>
+                      <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shadow-inner flex flex-col items-center justify-center font-bold">
+                        <Camera className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                        <span className="text-xs font-mono leading-none mt-1 font-bold">1:1</span>
                       </div>
                     )}
                     <span className="absolute -bottom-1 -right-1 p-1 rounded-full bg-indigo-600 text-white shadow-xs">
@@ -2949,10 +2953,10 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                             <img
                               src={p.brandLogo.data}
                               alt="Logo"
-                              className="w-14 h-14 rounded-2xl object-cover border-2 border-slate-200 dark:border-white/10 shadow-xs"
+                              className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover border-2 border-slate-200 dark:border-white/10 shadow-sm"
                             />
                           ) : (
-                            <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-xs font-bold font-mono text-slate-500">
+                            <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-xs sm:text-sm font-bold font-mono text-slate-500">
                               1:1
                             </div>
                           )}
