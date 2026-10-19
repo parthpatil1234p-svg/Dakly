@@ -33,13 +33,24 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health Check Endpoint (For Render / UptimeRobot / cron-job.org keep-awake)
-app.get('/health', (req, res) => {
+// Health Check Endpoint (For Render / Vercel / UptimeRobot keep-awake)
+app.get('/health', async (req, res) => {
+  const mongoose = require('mongoose');
+  let dbStatus = 'disconnected';
+  if (mongoose.connection.readyState === 1) dbStatus = 'connected';
+  else if (mongoose.connection.readyState === 2) dbStatus = 'connecting';
+
   res.json({
     status: 'healthy',
     uptime: `${Math.floor(process.uptime())}s`,
     timestamp: new Date().toISOString(),
     service: 'Dakly Transactional Email Engine',
+    database: {
+      status: dbStatus,
+      readyState: mongoose.connection.readyState,
+      hasMongoUri: !!process.env.MONGODB_URI,
+      hasEncryptionKey: !!process.env.ENCRYPTION_MASTER_KEY,
+    },
   });
 });
 

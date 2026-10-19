@@ -19,13 +19,14 @@ async function connectDB() {
   try {
     const conn = await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 5000,
-      autoIndex: true,
+      bufferCommands: false, // In serverless, fail fast with exact error instead of buffering
     });
 
     console.log(`✅ MongoDB Connected Successfully: ${conn.connection.host}/${conn.connection.name}`);
+    return conn;
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);
-    // Don't crash immediately in dev, but log warning
+    throw error;
   }
 }
 
