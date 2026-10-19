@@ -82,17 +82,29 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Connect to MongoDB and Start Server
-async function startServer() {
-  await connectDB();
+// Database connection middleware (ensures DB is connected on Vercel serverless invocations)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('DB Connection Middleware Error:', err);
+    res.status(500).json({ success: false, error: 'Database connection failed' });
+  }
+});
 
-  app.listen(PORT, () => {
-    console.log(`\n=================================================`);
-    console.log(`🚀 Dakly Email Engine Running on Port ${PORT}`);
-    console.log(`📡 URL: http://localhost:${PORT}`);
-    console.log(`🩺 Health: http://localhost:${PORT}/health`);
-    console.log(`=================================================\n`);
+// Connect to MongoDB and Start Server locally (or in Docker/VPS)
+if (!process.env.VERCEL) {
+  connectDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`\n=================================================`);
+      console.log(`🚀 Dakly Email Engine Running on Port ${PORT}`);
+      console.log(`📡 URL: http://localhost:${PORT}`);
+      console.log(`🩺 Health: http://localhost:${PORT}/health`);
+      console.log(`=================================================\n`);
+    });
   });
 }
 
-startServer();
+// Export for Vercel Serverless
+module.exports = app;

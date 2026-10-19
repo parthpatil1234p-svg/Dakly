@@ -4,6 +4,11 @@ const mongoose = require('mongoose');
  * Connect to MongoDB Atlas or local MongoDB
  */
 async function connectDB() {
+  // If already connected, reuse existing connection (crucial for Serverless / Vercel)
+  if (mongoose.connection.readyState >= 1) {
+    return;
+  }
+
   const uri = process.env.MONGODB_URI;
 
   if (!uri) {
