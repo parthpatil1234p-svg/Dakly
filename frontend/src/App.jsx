@@ -32,6 +32,7 @@ import {
   Wifi,
   Radio,
   AlertCircle,
+  ArrowRight,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -104,6 +105,7 @@ export default function App() {
   const [curlCopied, setCurlCopied] = useState(false);
 
   // Modals
+  const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   const [showNewProjModal, setShowNewProjModal] = useState(false);
   const [showAddSenderModal, setShowAddSenderModal] = useState(false);
   const [newProjForm, setNewProjForm] = useState({ name: '', senderEmail: '', appPassword: '', senderDisplayName: '' });
@@ -397,12 +399,153 @@ export default function App() {
   }
 
   // ==============================================================
+  // MODAL: WHAT DAKLY CAN DO (POPUP MODAL ON VISIT)
+  // ==============================================================
+  const renderWelcomeModal = () => {
+    if (!showWelcomeModal) return null;
+    return (
+      <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div className="glass-card rounded-2xl border border-indigo-500/30 max-w-3xl w-full my-auto overflow-hidden shadow-2xl shadow-indigo-500/20 bg-[#0d1017]">
+          
+          {/* Header */}
+          <div className="relative p-5 sm:p-6 bg-gradient-to-br from-indigo-950/70 via-[#12151f] to-[#0d1017] border-b border-white/10">
+            <button
+              onClick={() => setShowWelcomeModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
+              title="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center space-x-2 text-indigo-400 text-xs font-semibold tracking-wider uppercase mb-1.5">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Dakly System Capabilities & Features</span>
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center space-x-2">
+              <span>📮 Yeh System Aapke Project Ke Liye Kya Kar Sakta Hai?</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
+              Zero-cost, ultra-fast headless email engine jo aapke kisi bhi web/mobile app mein 100% plug & play ho jata hai.
+            </p>
+          </div>
+
+          {/* Capabilities 8-Card Grid */}
+          <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[58vh] overflow-y-auto">
+            
+            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+              <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
+                <Zap className="w-4 h-4 text-amber-400" />
+                <span>1. Sub-Second OTP & Verification (&lt; 1s)</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                4-6 digit OTPs, magic links aur password resets 1 second ke andar deliver karta hai via persistent STARTTLS Port 587.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+              <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
+                <FileCheck className="w-4 h-4 text-indigo-400" />
+                <span>2. 100% Custom HTML & Styling Freedom</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Koi fixed template nahi. Welcome cards, receipts, status updates aur alerts ko apne man-pasand HTML/CSS se design karein.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+              <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
+                <Paperclip className="w-4 h-4 text-emerald-400" />
+                <span>3. 15MB Multi-Format Attachments</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                PDFs (College Notes, Invoices), Images (QR Codes, Receipts), Excel/CSV sheets, aur ZIP files direct link ya base64 se bhejein.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+              <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
+                <Layers className="w-4 h-4 text-cyan-400" />
+                <span>4. 1,000+ Free Emails/Day Failover</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Primary + Backup Gmail attach karein. Jab Primary 500 emails poore karega, Dakly auto-backup account par switch ho jayega.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+              <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
+                <ShieldCheck className="w-4 h-4 text-rose-400" />
+                <span>5. Anti-Spam Burst Pacing Queue</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Traffic spike hone par 200ms spacing queue lagata hai taaki Google aapke Gmail ko block na kare aur emails spam mein na jayein.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+              <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
+                <Activity className="w-4 h-4 text-emerald-400" />
+                <span>6. Live Traffic Pulse & API Diagnostics</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Dashboard se 1-click mein API Key test karein, real-time inbound traffic dekhein, aur live stream audit logs track karein.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+              <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
+                <Lock className="w-4 h-4 text-violet-400" />
+                <span>7. Military-Grade AES-256-GCM Security</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Google App Passwords kabhi plain text mein save nahi hote. Military-grade authenticated encryption se 100% secure rehte hain.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#12151c] border border-white/5 hover:border-indigo-500/30 transition space-y-1">
+              <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs sm:text-sm">
+                <Terminal className="w-4 h-4 text-amber-300" />
+                <span>8. Zero Packages / Drop-in Replacement</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Apne project mein Nodemailer install karne ki zaroorat nahi. Sirf ek native fetch() call se bina koi purana code tode chalega.
+              </p>
+            </div>
+
+          </div>
+
+          {/* Footer CTA */}
+          <div className="p-4 sm:p-5 border-t border-white/10 bg-[#080a0f] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-[11px] text-slate-400 flex items-center space-x-1.5 text-center sm:text-left">
+              <span>💡</span>
+              <span>Kabhi bhi upar <b>"Capabilities"</b> button dabakar yeh list dobara dekh sakte hain.</span>
+            </div>
+
+            <button
+              onClick={() => setShowWelcomeModal(false)}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-indigo-500/25 flex items-center justify-center space-x-2"
+            >
+              <span>Theek Hai, Aage Badhein!</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+        </div>
+      </div>
+    );
+  };
+
+  // ==============================================================
   // VIEW: AUTH SCREEN (If Not Logged In)
   // ==============================================================
   if (!authToken) {
     return (
       <div className="min-h-screen bg-[#080a0f] flex flex-col justify-center items-center p-4 selection:bg-indigo-500 selection:text-white">
         
+        {/* Welcome Capabilities Popup on Visit */}
+        {renderWelcomeModal()}
+
         {/* Glow backdrop */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none"></div>
 
@@ -419,6 +562,16 @@ export default function App() {
             <p className="text-xs text-slate-400 mt-1">
               Multi-tenant transactional email engine for developers.
             </p>
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => setShowWelcomeModal(true)}
+                className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 text-[11px] font-semibold transition"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Dekhein Dakly Kya-Kya Kar Sakta Hai ✨</span>
+              </button>
+            </div>
           </div>
 
           {/* Auth Glass Card */}
@@ -539,6 +692,9 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-[#080a0f] text-slate-100">
       
+      {/* Welcome Capabilities Popup on Visit */}
+      {renderWelcomeModal()}
+
       {/* Top Header Navbar */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#080a0f]/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -560,7 +716,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Project Selector, User Profile & Logout */}
+          {/* Project Selector, Capabilities, User Profile & Logout */}
           <div className="flex items-center space-x-3">
             
             {projects.length > 0 && (
@@ -576,6 +732,15 @@ export default function App() {
                 ))}
               </select>
             )}
+
+            <button
+              onClick={() => setShowWelcomeModal(true)}
+              className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 text-xs sm:text-sm font-semibold transition"
+              title="Dakly ke saare features aur capabilities dekhein"
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span className="hidden sm:inline">Capabilities</span>
+            </button>
 
             <button
               onClick={() => setShowNewProjModal(true)}
