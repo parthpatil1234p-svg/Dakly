@@ -70,10 +70,10 @@ function matchCidr(ip, cidr) {
  * @returns {boolean}
  */
 function matchWildcard(ip, pattern) {
-  if (!pattern.includes('*')) return false;
-  const regexStr = '^' + pattern.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$';
+  if (!pattern || typeof pattern !== 'string' || !pattern.includes('*')) return false;
+  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
   try {
-    const regex = new RegExp(regexStr);
+    const regex = new RegExp('^' + escaped + '$');
     return regex.test(ip);
   } catch {
     return false;

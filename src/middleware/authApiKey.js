@@ -6,18 +6,32 @@ const { extractClientIp, isIpAllowed } = require('../utils/ipFilter');
  * Loads all encrypted credentials needed for email dispatching
  */
 async function authenticateApiKey(req, res, next) {
-  const apiKey = req.headers['x-api-key'] || req.query.apiKey;
+  const rawKey =
+    req.headers['x-api-key'] ||
+    (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')
+      ? req.headers.authorization.slice(7)
+      : null);
 
-  if (!apiKey) {
+  if (!rawKey || typeof rawKey !== 'string') {
     return res.status(401).json({
       success: false,
       error: 'API Key is missing. Pass your project key in the "x-api-key" header.',
     });
   }
 
+  const cleanApiKey = String(rawKey).trim();
+
+  // Validate format to prevent NoSQL operator injection
+  if (!/^gkey_[a-zA-Z0-9_-]+$/.test(cleanApiKey)) {
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid API Key format. Expected key starting with "gkey_".',
+    });
+  }
+
   try {
     // Select encryptedPassword, iv, authTag for both legacy and multi-sender pool
-    const project = await Project.findOne({ apiKey, isActive: true }).select(
+    const project = await Project.findOne({ apiKey: cleanApiKey, isActive: true }).select(
       '+encryptedPassword +iv +authTag +senders.encryptedPassword +senders.iv +senders.authTag'
     );
 
@@ -61,13 +75,25 @@ async function authenticateApiKey(req, res, next) {
 }
 
 async function optionalApiKey(req, res, next) {
-  const apiKey = req.headers['x-api-key'] || req.query.apiKey;
-  if (!apiKey) {
+  const rawKey =
+    req.headers['x-api-key'] ||
+    (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')
+      ? req.headers.authorization.slice(7)
+      : null);
+
+  if (!rawKey || typeof rawKey !== 'string') {
     req.project = null;
     return next();
   }
+
+  const cleanApiKey = String(rawKey).trim();
+  if (!/^gkey_[a-zA-Z0-9_-]+$/.test(cleanApiKey)) {
+    req.project = null;
+    return next();
+  }
+
   try {
-    const project = await Project.findOne({ apiKey, isActive: true });
+    const project = await Project.findOne({ apiKey: cleanApiKey, isActive: true });
     req.project = project || null;
   } catch {
     req.project = null;

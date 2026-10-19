@@ -56,7 +56,10 @@ function detectDeviceType(userAgent = '') {
 function injectTrackingPixel(html, trackingId, baseUrl = 'https://dakly-engin.vercel.app') {
   if (!html || !trackingId) return html;
 
-  const cleanBase = baseUrl.replace(/\/+$/, '');
+  let cleanBase = String(baseUrl || 'https://dakly-engin.vercel.app').trim();
+  while (cleanBase.endsWith('/')) {
+    cleanBase = cleanBase.slice(0, -1);
+  }
   const pixelUrl = `${cleanBase}/api/track/open/${trackingId}.png`;
   const pixelHtml = `<img src="${pixelUrl}" width="1" height="1" alt="" style="display:none!important;width:1px!important;height:1px!important;max-height:0!important;max-width:0!important;opacity:0!important;border:none!important;outline:none!important;mso-hide:all;" />`;
 
@@ -77,7 +80,10 @@ function injectTrackingPixel(html, trackingId, baseUrl = 'https://dakly-engin.ve
 function rewriteLinksForClickTracking(html, trackingId, baseUrl = 'https://dakly-engin.vercel.app') {
   if (!html || !trackingId) return html;
 
-  const cleanBase = baseUrl.replace(/\/+$/, '');
+  let cleanBase = String(baseUrl || 'https://dakly-engin.vercel.app').trim();
+  while (cleanBase.endsWith('/')) {
+    cleanBase = cleanBase.slice(0, -1);
+  }
   const trackingEndpointPrefix = `${cleanBase}/api/track/`;
 
   // Matches <a ... href="http..." ...>

@@ -532,8 +532,33 @@ async function trackClick(req, res) {
       }).catch((err) => console.error('Track Click DB Error:', err.message));
     }
 
+    // Validate target destination URL to prevent Open Redirect attacks
+    let safeDestination = 'https://dakly.vercel.app';
+    try {
+      const parsed = new URL(targetUrl);
+      if (
+        (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+        !/[\r\n]/.test(targetUrl)
+      ) {
+        const host = parsed.hostname.toLowerCase();
+        if (
+          host !== 'localhost' &&
+          !host.endsWith('.localhost') &&
+          !host.endsWith('.local') &&
+          !host.endsWith('.internal') &&
+          host !== '127.0.0.1' &&
+          host !== '0.0.0.0' &&
+          host !== '169.254.169.254'
+        ) {
+          safeDestination = parsed.href;
+        }
+      }
+    } catch {
+      safeDestination = 'https://dakly.vercel.app';
+    }
+
     // Immediate 302 Redirect to destination
-    return res.redirect(302, targetUrl);
+    return res.redirect(302, safeDestination);
   } catch (error) {
     console.error('Track Click Error:', error.message);
     res.redirect(302, 'https://dakly.vercel.app');

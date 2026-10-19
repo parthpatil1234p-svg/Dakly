@@ -75,7 +75,11 @@ class Dakly {
       this.throwOnSuppressed = true;
     } else if (typeof apiKeyOrOptions === 'object' && apiKeyOrOptions !== null) {
       this.apiKey = (apiKeyOrOptions.apiKey || (typeof process !== 'undefined' && process.env && process.env.DAKLY_API_KEY) || '').trim();
-      this.baseUrl = (apiKeyOrOptions.baseUrl || (typeof process !== 'undefined' && process.env && process.env.DAKLY_BASE_URL) || 'https://dakly-engin.vercel.app').replace(/\/+$/, '');
+      let rawBaseUrl = (apiKeyOrOptions.baseUrl || (typeof process !== 'undefined' && process.env && process.env.DAKLY_BASE_URL) || 'https://dakly-engin.vercel.app').trim();
+      while (rawBaseUrl.endsWith('/')) {
+        rawBaseUrl = rawBaseUrl.slice(0, -1);
+      }
+      this.baseUrl = rawBaseUrl;
       this.timeout = typeof apiKeyOrOptions.timeout === 'number' ? apiKeyOrOptions.timeout : 15000;
       this.throwOnSuppressed = apiKeyOrOptions.throwOnSuppressed !== false;
     } else {

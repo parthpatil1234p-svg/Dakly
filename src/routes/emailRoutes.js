@@ -13,6 +13,18 @@ const {
   trackClick,
 } = require('../controllers/emailController');
 const authenticateApiKey = require('../middleware/authApiKey');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiter for transactional email delivery and tracking APIs
+const emailLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 600, // 600 requests per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Rate limit exceeded for email delivery requests.' },
+});
+
+router.use(emailLimiter);
 
 // Pre-built email templates catalog & preview
 router.get('/templates', getTemplates);

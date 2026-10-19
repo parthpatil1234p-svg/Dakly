@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const EmailLog = require('../models/EmailLog');
 const Project = require('../models/Project');
+const { isSafeRemoteUrl } = require('../utils/ssrfHelper');
 
 /**
  * Verifies an incoming webhook HMAC signature
@@ -64,6 +65,10 @@ async function dispatchWebhook(project, payload) {
   }
 
   const webhookUrl = project.webhookUrl;
+  if (!webhookUrl || !isSafeRemoteUrl(webhookUrl)) {
+    return { dispatched: false, status: 'UNSAFE_OR_INVALID_URL', reason: 'Disallowed or unsafe destination.' };
+  }
+
   const timestamp = new Date().toISOString();
   const enhancedPayload = {
     ...payload,
@@ -170,10 +175,10 @@ async function dispatchWebhook(project, payload) {
  * @returns {Promise<{ success: boolean, httpStatus?: number, latencyMs?: number, responseText?: string, error?: string }>}
  */
 async function sendTestWebhook(project) {
-  if (!project.webhookUrl) {
+  if (!project.webhookUrl || !isSafeRemoteUrl(project.webhookUrl)) {
     return {
       success: false,
-      error: 'Please enter a valid Webhook Destination URL first.',
+      error: 'Please enter a valid, public Webhook Destination URL (localhost and internal private IPs are not allowed).',
     };
   }
 

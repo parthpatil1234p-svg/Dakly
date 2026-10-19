@@ -9,14 +9,55 @@ const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const emailRoutes = require('./routes/emailRoutes');
 
+const rateLimit = require('express-rate-limit');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security & CORS Middleware (Permits external frontend deployments to consume APIs)
-app.use(helmet({ contentSecurityPolicy: false }));
+// Rate Limiter Middleware to protect against brute-force & denial of service
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Max 1000 requests per 15 minutes per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests from this IP, please try again after 15 minutes.' },
+});
+app.use(globalLimiter);
+
+// Security Middleware (Configured CSP to allow trusted frontend assets and APIs)
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", '*'],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://dakly.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5000',
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: '*',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
   })
@@ -77,12 +118,12 @@ app.get('/health', async (req, res) => {
 });
 
 // Dashboard View (Web UI)
-app.get('/dashboard', (req, res) => {
+app.get('/dashboard', globalLimiter, (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // API Welcome & Quick Info (or Dashboard for Browser Requests)
-app.get('/', (req, res) => {
+app.get('/', globalLimiter, (req, res) => {
   const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
   if (acceptsHtml) {
     return res.sendFile(path.join(__dirname, '../public/index.html'));

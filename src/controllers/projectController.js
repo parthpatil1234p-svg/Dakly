@@ -620,8 +620,17 @@ async function addSuppression(req, res) {
     const { id } = req.params;
     const { email, reason = 'MANUAL_BLOCK', details } = req.body;
 
-    if (!email || !email.includes('@')) {
+    if (!id || typeof id !== 'string' || !mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, error: 'Valid project ID is required.' });
+    }
+
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
       return res.status(400).json({ success: false, error: 'Valid email address is required.' });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanEmail)) {
+      return res.status(400).json({ success: false, error: 'Invalid email format.' });
     }
 
     const project = await Project.findById(id);
@@ -632,8 +641,6 @@ async function addSuppression(req, res) {
     if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ success: false, error: 'Access denied to this project.' });
     }
-
-    const cleanEmail = email.trim().toLowerCase();
 
     const suppression = await Suppression.findOneAndUpdate(
       { projectId: project._id, email: cleanEmail },

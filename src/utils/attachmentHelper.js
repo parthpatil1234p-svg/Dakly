@@ -4,6 +4,8 @@
  * Enforces a strict 15MB size limit to prevent SMTP timeouts and memory exhaustion.
  */
 
+const { isSafeRemoteUrl } = require('./ssrfHelper');
+
 const MAX_SINGLE_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
 const MAX_TOTAL_ATTACHMENT_SIZE = 20 * 1024 * 1024; // 20 MB
 const FETCH_TIMEOUT_MS = 12000; // 12 seconds
@@ -51,8 +53,8 @@ async function processAttachments(attachments = []) {
     const remoteUrl = url || (typeof path === 'string' && /^https?:\/\//i.test(path) ? path : null);
 
     if (remoteUrl) {
-      if (!/^https?:\/\//i.test(remoteUrl)) {
-        throw new Error(`Attachment "${filename || i}": Only http/https URLs are supported.`);
+      if (!isSafeRemoteUrl(remoteUrl)) {
+        throw new Error(`Attachment "${filename || i}": URL is not allowed or points to an unsafe/private address.`);
       }
 
       filename = filename || extractFilenameFromUrl(remoteUrl, `attachment_${i + 1}.pdf`);

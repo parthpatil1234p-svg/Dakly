@@ -26,6 +26,18 @@ const {
   removeProjectMember,
 } = require('../controllers/projectController');
 const { optionalProtect } = require('../middleware/authJwt');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiter for workspace and project management APIs
+const projectLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // 500 requests per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Rate limit exceeded for project actions.' },
+});
+
+router.use(projectLimiter);
 
 // Apply optional JWT authentication to all project routes
 router.use(optionalProtect);
