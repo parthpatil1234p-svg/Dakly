@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="daklyBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090D16" />
+      <stop offset="50%" stop-color="#1E1B4B" />
+      <stop offset="100%" stop-color="#2E1065" />
+    </linearGradient>
+
+    <!-- Primary Brand Gradient -->
+    <linearGradient id="daklyBrand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="50%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#EC4899" />
+    </linearGradient>
+
+    <!-- Lightning Bolt Gradient -->
+    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEF08A" />
+      <stop offset="50%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <style>
+      /* 1. Smooth Floating Engine */
+      .engine-float {
+        animation: floatEngine 3.5s ease-in-out infinite;
+        transform-origin: center;
+      }
+      @keyframes floatEngine {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+      }
+
+      /* 2. Lightning Bolt Power Surge */
+      .bolt-surge {
+        animation: boltPulse 2.2s ease-in-out infinite;
+        transform-origin: 268px 252px;
+      }
+      @keyframes boltPulse {
+        0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.5)); }
+        50% { transform: scale(1.06); filter: drop-shadow(0 0 26px rgba(250, 204, 21, 0.95)); }
+      }
+
+      /* 3. Envelope Laser Data Flow */
+      .data-stream {
+        stroke-dasharray: 60 220;
+        animation: streamMove 2.5s linear infinite;
+      }
+      @keyframes streamMove {
+        from { stroke-dashoffset: 280; }
+        to { stroke-dashoffset: 0; }
+      }
+
+      /* 4. 250 OK Radar Ping */
+      .radar-ring {
+        animation: radarPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        transform-origin: 396px 148px;
+      }
+      @keyframes radarPing {
+        0% { transform: scale(1); opacity: 0.9; }
+        100% { transform: scale(2.6); opacity: 0; }
+      }
+
+      /* 5. High-Speed Rising Data Packets */
+      .packet-1 { animation: rise 2.4s linear infinite; }
+      .packet-2 { animation: rise 3.1s linear infinite 0.8s; }
+      .packet-3 { animation: rise 2.7s linear infinite 1.5s; }
+      @keyframes rise {
+        0% { transform: translateY(60px); opacity: 0; }
+        30% { opacity: 0.6; }
+        70% { opacity: 0.6; }
+        100% { transform: translateY(-120px); opacity: 0; }
+      }
+
+      /* 6. Outer Border Pulse */
+      .border-glow {
+        animation: borderBreathe 4s ease-in-out infinite;
+      }
+      @keyframes borderBreathe {
+        0%, 100% { stroke-opacity: 0.25; }
+        50% { stroke-opacity: 0.7; }
+      }
+    </style>
+  </defs>
+
+  <!-- 1:1 Squircle Base -->
+  <rect width="512" height="512" rx="112" fill="url(#daklyBg)" />
+  <rect class="border-glow" x="10" y="10" width="492" height="492" rx="102" fill="none" stroke="url(#daklyBrand)" stroke-width="5" />
+
+  <!-- Subtle Background Grid -->
+  <g stroke="#FFFFFF" stroke-opacity="0.04" stroke-width="2">
+    <line x1="128" y1="0" x2="128" y2="512" />
+    <line x1="256" y1="0" x2="256" y2="512" />
+    <line x1="384" y1="0" x2="384" y2="512" />
+    <line x1="0" y1="128" x2="512" y2="128" />
+    <line x1="0" y1="256" x2="512" y2="256" />
+    <line x1="0" y1="384" x2="512" y2="384" />
+  </g>
+
+  <!-- Animated Rising Speed Lines (Sub-Second Delivery Vibe) -->
+  <g stroke="#818CF8" stroke-width="4" stroke-linecap="round">
+    <line class="packet-1" x1="72" y1="340" x2="72" y2="300" />
+    <line class="packet-2" x1="440" y1="380" x2="440" y2="330" />
+    <line class="packet-3" x1="145" y1="430" x2="145" y2="395" />
+  </g>
+
+  <!-- Main Floating Group -->
+  <g class="engine-float">
+    <!-- Envelope Base Backplate -->
+    <rect x="96" y="148" width="320" height="224" rx="28" fill="#0F172A" stroke="url(#daklyBrand)" stroke-width="10" />
+    
+    <!-- Animated Laser Stream Around Envelope -->
+    <rect class="data-stream" x="96" y="148" width="320" height="224" rx="28" fill="none" stroke="#38BDF8" stroke-width="10" stroke-linecap="round" />
+
+    <!-- Envelope Bottom Folds -->
+    <path d="M 104 360 L 220 260 M 408 360 L 292 260" stroke="#334155" stroke-width="8" stroke-linecap="round" />
+
+    <!-- Envelope Top Flap -->
+    <path d="M 102 158 L 236 266 C 248 275 264 275 276 266 L 410 158" fill="none" stroke="url(#daklyBrand)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Animated High-Voltage Lightning Bolt -->
+    <g class="bolt-surge">
+      <path d="M 284 82 L 188 244 H 264 L 228 420 L 348 236 H 268 L 284 82 Z" fill="url(#boltGrad)" filter="url(#neonGlow)" />
+      <path d="M 284 82 L 188 244 H 264 L 228 420 L 348 236 H 268 L 284 82 Z" fill="url(#boltGrad)" stroke="#090D16" stroke-width="8" stroke-linejoin="round" />
+    </g>
+
+    <!-- Live Status Telemetry Dot (250 OK) + Radar Ping -->
+    <circle class="radar-ring" cx="396" cy="148" r="18" fill="none" stroke="#10B981" stroke-width="5" />
+    <circle cx="396" cy="148" r="18" fill="#10B981" stroke="#090D16" stroke-width="6" />
+  </g>
+</svg>

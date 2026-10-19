@@ -1253,8 +1253,9 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
               <span>Dakly System Capabilities & Features</span>
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center space-x-2">
-              <span>📮 Yeh System Aapke Project Ke Liye Kya Kar Sakta Hai?</span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center space-x-2.5">
+              <img src="/gemini-svg.svg" alt="Dakly Logo" className="w-7 h-7 rounded-lg inline-block shadow-sm object-contain" />
+              <span>Yeh System Aapke Project Ke Liye Kya Kar Sakta Hai?</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
               Zero-cost, ultra-fast headless email engine jo aapke kisi bhi web/mobile app mein 100% plug & play ho jata hai.
@@ -1418,8 +1419,8 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
           
           {/* Logo Brand */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-3xl mb-3 shadow-lg shadow-indigo-500/10">
-              📮
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 mb-3 shadow-xl shadow-indigo-500/20 p-2 overflow-hidden">
+              <img src="/logo-square-animated.svg" alt="Dakly Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center justify-center space-x-2">
               <span>Dakly</span>
@@ -1579,7 +1580,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
           {/* Logo & Live Status */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2.5">
-              <span className="text-2xl">📮</span>
+              <img src="/logo-square-animated.svg" alt="Dakly Logo" className="w-8 h-8 rounded-lg shadow-md shadow-indigo-500/20 object-contain" />
               <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center">
                 Dakly<span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-xs ml-1.5 px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 font-mono">ENGINE</span>
               </span>
