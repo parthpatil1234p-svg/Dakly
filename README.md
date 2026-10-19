@@ -8,12 +8,12 @@
 ## ✨ Features
 
 - ⚡ **Zero-Setup Delivery Pipeline:** No need to configure Nodemailer or SMTP in every single project. Just make a single `POST` request.
-- 🎨 **100% Headless Design Freedom:** Projects design their own HTML/UI, pass their variables, and attach documents/PDFs. Dakly delivers it without meddling with your template.
+- 🖥️ **Modern Web Dashboard & Playground:** Built-in React + Vite + Tailwind dashboard in `frontend/` to manage senders, API keys, delivery logs, and shoot live test emails with confetti feedback.
 - 🔐 **Military-Grade Security (AES-256-GCM):** Google App Passwords and credentials are encrypted using authenticated AES-256-GCM encryption.
-- 🏢 **Multi-Project & Multi-Tenant:** Manage multiple projects (e.g. College Notes Hub, Document Invoicer, SaaS App) with dedicated sender accounts and unique API keys.
-- 📊 **Real-time Delivery Reports & Tracking:** Every email receives an immutable `trackingId` (`msg_...`). Get millisecond-level synchronous delivery status and persistent audit history.
-- 🛡️ **Anti-Timeout & Connection Pooling:** Uses persistent SMTP connection pooling to prevent cold starts and delivery latency (OTPs arrive in 1–2 seconds).
-- 📈 **Daily Quota Management:** Automatically tracks Gmail's 500 emails/day free threshold per project with automated 24-hour resets.
+- 👥 **Multi-Tenant User Isolation:** Developers sign up and authenticate with JWT; all projects, API keys, and email logs remain 100% private to each account.
+- 🔀 **Multi-Account Failover & Anti-Spam Pacing:** Pool primary and backup Gmail senders (1,000+ free emails/day) with 200ms burst pacing to prevent Google rate limits.
+- 📎 **Remote & Base64 Attachments:** Send PDFs, invoices, and documents up to 15MB via remote URLs or direct base64 payloads.
+- 🔔 **HMAC Delivery Webhooks:** Automated callbacks to your client app on email delivery or bounce.
 
 ---
 
