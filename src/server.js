@@ -63,8 +63,8 @@ app.use(
   })
 );
 
-// Serve Static Frontend Assets
-app.use(express.static(path.join(__dirname, '../public')));
+// Serve Static Frontend Assets (Logos, SVGs, Badges - index: false ensures no HTML index is served)
+app.use(express.static(path.join(__dirname, '../public'), { index: false }));
 
 // Body Parsers (15MB limit to allow base64 PDF/image attachments)
 app.use(express.json({ limit: '15mb' }));
@@ -117,36 +117,50 @@ app.get('/health', async (req, res) => {
   });
 });
 
-// Dashboard View (Web UI)
+// Official Web Dashboard Redirect
 app.get('/dashboard', globalLimiter, (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.redirect(process.env.FRONTEND_URL || 'https://dakly.vercel.app');
 });
 
-// API Welcome & Quick Info (or Dashboard for Browser Requests)
+// API Welcome & Microservice Status (Pure JSON API Engine Status)
 app.get('/', globalLimiter, (req, res) => {
-  const acceptsHtml = req.headers.accept && req.headers.accept.includes('text/html');
-  if (acceptsHtml) {
-    return res.sendFile(path.join(__dirname, '../public/index.html'));
-  }
-
   res.json({
-    name: '📮 Dakly API',
+    service: 'Dakly Transactional Email Engine',
     tagline: 'The zero-setup headless transactional email delivery engine for developers.',
-    status: 'active',
+    status: 'ONLINE',
     version: '1.0.0',
-    documentation: {
-      dashboard: 'GET /dashboard',
-      healthCheck: 'GET /health',
-      createProject: 'POST /api/projects',
-      listProjects: 'GET /api/projects',
-      updateProject: 'PATCH /api/projects/:id',
-      addSender: 'POST /api/projects/:id/senders',
-      listSenders: 'GET /api/projects/:id/senders',
+    cluster: '100% OPERATIONAL',
+    dashboard: process.env.FRONTEND_URL || 'https://dakly.vercel.app',
+    documentation: 'https://github.com/parthpatil1234p-svg/Dakly#readme',
+    endpoints: {
+      health: 'GET /health',
+      ping: 'GET /api/ping',
       sendEmail: 'POST /api/send (Headers: { x-api-key })',
       checkStatus: 'GET /api/status/:trackingId',
       deliveryAuditLogs: 'GET /api/logs (Headers: { x-api-key })',
       dashboardStats: 'GET /api/stats (Headers: { x-api-key })',
       deliveryReports: 'GET /api/reports (Headers: { x-api-key })',
+      templates: 'GET /api/templates',
+      trackingPixel: 'GET /api/tracking/pixel/:trackingId',
+      trackingClick: 'GET /api/tracking/click/:trackingId',
+      auth: {
+        register: 'POST /api/auth/register',
+        login: 'POST /api/auth/login',
+        me: 'GET /api/auth/me',
+      },
+      projects: {
+        list: 'GET /api/projects',
+        create: 'POST /api/projects',
+        get: 'GET /api/projects/:id',
+        update: 'PATCH /api/projects/:id',
+        rotateApiKey: 'POST /api/projects/:id/rotate-key',
+        addSender: 'POST /api/projects/:id/senders',
+        testSender: 'POST /api/projects/:id/senders/:senderId/test',
+        deleteSender: 'DELETE /api/projects/:id/senders/:senderId',
+        webhooks: 'POST /api/projects/:id/webhook',
+        ipWhitelist: 'POST /api/projects/:id/security/whitelist',
+        inviteMember: 'POST /api/projects/:id/members/invite',
+      },
     },
   });
 });
