@@ -26,5 +26,14 @@ jobs:
     - name: Install Dependencies
       run: npm ci
 
-    - name: Syntax Check
-      run: node -c src/utils/crypto.js src/config/db.js src/models/User.js src/models/Project.js src/models/EmailLog.js
+    - name: Run Backend Syntax & Tests
+      run: npm test
+
+    - name: Frontend Build Verification
+      run: |
+        if [ -d "frontend" ]; then
+          cd frontend
+          npm ci
+          npm run build
+        fi
+
