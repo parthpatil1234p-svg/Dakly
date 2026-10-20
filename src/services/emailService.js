@@ -93,9 +93,24 @@ function isQuotaOrAuthLimitError(errorMsg = '') {
  * @param {string} [options.otp] - Convenience OTP string if no full HTML provided
  * @param {string} [options.template] - Pre-built template ID if used
  * @param {Array} [options.attachments] - Array of attachments (URLs, base64, or files)
+ * @param {boolean} [options.trackClicks] - Whether to rewrite links for click tracking (default: true)
+ * @param {boolean} [options.trackOpens] - Whether to inject 1x1 tracking pixel (default: true)
+ * @param {boolean} [options.tracking] - Master switch for all tracking (default: true)
  * @returns {Promise<{ success: boolean, trackingId: string, status: string, error?: string, sender?: string }>}
  */
-async function sendEmail({ project, to, subject, html, text, otp, template, attachments = [] }) {
+async function sendEmail({
+  project,
+  to,
+  subject,
+  html,
+  text,
+  otp,
+  template,
+  attachments = [],
+  trackClicks,
+  trackOpens,
+  tracking,
+}) {
   const startTime = Date.now();
   const trackingId = generateTrackingId();
   const cleanRecipient = (to || '').trim().toLowerCase();
@@ -247,7 +262,11 @@ async function sendEmail({ project, to, subject, html, text, otp, template, atta
   let finalHtmlWithTracking = finalHtml;
   if (finalHtml) {
     const baseUrl = process.env.APP_URL || process.env.DAKLY_API_URL || 'https://dakly-engin.vercel.app';
-    finalHtmlWithTracking = processEmailHtmlForTracking(finalHtml, trackingId, baseUrl);
+    finalHtmlWithTracking = processEmailHtmlForTracking(finalHtml, trackingId, baseUrl, {
+      trackClicks,
+      trackOpens,
+      tracking,
+    });
   }
 
   // 4. Send with Multi-Account Failover & Anti-Spam Pacing

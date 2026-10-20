@@ -105,13 +105,22 @@ function rewriteLinksForClickTracking(html, trackingId, baseUrl = 'https://dakly
  * @param {string} html - Raw or template-compiled HTML
  * @param {string} trackingId - Message tracking ID
  * @param {string} baseUrl - API host URL
+ * @param {Object} [options={}] - Optional tracking controls ({ trackClicks, trackOpens, tracking })
  * @returns {string} Fully instrumented HTML email
  */
-function processEmailHtmlForTracking(html, trackingId, baseUrl) {
+function processEmailHtmlForTracking(html, trackingId, baseUrl, options = {}) {
   if (!html || typeof html !== 'string') return html;
 
-  let instrumented = rewriteLinksForClickTracking(html, trackingId, baseUrl);
-  instrumented = injectTrackingPixel(instrumented, trackingId, baseUrl);
+  const shouldTrackClicks = options.trackClicks !== false && options.tracking !== false;
+  const shouldTrackOpens = options.trackOpens !== false && options.tracking !== false;
+
+  let instrumented = html;
+  if (shouldTrackClicks) {
+    instrumented = rewriteLinksForClickTracking(instrumented, trackingId, baseUrl);
+  }
+  if (shouldTrackOpens) {
+    instrumented = injectTrackingPixel(instrumented, trackingId, baseUrl);
+  }
   return instrumented;
 }
 

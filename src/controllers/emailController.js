@@ -11,7 +11,19 @@ const { TRANSPARENT_GIF_BUFFER, detectDeviceType } = require('../utils/trackingH
  */
 async function send(req, res) {
   try {
-    const { to, subject, html, text, otp, template, vars, attachments } = req.body;
+    const {
+      to,
+      subject,
+      html,
+      text,
+      otp,
+      template,
+      vars,
+      attachments,
+      trackClicks,
+      trackOpens,
+      tracking,
+    } = req.body;
 
     if (!to) {
       return res.status(400).json({
@@ -58,6 +70,9 @@ async function send(req, res) {
       otp,
       template: usedTemplateId,
       attachments: Array.isArray(attachments) ? attachments : [],
+      trackClicks,
+      trackOpens,
+      tracking,
     });
 
     if (result.success) {
@@ -480,7 +495,13 @@ async function trackClick(req, res) {
   try {
     const rawId = req.params.trackingId || '';
     const trackingId = rawId.trim();
-    const targetUrl = req.query.url ? decodeURIComponent(req.query.url).trim() : '';
+    let targetUrl = req.query.url ? String(req.query.url).trim() : '';
+
+    if (targetUrl.includes('%')) {
+      try {
+        targetUrl = decodeURIComponent(targetUrl).trim();
+      } catch (_) {}
+    }
 
     // Safety check: only redirect to valid http/https URLs to prevent javascript: or file: exploits
     if (!targetUrl || (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://'))) {
@@ -532,7 +553,7 @@ async function trackClick(req, res) {
       }).catch((err) => console.error('Track Click DB Error:', err.message));
     }
 
-    // Validate target destination URL to prevent Open Redirect attacks
+    // Validate target destination URL to prevent Open Redirect attacks to internal cloud metadata
     let safeDestination = 'https://dakly.vercel.app';
     try {
       const parsed = new URL(targetUrl);
@@ -541,14 +562,11 @@ async function trackClick(req, res) {
         !/[\r\n]/.test(targetUrl)
       ) {
         const host = parsed.hostname.toLowerCase();
+        // Allow all valid websites and localhost/dev endpoints; block only cloud instance metadata endpoints
         if (
-          host !== 'localhost' &&
-          !host.endsWith('.localhost') &&
-          !host.endsWith('.local') &&
-          !host.endsWith('.internal') &&
-          host !== '127.0.0.1' &&
-          host !== '0.0.0.0' &&
-          host !== '169.254.169.254'
+          host !== '169.254.169.254' &&
+          host !== 'metadata.google.internal' &&
+          !host.endsWith('.metadata.google.internal')
         ) {
           safeDestination = parsed.href;
         }

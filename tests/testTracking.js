@@ -35,4 +35,18 @@ const fullProcess = processEmailHtmlForTracking(htmlWithLinks, 'track_999', 'htt
 assert(fullProcess.includes('/api/track/click/track_999'));
 assert(fullProcess.includes('/api/track/open/track_999.png'));
 
+// 6. Selective tracking options
+const noClickTrack = processEmailHtmlForTracking(htmlWithLinks, 'track_100', 'https://api.dakly.dev', { trackClicks: false });
+assert(!noClickTrack.includes('/api/track/click/'));
+assert(noClickTrack.includes('href="https://example.com/verify?token=abc"'));
+assert(noClickTrack.includes('/api/track/open/track_100.png'));
+
+const noOpenTrack = processEmailHtmlForTracking(htmlWithLinks, 'track_101', 'https://api.dakly.dev', { trackOpens: false });
+assert(noOpenTrack.includes('/api/track/click/track_101'));
+assert(!noOpenTrack.includes('/api/track/open/'));
+
+const noTracking = processEmailHtmlForTracking(htmlWithLinks, 'track_102', 'https://api.dakly.dev', { tracking: false });
+assert(!noTracking.includes('/api/track/'));
+assert(noTracking.includes('href="https://example.com/verify?token=abc"'));
+
 console.log('✅ ALL TRACKING UNIT TESTS PASSED SUCCESSFULLY!');
