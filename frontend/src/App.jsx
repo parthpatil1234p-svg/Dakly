@@ -1250,17 +1250,17 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
 
             <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 text-xs font-semibold tracking-wider uppercase mb-1.5">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Dakly System Capabilities & Features</span>
+              <span>Engine Architecture & Performance Specs</span>
             </div>
 
             <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center space-x-3">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 shadow-md p-1.5 flex items-center justify-center flex-shrink-0">
                 <img src="/logo-square-animated.svg" alt="Dakly Logo" className="w-full h-full object-contain" />
               </div>
-              <span>Yeh System Aapke Project Ke Liye Kya Kar Sakta Hai?</span>
+              <span>Built to Ship: What Dakly Does for Your Architecture</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-              Zero-cost, ultra-fast headless email engine jo aapke kisi bhi web/mobile app mein 100% plug & play ho jata hai.
+              Zero monthly SaaS fees, sub-second OTP latency, and instant drop-in REST integration for any web or mobile stack.
             </p>
           </div>
 
@@ -1438,7 +1438,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                 className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20 text-[11px] font-semibold transition active:scale-[0.98]"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Dekhein Dakly Kya-Kya Kar Sakta Hai ✨</span>
+                <span>Inspect Engine Capabilities & Specs ✨</span>
               </button>
             </div>
           </div>

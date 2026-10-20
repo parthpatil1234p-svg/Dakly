@@ -86,7 +86,7 @@ This document details the architectural design, security mechanisms, pacing logi
 
 ### C. Tracking & Analytics Engine (`trackingHelper.js`)
 - **Open Tracking**:
-  - Automatically appends a hidden 1x1 GIF tracking beacon:
+  - Automatically appends a hidden 1x1 GIF tracking pixel:
     `<img src="https://dakly-engin.vercel.app/api/track/open/<trackingId>" width="1" height="1" style="display:none;" />`
   - When the recipient opens the email in Apple Mail, Gmail, or Outlook, the tracking route records `openedAt`, `openCount`, and parses User-Agent for device categorization (Mobile vs Desktop).
 - **Click Tracking**:

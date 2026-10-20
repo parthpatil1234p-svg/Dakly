@@ -16,6 +16,7 @@
 - 📡 **[REST API Reference](docs/API_REFERENCE.md)**: Comprehensive endpoint catalog, schemas & status codes.
 - 🔔 **[Webhooks Guide](docs/WEBHOOKS.md)**: Event catalog, HMAC-SHA256 signature verification & multi-language examples.
 - ⚡ **[Developer SDK Guide](docs/SDK_GUIDE.md)**: Node.js (`npm i dakly`) & Python (`pip install dakly`) setup.
+- 🎨 **[Brand Voice Standards](docs/brand-guidelines.md)**: Tone, anti-AI guidelines, and copywriting principles.
 - 🤝 **[Contributing Guidelines](CONTRIBUTING.md)**: Dev setup, testing workflows, and PR submission rules.
 - 📜 **[Changelog](CHANGELOG.md)**: Semantic release history & feature updates.
 
@@ -48,7 +49,7 @@ By plugging Dakly into your project, your application instantly gets an enterpri
 | 📊 **Real-Time Audit & Tracking Logs** | Generates an immutable tracking ID (`msg_...`) with millisecond latency logging | Instant visibility into delivery success, bounces, and timestamps |
 | 🔔 **HMAC Delivery Webhooks** | Real-time HMAC-SHA256 authenticated webhooks for delivery, failure, suppression, opens, and clicks | Keeps your backend database updated with asynchronous two-way delivery telemetry |
 | 🛡️ **Server IP Whitelisting & Key Rotation** | Bind API keys to specific server IPs (exact, CIDR `/24`, or wildcard `*`) + 1-click zero-downtime key rotation | Prevents stolen API keys from quota misuse and hardens production infrastructure |
-| 👥 **Team Workspaces & Multi-Seat RBAC** | Multi-developer project collaboration with Owner, Admin, and Viewer permissions | Collaborate seamlessly with team members without sharing developer passwords |
+| 👥 **Team Workspaces & Multi-Seat RBAC** | Multi-developer project collaboration with Owner, Admin, and Viewer permissions | Collaborate directly with team members without sharing developer passwords |
 | 🖼️ **1:1 Brand Logo & Anti-Piracy Guard** | Strict 1:1 square brand logo (1 per project) with magic-byte anti-malware/piracy inspection | Renders high-trust brand logo in outgoing emails while blocking fake media/torrents |
 | 📧 **Pre-built Templates & Variable Engine** | 5 built-in responsive templates (OTP, Welcome, Password Reset, College Notes, Receipts) with dynamic `vars` | Zero HTML design work needed; dynamic interpolation with project branding |
 | 📊 **Open & Click Tracking Analytics** | 1x1 zero-latency transparent pixel + phishing-safe link redirects + device breakdown (Mobile vs Desktop) | Real-time engagement telemetry & webhooks (`email.opened`, `email.clicked`) without 3rd-party dependencies |

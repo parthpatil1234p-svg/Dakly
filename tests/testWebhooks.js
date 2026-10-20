@@ -66,7 +66,7 @@ async function runWebhookTests() {
     });
     assert.strictEqual(isValidStandalone, true, 'Standalone sdk/dakly.js verifyWebhookSignature should return true');
 
-    console.log('✅ Test 3 Passed: Official Node.js SDK and standalone verifyWebhookSignature pass seamlessly.');
+    console.log('✅ Test 3 Passed: Official Node.js SDK and standalone verifyWebhookSignature pass cleanly.');
   }
 
   // Test 4: Disabled Webhooks are not dispatched

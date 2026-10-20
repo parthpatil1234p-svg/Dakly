@@ -123,7 +123,7 @@ x-api-key: gkey_live_...
 ## 2. Tracking Endpoints
 
 ### `GET /api/track/open/:trackingId`
-Zero-latency tracking pixel beacon. Appended invisibly to tracked emails. Returns a 1x1 transparent GIF (`image/gif`) with `Cache-Control: no-cache, no-store`.
+Zero-latency 1x1 transparent tracking pixel. Appended invisibly to tracked emails. Returns a 1x1 transparent GIF (`image/gif`) with `Cache-Control: no-cache, no-store`.
 
 ### `GET /api/track/click/:trackingId?url=<target_url>`
 Hyperlink redirection endpoint. Increments click metrics and immediately issues a `302 Found` redirect to the destination URL.
