@@ -552,10 +552,15 @@ projectSchema.methods.getCapacitySummary = function () {
     senders: senders.map((s, idx) => {
       const warmup = calculateWarmupStage(s.warmupStartedAt, s.dailyQuota);
       const effectiveQuota = s.warmupEnabled !== false ? warmup.effectiveQuota : s.dailyQuota;
+      const displayedEmail = (idx === 0 && this.defaultFromEmail) ? this.defaultFromEmail : s.email;
+      const displayedName = (idx === 0 && this.defaultFromEmail)
+        ? `${s.displayName || this.senderDisplayName || 'Disheera'} (Relay: ${s.email})`
+        : (s.displayName || this.senderDisplayName || 'Disheera');
       return {
         id: s._id,
-        email: s.email,
-        displayName: s.displayName,
+        email: displayedEmail,
+        authEmail: s.email,
+        displayName: displayedName,
         priority: s.priority,
         role: s.priority === 0 || idx === 0 ? 'Primary' : `Backup #${s.priority || idx}`,
         dailyQuota: s.dailyQuota,
