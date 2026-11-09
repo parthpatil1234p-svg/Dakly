@@ -189,6 +189,17 @@ const projectSchema = new mongoose.Schema(
       min: 0,
       max: 5000,
     },
+    // Optional Verified Custom From Alias & Reply-To (e.g. no-replay@disheera.site)
+    defaultFromEmail: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    defaultReplyTo: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     // Delivery Webhooks & Instant Delivery Alerts
     webhookUrl: {
       type: String,

@@ -104,6 +104,8 @@ async function sendEmail({
   subject,
   html,
   text,
+  from,
+  replyTo,
   otp,
   template,
   attachments = [],
@@ -287,9 +289,20 @@ async function sendEmail({
       const decryptedPassword = project.getDecryptedPassword(currentSender);
       const transporter = getTransporter(project, currentSender, decryptedPassword);
 
+      // Support custom From alias (e.g. "no-replay@disheera.site" or '"Disheera" <no-replay@disheera.site>')
+      let resolvedFrom = `"${displayName}" <${senderEmail}>`;
+      if (from) {
+        resolvedFrom = from.includes('<') ? from : `"${displayName}" <${from}>`;
+      } else if (project.defaultFromEmail) {
+        resolvedFrom = project.defaultFromEmail.includes('<')
+          ? project.defaultFromEmail
+          : `"${displayName}" <${project.defaultFromEmail}>`;
+      }
+
       const mailOptions = {
-        from: `"${displayName}" <${senderEmail}>`,
+        from: resolvedFrom,
         to,
+        replyTo: replyTo || project.defaultReplyTo || undefined,
         subject: finalSubject || `${project.name} Notification`,
         html: finalHtmlWithTracking,
         text: text || undefined,
