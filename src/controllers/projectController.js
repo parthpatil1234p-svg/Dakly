@@ -361,7 +361,7 @@ async function getSenders(req, res) {
 }
 
 /**
- * Remove / deactivate a sender
+ * Remove / delete a sender (Primary or Backup)
  * DELETE /api/projects/:id/senders/:senderId
  */
 async function removeSender(req, res) {
@@ -380,18 +380,62 @@ async function removeSender(req, res) {
       return res.status(403).json({ success: false, error: 'Access denied to this project.' });
     }
 
+    let deletedEmail = '';
+
     if (project.senders && project.senders.length > 0) {
-      const sender = project.senders.id(senderId);
+      const sender =
+        project.senders.id(senderId) ||
+        project.senders.find((s) => s._id.toString() === senderId || s.email === senderId);
+
       if (sender) {
-        sender.isActive = false;
+        deletedEmail = sender.email;
+        const wasPrimary = project.senderEmail === sender.email || sender.priority === 0;
+
+        project.senders.pull(sender._id);
+
+        if (wasPrimary) {
+          const remainingSenders = project.senders.filter((s) => s.isActive !== false);
+          if (remainingSenders.length > 0) {
+            remainingSenders.sort((a, b) => a.priority - b.priority);
+            remainingSenders[0].priority = 0;
+            project.senderEmail = remainingSenders[0].email;
+            project.senderDisplayName = remainingSenders[0].displayName || project.name;
+            project.encryptedPassword = remainingSenders[0].encryptedPassword;
+            project.iv = remainingSenders[0].iv;
+            project.authTag = remainingSenders[0].authTag;
+          } else {
+            project.senderEmail = '';
+            project.encryptedPassword = '';
+            project.iv = '';
+            project.authTag = '';
+          }
+        }
         await project.save();
-        invalidateTransporter(project._id, sender.email);
+        invalidateTransporter(project._id, deletedEmail);
       }
+    } else if (
+      project.senderEmail &&
+      (senderId === project._id.toString() ||
+        senderId === project.senderEmail ||
+        senderId === 'primary')
+    ) {
+      deletedEmail = project.senderEmail;
+      project.senderEmail = '';
+      project.encryptedPassword = '';
+      project.iv = '';
+      project.authTag = '';
+      await project.save();
+      invalidateTransporter(project._id, deletedEmail);
     }
+
+    const capacity = project.getCapacitySummary();
 
     res.json({
       success: true,
-      message: 'Sender deactivated successfully.',
+      message: deletedEmail
+        ? `Sender ${deletedEmail} removed successfully.`
+        : 'Sender removed successfully.',
+      capacity,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

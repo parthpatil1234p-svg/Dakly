@@ -69,6 +69,18 @@ export async function addSender(projectId, { email, appPassword, displayName }, 
   return res.json();
 }
 
+export async function deleteSender(projectId, senderId, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/senders/${senderId}`, {
+    method: 'DELETE',
+    headers,
+  });
+  return res.json();
+}
+
 export async function fetchStats(apiKey) {
   const res = await fetch(`${API_BASE_URL}/api/stats`, {
     headers: { 'x-api-key': apiKey },

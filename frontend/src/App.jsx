@@ -64,6 +64,7 @@ import {
   sendEmail,
   createProject,
   addSender,
+  deleteSender,
   pingApiKey,
   uploadProjectLogo,
   deleteProjectLogo,
@@ -294,6 +295,7 @@ export default function App() {
   const [newProjForm, setNewProjForm] = useState({ name: '', senderEmail: '', appPassword: '', senderDisplayName: '' });
   const [addSenderForm, setAddSenderForm] = useState({ email: '', appPassword: '', displayName: '' });
   const [modalLoading, setModalLoading] = useState(false);
+  const [isDeletingSender, setIsDeletingSender] = useState(false);
 
   // Suppression & Bounce Protection State
   const [showSuppressionModal, setShowSuppressionModal] = useState(false);
@@ -988,6 +990,83 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
       }
     } catch (err) {
       console.error('Failed to toggle warmup mode:', err);
+    }
+  }
+
+  async function handleDeleteSender(sender) {
+    if (!activeProject) return;
+    const senderEmail = sender.email;
+    const isPrimary = sender.role === 'Primary';
+    const totalSenders = stats?.capacity?.senders?.length || 1;
+
+    let confirmMsg = `Are you sure you want to delete ${senderEmail} from this project?`;
+    if (isPrimary && totalSenders > 1) {
+      confirmMsg += '\n\nNote: The next backup sender will automatically become Primary.';
+    } else if (totalSenders <= 1) {
+      confirmMsg += "\n\nWarning: This is the ONLY sender in this project. Removing it means you won't be able to send emails until you add another Gmail sender.";
+    }
+
+    if (!window.confirm(confirmMsg)) return;
+
+    const projId = activeProject.id || activeProject._id;
+    const senderId = sender.id || sender._id || sender.email;
+
+    try {
+      setIsDeletingSender(true);
+      const res = await deleteSender(projId, senderId, authToken);
+      if (res.success) {
+        if (activeProject.apiKey) {
+          await loadStats(activeProject.apiKey);
+        }
+        if (authToken) {
+          await loadProjects(authToken);
+        }
+      } else {
+        alert(res.error || 'Failed to remove sender.');
+      }
+    } catch (err) {
+      console.error('Failed to delete sender:', err);
+      alert(err.message || 'Error occurred while deleting sender.');
+    } finally {
+      setIsDeletingSender(false);
+    }
+  }
+
+  async function handleDeleteSenderFromProject(project, sender) {
+    const senderEmail = sender.email;
+    const isPrimary = sender.priority === 0 || project.senderEmail === sender.email;
+    const totalSenders = project.senders?.length || 1;
+
+    let confirmMsg = `Are you sure you want to delete ${senderEmail} from "${project.name}"?`;
+    if (isPrimary && totalSenders > 1) {
+      confirmMsg += '\n\nNote: The next backup sender will automatically become Primary.';
+    } else if (totalSenders <= 1) {
+      confirmMsg += '\n\nWarning: This is the ONLY sender in this project.';
+    }
+
+    if (!window.confirm(confirmMsg)) return;
+
+    const projId = project.id || project._id;
+    const senderId = sender.id || sender._id || sender.email;
+
+    try {
+      setIsDeletingSender(true);
+      const res = await deleteSender(projId, senderId, authToken);
+      if (res.success) {
+        if (authToken) {
+          await loadProjects(authToken);
+        }
+        if (activeProject && (activeProject.id === projId || activeProject._id === projId) && activeProject.apiKey) {
+          await loadStats(activeProject.apiKey);
+        }
+      } else {
+        alert(res.error || 'Failed to remove sender.');
+      }
+    } catch (err) {
+      console.error('Failed to delete sender:', err);
+      alert(err.message || 'Error occurred while deleting sender.');
+    } finally {
+      setIsDeletingSender(false);
     }
   }
 
@@ -2289,6 +2368,15 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                               }`}
                               title={s.isExhaustedToday ? 'Quota Reached' : 'Active'}
                             ></span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSender(s)}
+                              disabled={isDeletingSender}
+                              className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 dark:hover:bg-rose-500/15 border border-transparent hover:border-rose-500/20 transition active:scale-95 disabled:opacity-50"
+                              title={`Delete ${s.role} sender (${s.email})`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
 
@@ -2313,13 +2401,40 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                             )}
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => handleToggleWarmup(s.id || s.email, s.warmupEnabled)}
-                            className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-mono font-semibold transition"
-                          >
-                            {s.warmupEnabled ? '⚡ Skip to 500/day' : '🔥 Enable Warm-up'}
-                          </button>
+                          <div className="flex items-center space-x-3 self-end sm:self-auto">
+                            {s.warmupEnabled && (s.warmup?.isComplete || s.effectiveQuota >= (s.dailyQuota || 500)) ? (
+                              <span className="text-emerald-500 font-mono text-xs font-semibold">✅ Fully Ramped</span>
+                            ) : s.warmupEnabled ? (
+                              <button
+                                type="button"
+                                onClick={() => handleToggleWarmup(s.id || s.email, s.warmupEnabled)}
+                                className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-mono font-semibold transition"
+                              >
+                                ⚡ Skip to 500/day
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleToggleWarmup(s.id || s.email, s.warmupEnabled)}
+                                className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-mono font-semibold transition"
+                              >
+                                🔥 Enable Warm-up
+                              </button>
+                            )}
+
+                            <span className="text-slate-300 dark:text-slate-700">•</span>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSender(s)}
+                              disabled={isDeletingSender}
+                              className="text-xs sm:text-sm text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 hover:underline font-mono font-semibold transition flex items-center space-x-1"
+                              title={`Delete ${s.role} sender`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5 inline" />
+                              <span>Delete {s.role}</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -3026,9 +3141,20 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                           {(p.senders || [{ email: p.senderEmail, dailyQuota: 500, emailsSentToday: 0 }]).map((s, idx) => (
                             <div key={idx} className="p-3 rounded-xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-white/5 flex items-center justify-between">
                               <span className="text-slate-800 dark:text-slate-300 font-medium">{s.email}</span>
-                              <span className="text-xs text-slate-500 font-bold">
-                                {s.emailsSentToday || 0} / {s.dailyQuota || 500} sent
-                              </span>
+                              <div className="flex items-center space-x-2.5">
+                                <span className="text-xs text-slate-500 font-bold">
+                                  {s.emailsSentToday || 0} / {s.dailyQuota || 500} sent
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSenderFromProject(p, s)}
+                                  disabled={isDeletingSender}
+                                  className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition"
+                                  title={`Delete ${s.email}`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
