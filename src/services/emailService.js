@@ -195,7 +195,9 @@ async function sendEmail({
 
   if (!activeSender) {
     const quotaSummary = project.getCapacitySummary();
-    const quotaError = `Daily quota reached across all ${quotaSummary.sendersCount} configured Gmail account(s) (${quotaSummary.totalSentToday}/${quotaSummary.totalDailyQuota} sent today). Resets at 00:00 UTC.`;
+    const quotaError = quotaSummary.sendersCount === 0
+      ? 'No active Gmail sender configured for this project. Please connect a Gmail account with a Google App Password in your Dakly dashboard.'
+      : `Daily quota reached across all ${quotaSummary.sendersCount} configured Gmail account(s) (${quotaSummary.totalSentToday}/${quotaSummary.totalDailyQuota} sent today). Resets at 00:00 UTC.`;
 
     await EmailLog.create({
       projectId: project._id,

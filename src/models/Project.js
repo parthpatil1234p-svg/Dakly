@@ -492,6 +492,13 @@ projectSchema.methods.addSender = async function ({
     ];
   }
 
+  if (!this.senders) {
+    this.senders = [];
+  }
+
+  const activeCount = this.senders.filter((s) => s.isActive !== false).length;
+  const effectivePriority = activeCount === 0 ? 0 : priority;
+
   // Check if sender already exists
   const existingIndex = this.senders.findIndex((s) => s.email.toLowerCase() === cleanEmail);
   if (existingIndex >= 0) {
@@ -500,7 +507,7 @@ projectSchema.methods.addSender = async function ({
     this.senders[existingIndex].iv = iv;
     this.senders[existingIndex].authTag = authTag;
     this.senders[existingIndex].dailyQuota = dailyQuota;
-    this.senders[existingIndex].priority = priority;
+    this.senders[existingIndex].priority = effectivePriority;
     this.senders[existingIndex].isActive = true;
     this.senders[existingIndex].isExhaustedToday = false;
     if (warmupEnabled !== undefined) {
@@ -514,12 +521,21 @@ projectSchema.methods.addSender = async function ({
       iv,
       authTag,
       dailyQuota,
-      priority,
+      priority: effectivePriority,
       isActive: true,
       isExhaustedToday: false,
       warmupEnabled: warmupEnabled !== false,
       warmupStartedAt: new Date(),
     });
+  }
+
+  // If project has no active senderEmail or this is the first active sender, sync to project root
+  if (!this.senderEmail || effectivePriority === 0 || this.senders.length === 1) {
+    this.senderEmail = cleanEmail;
+    this.senderDisplayName = displayName || this.name;
+    this.encryptedPassword = encryptedData;
+    this.iv = iv;
+    this.authTag = authTag;
   }
 
   // Recalculate total daily quota

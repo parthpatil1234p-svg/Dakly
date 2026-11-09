@@ -1190,7 +1190,8 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
     if (!activeProject) return;
     setModalLoading(true);
     try {
-      const data = await addSender(activeProject.id, addSenderForm, authToken);
+      const projId = activeProject.id || activeProject._id;
+      const data = await addSender(projId, addSenderForm, authToken);
       if (data.success) {
         setShowAddSenderModal(false);
         setAddSenderForm({ email: '', appPassword: '', displayName: '' });
@@ -1690,7 +1691,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
               >
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.senderEmail})
+                    {p.name} {p.senderEmail ? `(${p.senderEmail})` : '(No sender)'}
                   </option>
                 ))}
               </select>
@@ -2325,16 +2326,40 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                       </button>
                       <button
                         onClick={() => setShowAddSenderModal(true)}
-                        className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white dark:border-transparent text-xs sm:text-sm font-semibold transition active:scale-[0.98] shadow-xs"
+                        className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition active:scale-[0.98] shadow-md shadow-indigo-500/20"
                       >
-                        <Plus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                        <span>Add Backup Gmail (+500/day)</span>
+                        <Plus className="w-4 h-4" />
+                        <span>{stats?.capacity?.senders?.length > 0 ? 'Add Backup Gmail (+500/day)' : '+ Connect Gmail Sender'}</span>
                       </button>
                     </div>
                   </div>
 
                   <div className="mt-5 space-y-4">
-                    {stats?.capacity?.senders?.map((s, idx) => (
+                    {(!stats?.capacity?.senders || stats?.capacity?.senders?.length === 0) ? (
+                      <div className="py-12 px-6 text-center rounded-2xl bg-slate-50/50 dark:bg-[#080a0f]/60 border border-dashed border-amber-500/30 dark:border-amber-500/20 space-y-4">
+                        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center mx-auto shadow-inner">
+                          <Mail className="w-7 h-7" />
+                        </div>
+                        <div className="max-w-md mx-auto space-y-1.5">
+                          <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center justify-center space-x-2">
+                            <AlertCircle className="w-5 h-5 text-amber-500" />
+                            <span>No Active Gmail Senders</span>
+                          </h4>
+                          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                            You currently have 0 senders configured for this project. Connect a Gmail sender account with a Google App Password to enable transactional OTPs and email deliveries.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddSenderModal(true)}
+                          className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold transition shadow-md shadow-indigo-500/25 active:scale-95"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>+ Connect Gmail Sender</span>
+                        </button>
+                      </div>
+                    ) : (
+                      stats.capacity.senders.map((s, idx) => (
                       <div
                         key={idx}
                         className="p-5 rounded-2xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200/80 dark:border-white/5 space-y-3.5"
@@ -2437,7 +2462,8 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                           </div>
                         </div>
                       </div>
-                    ))}
+                    ))
+                    )}
                   </div>
                 </SpotlightCard>
 
@@ -4912,19 +4938,23 @@ curl -X POST "${API_BASE_URL}/api/send" \\
           <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10 max-w-md w-full space-y-4 shadow-2xl bg-white dark:bg-[#0d1017]">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <span>🛡️</span>
-                <span>Add Backup Gmail Account</span>
+                <span>{stats?.capacity?.senders?.length > 0 ? '🛡️' : '📮'}</span>
+                <span>{stats?.capacity?.senders?.length > 0 ? 'Add Backup Gmail Account' : 'Connect Gmail Sender Account'}</span>
               </h3>
               <button onClick={() => setShowAddSenderModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Adds a secondary Gmail account to automatically double daily capacity to 1,000+ emails/day.
+              {stats?.capacity?.senders?.length > 0
+                ? 'Adds a secondary Gmail account to automatically double daily capacity to 1,000+ emails/day.'
+                : 'Connect your Gmail account with a 16-character Google App Password to enable transactional email delivery.'}
             </p>
             <form onSubmit={handleAddSenderSubmit} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Backup Gmail Address *</label>
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {stats?.capacity?.senders?.length > 0 ? 'Backup Gmail Address *' : 'Gmail Sender Address *'}
+                </label>
                 <input
                   type="email"
                   required
@@ -4968,7 +4998,7 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                   disabled={modalLoading}
                   className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
                 >
-                  {modalLoading ? 'Adding...' : 'Add Account'}
+                  {modalLoading ? 'Connecting...' : (stats?.capacity?.senders?.length > 0 ? 'Add Backup Account' : 'Connect Gmail Sender')}
                 </button>
               </div>
             </form>
