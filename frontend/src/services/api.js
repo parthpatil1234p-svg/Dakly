@@ -81,6 +81,40 @@ export async function deleteSender(projectId, senderId, token) {
   return res.json();
 }
 
+export async function addSenderAlias(projectId, senderId, { email, displayName, isDefault }, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/senders/${senderId}/aliases`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ email, displayName, isDefault }),
+  });
+  return res.json();
+}
+
+export async function deleteSenderAlias(projectId, senderId, aliasEmail, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/senders/${senderId}/aliases/${encodeURIComponent(aliasEmail)}`, {
+    method: 'DELETE',
+    headers,
+  });
+  return res.json();
+}
+
+export async function fetchProjectAliases(projectId, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/aliases`, { headers });
+  return res.json();
+}
+
 export async function fetchStats(apiKey) {
   const res = await fetch(`${API_BASE_URL}/api/stats`, {
     headers: { 'x-api-key': apiKey },

@@ -98,6 +98,29 @@ function isQuotaOrAuthLimitError(errorMsg = '') {
  * @param {boolean} [options.tracking] - Master switch for all tracking (default: true)
  * @returns {Promise<{ success: boolean, trackingId: string, status: string, error?: string, sender?: string }>}
  */
+/**
+ * Parses a 'From' header string into display name and clean email
+ * Examples:
+ *   '"Acme Support" <support@acme.com>' -> { displayName: 'Acme Support', email: 'support@acme.com' }
+ *   'Acme Support <support@acme.com>'   -> { displayName: 'Acme Support', email: 'support@acme.com' }
+ *   'support@acme.com'                  -> { displayName: '', email: 'support@acme.com' }
+ */
+function parseFromHeader(fromStr) {
+  if (!fromStr || typeof fromStr !== 'string') return { displayName: '', email: '' };
+  const trimmed = fromStr.trim();
+  const match = trimmed.match(/^(?:"?([^"<]+)"?\s*)?<([^>]+)>$/);
+  if (match) {
+    return {
+      displayName: (match[1] || '').trim(),
+      email: (match[2] || '').trim().toLowerCase(),
+    };
+  }
+  return {
+    displayName: '',
+    email: trimmed.toLowerCase(),
+  };
+}
+
 async function sendEmail({
   project,
   to,
@@ -105,6 +128,9 @@ async function sendEmail({
   html,
   text,
   from,
+  fromAlias,
+  alias,
+  senderAlias,
   replyTo,
   otp,
   template,
@@ -190,8 +216,11 @@ async function sendEmail({
     };
   }
 
+    const requestedFromRaw = from || fromAlias || alias || senderAlias || project.defaultFromEmail;
+  const parsedRequestedFrom = parseFromHeader(requestedFromRaw);
+
   // 2. Select Active Sender with Failover (Primary -> Backup 1 -> Backup 2)
-  let activeSender = project.getActiveSender();
+  let activeSender = project.getActiveSender(parsedRequestedFrom.email);
 
   if (!activeSender) {
     const quotaSummary = project.getCapacitySummary();
@@ -281,7 +310,30 @@ async function sendEmail({
   while (attempts < maxAttempts && currentSender) {
     attempts++;
     const senderEmail = currentSender.email;
-    const displayName = currentSender.displayName || project.senderDisplayName || project.name;
+    const defaultDisplayName = currentSender.displayName || project.senderDisplayName || project.name;
+
+    let targetFromEmail = senderEmail;
+    let targetDisplayName = defaultDisplayName;
+    let isUsingAlias = false;
+
+    if (parsedRequestedFrom.email) {
+      targetFromEmail = parsedRequestedFrom.email;
+      if (parsedRequestedFrom.displayName) {
+        targetDisplayName = parsedRequestedFrom.displayName;
+      }
+
+      if (targetFromEmail.toLowerCase() !== senderEmail.toLowerCase()) {
+        isUsingAlias = true;
+        if (!parsedRequestedFrom.displayName && currentSender.aliases && Array.isArray(currentSender.aliases)) {
+          const aliasObj = currentSender.aliases.find(
+            (a) => a.email && a.email.toLowerCase() === targetFromEmail.toLowerCase()
+          );
+          if (aliasObj && aliasObj.displayName) {
+            targetDisplayName = aliasObj.displayName;
+          }
+        }
+      }
+    }
 
     try {
       // Phase 1.3: Anti-Spam Burst Pacing
@@ -291,20 +343,12 @@ async function sendEmail({
       const decryptedPassword = project.getDecryptedPassword(currentSender);
       const transporter = getTransporter(project, currentSender, decryptedPassword);
 
-      // Support custom From alias (e.g. "no-replay@disheera.site" or '"Disheera" <no-replay@disheera.site>')
-      let resolvedFrom = `"${displayName}" <${senderEmail}>`;
-      if (from) {
-        resolvedFrom = from.includes('<') ? from : `"${displayName}" <${from}>`;
-      } else if (project.defaultFromEmail) {
-        resolvedFrom = project.defaultFromEmail.includes('<')
-          ? project.defaultFromEmail
-          : `"${displayName}" <${project.defaultFromEmail}>`;
-      }
+      const resolvedFrom = `"${targetDisplayName}" <${targetFromEmail}>`;
 
       const mailOptions = {
         from: resolvedFrom,
-        to,
-        replyTo: replyTo || project.defaultReplyTo || undefined,
+        to: cleanRecipient,
+        replyTo: replyTo || (isUsingAlias ? targetFromEmail : project.defaultReplyTo) || undefined,
         subject: finalSubject || `${project.name} Notification`,
         html: finalHtmlWithTracking,
         text: text || undefined,
@@ -322,7 +366,9 @@ async function sendEmail({
         projectId: project._id,
         trackingId,
         senderEmail,
-        to,
+        fromEmail: targetFromEmail,
+        isAlias: isUsingAlias,
+        to: cleanRecipient,
         subject: mailOptions.subject,
         status: 'DELIVERED',
         template: template || null,
@@ -338,7 +384,9 @@ async function sendEmail({
         projectId: project._id,
         projectName: project.name,
         sender: senderEmail,
-        recipient: to,
+        from: targetFromEmail,
+        isAlias: isUsingAlias,
+        recipient: cleanRecipient,
         subject: mailOptions.subject,
         status: 'DELIVERED',
         hasAttachments: processedAttachments.length > 0,
@@ -353,7 +401,9 @@ async function sendEmail({
         trackingId,
         messageId: info.messageId,
         sender: senderEmail,
-        recipient: to,
+        from: targetFromEmail,
+        isAlias: isUsingAlias,
+        recipient: cleanRecipient,
         executionTimeMs,
         hasAttachments: processedAttachments.length > 0,
         timestamp: new Date().toISOString(),
@@ -384,11 +434,14 @@ async function sendEmail({
         }).catch(() => {});
       }
 
+      const executionTimeMs = Date.now() - startTime;
       await EmailLog.create({
         projectId: project._id,
         trackingId,
         senderEmail,
-        to,
+        fromEmail: targetFromEmail,
+        isAlias: isUsingAlias,
+        to: cleanRecipient,
         subject: finalSubject || `${project.name} Notification`,
         status: 'FAILED',
         template: template || null,

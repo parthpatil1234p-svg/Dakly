@@ -1204,6 +1204,194 @@ async function removeProjectMember(req, res) {
   }
 }
 
+
+/**
+ * Add a sender alias to a specific sender account
+ * POST /api/projects/:id/senders/:senderId/aliases
+ * Body: { email, displayName, isDefault }
+ */
+async function addSenderAlias(req, res) {
+  try {
+    const { id, senderId } = req.params;
+    const { email, displayName, isDefault } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Alias email address is required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ success: false, error: 'Invalid alias email format.' });
+    }
+
+    const project = await Project.findById(id).select(
+      '+encryptedPassword +iv +authTag +senders.encryptedPassword +senders.iv +senders.authTag'
+    );
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    // Locate sender
+    let targetSender = null;
+    if (project.senders && project.senders.length > 0) {
+      targetSender =
+        project.senders.id(senderId) ||
+        project.senders.find((s) => s._id.toString() === senderId || s.email.toLowerCase() === senderId.toLowerCase());
+    }
+
+    if (!targetSender && (senderId === 'primary' || senderId === project._id.toString() || (project.senderEmail && senderId.toLowerCase() === project.senderEmail.toLowerCase()))) {
+      if (project.senders && project.senders.length > 0) {
+        targetSender = project.senders[0];
+      }
+    }
+
+    if (!targetSender) {
+      return res.status(404).json({ success: false, error: 'Sender account not found.' });
+    }
+
+    if (!targetSender.aliases) {
+      targetSender.aliases = [];
+    }
+
+    // Check if alias already exists on this sender
+    const exists = targetSender.aliases.some((a) => a.email.toLowerCase() === cleanEmail);
+    if (exists) {
+      return res.status(400).json({ success: false, error: `Alias [${cleanEmail}] already exists on this sender.` });
+    }
+
+    if (isDefault) {
+      targetSender.aliases.forEach((a) => {
+        a.isDefault = false;
+      });
+      project.defaultFromEmail = cleanEmail;
+      if (displayName) project.defaultFromDisplayName = displayName.trim();
+    }
+
+    targetSender.aliases.push({
+      email: cleanEmail,
+      displayName: displayName ? displayName.trim() : '',
+      isDefault: Boolean(isDefault),
+      addedAt: new Date(),
+    });
+
+    await project.save();
+
+    res.status(201).json({
+      success: true,
+      message: `Alias [${cleanEmail}] added successfully to sender [${targetSender.email}].`,
+      aliases: targetSender.aliases,
+      capacity: project.getCapacitySummary(),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Remove an alias from a sender account
+ * DELETE /api/projects/:id/senders/:senderId/aliases/:aliasEmail
+ */
+async function removeSenderAlias(req, res) {
+  try {
+    const { id, senderId, aliasEmail } = req.params;
+
+    if (!aliasEmail) {
+      return res.status(400).json({ success: false, error: 'Alias email is required.' });
+    }
+
+    const cleanAlias = decodeURIComponent(aliasEmail).trim().toLowerCase();
+
+    const project = await Project.findById(id).select(
+      '+encryptedPassword +iv +authTag +senders.encryptedPassword +senders.iv +senders.authTag'
+    );
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    let targetSender = null;
+    if (project.senders && project.senders.length > 0) {
+      targetSender =
+        project.senders.id(senderId) ||
+        project.senders.find((s) => s._id.toString() === senderId || s.email.toLowerCase() === senderId.toLowerCase());
+    }
+
+    if (!targetSender && (senderId === 'primary' || senderId === project._id.toString() || (project.senderEmail && senderId.toLowerCase() === project.senderEmail.toLowerCase()))) {
+      if (project.senders && project.senders.length > 0) {
+        targetSender = project.senders[0];
+      }
+    }
+
+    if (!targetSender) {
+      return res.status(404).json({ success: false, error: 'Sender account not found.' });
+    }
+
+    if (!targetSender.aliases || targetSender.aliases.length === 0) {
+      return res.status(404).json({ success: false, error: 'No aliases found for this sender.' });
+    }
+
+    const initialLen = targetSender.aliases.length;
+    targetSender.aliases = targetSender.aliases.filter((a) => a.email.toLowerCase() !== cleanAlias);
+
+    if (targetSender.aliases.length === initialLen) {
+      return res.status(404).json({ success: false, error: `Alias [${cleanAlias}] not found on this sender.` });
+    }
+
+    if (project.defaultFromEmail && project.defaultFromEmail.toLowerCase() === cleanAlias) {
+      project.defaultFromEmail = '';
+      project.defaultFromDisplayName = '';
+    }
+
+    await project.save();
+
+    res.json({
+      success: true,
+      message: `Alias [${cleanAlias}] removed successfully from sender [${targetSender.email}].`,
+      aliases: targetSender.aliases,
+      capacity: project.getCapacitySummary(),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Get all aliases across all senders for a project
+ * GET /api/projects/:id/aliases
+ */
+async function getProjectAliases(req, res) {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id);
+
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    const summary = project.getCapacitySummary();
+    res.json({
+      success: true,
+      aliases: summary.allAliases || [],
+      defaultFromEmail: project.defaultFromEmail || '',
+      defaultFromDisplayName: project.defaultFromDisplayName || '',
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   createProject,
   getProjects,
@@ -1228,4 +1416,7 @@ module.exports = {
   addProjectMember,
   updateProjectMember,
   removeProjectMember,
+  addSenderAlias,
+  removeSenderAlias,
+  getProjectAliases,
 };

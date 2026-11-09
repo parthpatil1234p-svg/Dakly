@@ -65,6 +65,8 @@ import {
   createProject,
   addSender,
   deleteSender,
+  addSenderAlias,
+  deleteSenderAlias,
   pingApiKey,
   uploadProjectLogo,
   deleteProjectLogo,
@@ -268,6 +270,15 @@ export default function App() {
   const [pingResult, setPingResult] = useState(null);
   const [isPinging, setIsPinging] = useState(false);
   const [autoRefreshLogs, setAutoRefreshLogs] = useState(false);
+  // Sender Aliases Modal & Form State
+  const [isAddAliasModalOpen, setIsAddAliasModalOpen] = useState(false);
+  const [aliasTargetSender, setAliasTargetSender] = useState(null);
+  const [newAliasEmail, setNewAliasEmail] = useState('');
+  const [newAliasDisplayName, setNewAliasDisplayName] = useState('');
+  const [newAliasIsDefault, setNewAliasIsDefault] = useState(false);
+  const [isSavingAlias, setIsSavingAlias] = useState(false);
+  const [playFrom, setPlayFrom] = useState('');
+
   const [curlCopied, setCurlCopied] = useState(false);
 
   // Templates Tab State
@@ -1070,6 +1081,76 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
     }
   }
 
+  function openAddAliasModal(sender) {
+    setAliasTargetSender(sender);
+    setNewAliasEmail('');
+    setNewAliasDisplayName(sender.displayName || '');
+    setNewAliasIsDefault(false);
+    setIsAddAliasModalOpen(true);
+  }
+
+  async function handleAddAliasSubmit(e) {
+    e.preventDefault();
+    if (!newAliasEmail.trim()) {
+      alert('Please enter an alias email.');
+      return;
+    }
+    if (!activeProject || !aliasTargetSender) return;
+
+    const projId = activeProject.id || activeProject._id;
+    const senderId = aliasTargetSender.id || aliasTargetSender._id || aliasTargetSender.email;
+
+    try {
+      setIsSavingAlias(true);
+      const res = await addSenderAlias(
+        projId,
+        senderId,
+        {
+          email: newAliasEmail.trim(),
+          displayName: newAliasDisplayName.trim(),
+          isDefault: newAliasIsDefault,
+        },
+        authToken
+      );
+
+      if (res.success) {
+        setIsAddAliasModalOpen(false);
+        if (authToken) await loadProjects(authToken);
+        if (activeProject.apiKey) await loadStats(activeProject.apiKey);
+      } else {
+        alert(res.error || 'Failed to add sender alias.');
+      }
+    } catch (err) {
+      console.error('Failed to add sender alias:', err);
+      alert(err.message || 'Error occurred while adding alias.');
+    } finally {
+      setIsSavingAlias(false);
+    }
+  }
+
+  async function handleDeleteAlias(sender, alias) {
+    if (!window.confirm(`Are you sure you want to delete alias "${alias.email}" from ${sender.email}?`)) {
+      return;
+    }
+    if (!activeProject) return;
+
+    const projId = activeProject.id || activeProject._id;
+    const senderId = sender.id || sender._id || sender.email;
+
+    try {
+      const res = await deleteSenderAlias(projId, senderId, alias.email, authToken);
+      if (res.success) {
+        if (authToken) await loadProjects(authToken);
+        if (activeProject.apiKey) await loadStats(activeProject.apiKey);
+      } else {
+        alert(res.error || 'Failed to delete alias.');
+      }
+    } catch (err) {
+      console.error('Failed to delete alias:', err);
+      alert(err.message || 'Error occurred while deleting alias.');
+    }
+  }
+
   // Auto-refresh logs when enabled
   useEffect(() => {
     let interval;
@@ -1120,6 +1201,9 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
       to: playTo.trim(),
       subject: playSubject.trim(),
     };
+    if (playFrom.trim()) {
+      payload.from = playFrom.trim();
+    }
 
     if (playMode === 'otp') {
       payload.otp = playOtp.trim();
@@ -2405,6 +2489,63 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                           </div>
                         </div>
 
+                        {/* Sender Aliases Section (Gmail "Send mail as") */}
+                        <div className="pt-3 border-t border-slate-200/60 dark:border-white/5 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center space-x-1">
+                                <span>Sender Aliases</span>
+                                <span className="text-[10px] text-slate-400 font-normal">("Send mail as")</span>
+                              </span>
+                              {s.aliases && s.aliases.length > 0 && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                                  {s.aliases.length}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => openAddAliasModal(s)}
+                              className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium flex items-center space-x-1 hover:underline transition"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Add Alias</span>
+                            </button>
+                          </div>
+
+                          {s.aliases && s.aliases.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {s.aliases.map((alias, aIdx) => (
+                                <div
+                                  key={aIdx}
+                                  className="inline-flex items-center space-x-2 px-2.5 py-1 rounded-lg text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-xs"
+                                >
+                                  <span className="font-mono text-slate-800 dark:text-slate-200">
+                                    {alias.displayName ? `${alias.displayName} <${alias.email}>` : alias.email}
+                                  </span>
+                                  {alias.isDefault && (
+                                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                      Default
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteAlias(s, alias)}
+                                    className="text-slate-400 hover:text-rose-500 transition p-0.5"
+                                    title={`Delete alias ${alias.email}`}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-400 dark:text-slate-500 italic">
+                              No aliases configured. By default, emails send from <span className="font-mono">{s.email}</span>. Click "Add Alias" to route alternate "Send mail as" addresses.
+                            </p>
+                          )}
+                        </div>
+
                         {/* Smart Warm-up Banner & Action */}
                         <div className="pt-3 border-t border-slate-200/60 dark:border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs sm:text-sm">
                           <div className="flex items-center space-x-2.5">
@@ -2841,6 +2982,45 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                     <span className="px-3 py-1 rounded-md text-xs font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                       PORT 587 LIVE
                     </span>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        From Address / Sender Alias (Optional)
+                      </label>
+                      <span className="text-[11px] text-slate-400 font-mono">Dynamic 'From' Selection</span>
+                    </div>
+                    {stats?.capacity?.allAliases && stats.capacity.allAliases.length > 0 ? (
+                      <select
+                        value={playFrom}
+                        onChange={(e) => setPlayFrom(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                      >
+                        <option value="">Default (Primary Connected Sender Account)</option>
+                        {stats.capacity.senders.map((s, idx) => (
+                          <option key={`sender-${idx}`} value={s.email}>
+                            {s.email} ({s.role} - {s.displayName || 'Default'})
+                          </option>
+                        ))}
+                        {stats.capacity.allAliases.map((a, idx) => (
+                          <option key={`alias-${idx}`} value={a.email}>
+                            🏷️ {a.email} {a.displayName ? `(${a.displayName})` : ''} — via {a.senderEmail}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={playFrom}
+                        onChange={(e) => setPlayFrom(e.target.value)}
+                        placeholder="e.g. support@yourdomain.com (Leave blank for default sender)"
+                        className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                      />
+                    )}
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Choose which verified Gmail account or registered alias to send this email from.
+                    </p>
                   </div>
 
                   <div>
@@ -3344,7 +3524,16 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                                   )}
                                 </div>
                               </td>
-                              <td className="py-3.5 px-4 sm:px-5 font-mono text-xs sm:text-sm text-slate-500 dark:text-slate-400">{l.senderEmail || 'Primary'}</td>
+                              <td className="py-3.5 px-4 sm:px-5 font-mono text-xs sm:text-sm">
+                                {l.isAlias && l.fromEmail ? (
+                                  <div>
+                                    <span className="text-slate-900 dark:text-slate-200 font-bold block">{l.fromEmail}</span>
+                                    <span className="text-[10px] text-indigo-500 font-mono block">via {l.senderEmail}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-500 dark:text-slate-400">{l.senderEmail || 'Primary'}</span>
+                                )}
+                              </td>
                               <td className="py-3.5 px-4 sm:px-5 text-xs sm:text-sm">
                                 {l.hasAttachments ? (
                                   <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-mono font-semibold">
@@ -4925,6 +5114,84 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                   className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
                 >
                   {modalLoading ? 'Creating...' : 'Create Project'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD SENDER ALIAS */}
+      {isAddAliasModalOpen && aliasTargetSender && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10 max-w-md w-full space-y-4 shadow-2xl bg-white dark:bg-[#0d1017]">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                <span>🏷️</span>
+                <span>Add Gmail Sender Alias</span>
+              </h3>
+              <button onClick={() => setIsAddAliasModalOpen(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/50 dark:border-indigo-800/30 text-xs text-indigo-800 dark:text-indigo-300 space-y-1">
+              <div className="font-semibold">Associated Account: <span className="font-mono">{aliasTargetSender.email}</span></div>
+              <p className="text-[11px] leading-relaxed text-indigo-700 dark:text-indigo-400">
+                Ensure this alias (or custom domain address) is already verified in this Gmail account under <strong>Gmail Settings ➔ Accounts ➔ "Send mail as"</strong>.
+              </p>
+            </div>
+            <form onSubmit={handleAddAliasSubmit} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Alias Email Address *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={newAliasEmail}
+                  onChange={(e) => setNewAliasEmail(e.target.value)}
+                  placeholder="e.g. support@yourdomain.com or team@brand.com"
+                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                />
+              </div>
+              <div>
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Display Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newAliasDisplayName}
+                  onChange={(e) => setNewAliasDisplayName(e.target.value)}
+                  placeholder="e.g. Acme Support Team"
+                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
+                />
+              </div>
+              <div className="flex items-center space-x-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="aliasIsDefault"
+                  checked={newAliasIsDefault}
+                  onChange={(e) => setNewAliasIsDefault(e.target.checked)}
+                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label htmlFor="aliasIsDefault" className="text-slate-700 dark:text-slate-300 select-none cursor-pointer">
+                  Set as default 'From' address for dispatches
+                </label>
+              </div>
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-200 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIsAddAliasModalOpen(false)}
+                  className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingAlias}
+                  className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition disabled:opacity-50 flex items-center space-x-1.5 shadow-md shadow-indigo-600/20"
+                >
+                  <span>{isSavingAlias ? 'Saving...' : 'Add Alias'}</span>
                 </button>
               </div>
             </form>

@@ -67,6 +67,30 @@ const senderAccountSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    // Sender Aliases (Google 'Send mail as' alternate email addresses)
+    aliases: [
+      {
+        email: {
+          type: String,
+          required: true,
+          lowercase: true,
+          trim: true,
+        },
+        displayName: {
+          type: String,
+          trim: true,
+          default: '',
+        },
+        isDefault: {
+          type: Boolean,
+          default: false,
+        },
+        addedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
@@ -191,6 +215,11 @@ const projectSchema = new mongoose.Schema(
     },
     // Optional Verified Custom From Alias & Reply-To (e.g. no-replay@disheera.site)
     defaultFromEmail: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    defaultFromDisplayName: {
       type: String,
       default: '',
       trim: true,
@@ -381,7 +410,45 @@ projectSchema.methods.getAllSenders = function () {
  * Respects progressive Smart Warm-up daily limits if enabled.
  * @returns {Object|null} Active sender object or null if all quotas exhausted
  */
-projectSchema.methods.getActiveSender = function () {
+/**
+ * Locates the sender account associated with a given email or alias
+ * @param {string} targetEmail 
+ * @returns {Object|null} { sender, isAlias, alias } or null
+ */
+projectSchema.methods.findSenderForAlias = function (targetEmail) {
+  if (!targetEmail || typeof targetEmail !== 'string') return null;
+  const clean = targetEmail.trim().toLowerCase();
+  const senders = this.getAllSenders();
+
+  // 1. Direct match on sender account email
+  const directMatch = senders.find((s) => s.email && s.email.toLowerCase() === clean);
+  if (directMatch) {
+    return { sender: directMatch, isAlias: false, alias: null };
+  }
+
+  // 2. Match on alias configured on any sender account
+  for (const s of senders) {
+    if (s.aliases && Array.isArray(s.aliases)) {
+      const aliasMatch = s.aliases.find((a) => a.email && a.email.toLowerCase() === clean);
+      if (aliasMatch) {
+        return { sender: s, isAlias: true, alias: aliasMatch };
+      }
+    }
+  }
+
+  // 3. Fallback match on project defaultFromEmail
+  if (this.defaultFromEmail && this.defaultFromEmail.toLowerCase() === clean && senders.length > 0) {
+    return {
+      sender: senders[0],
+      isAlias: true,
+      alias: { email: this.defaultFromEmail, displayName: this.defaultFromDisplayName || '' },
+    };
+  }
+
+  return null;
+};
+
+projectSchema.methods.getActiveSender = function (preferredEmailOrAlias) {
   const senders = this.getAllSenders();
   const now = new Date();
 
@@ -397,13 +464,27 @@ projectSchema.methods.getActiveSender = function () {
       sender.isExhaustedToday = false;
       sender.lastQuotaReset = now;
     }
+  }
 
-    // Determine effective daily quota (Progressive Warm-up vs Full Quota)
-    const effectiveLimit = sender.warmupEnabled !== false
-      ? calculateWarmupStage(sender.warmupStartedAt, sender.dailyQuota).effectiveQuota
-      : sender.dailyQuota;
+  const isSenderAvailable = (s) => {
+    if (!s.isActive || s.isExhaustedToday) return false;
+    const effectiveLimit = s.warmupEnabled !== false
+      ? calculateWarmupStage(s.warmupStartedAt, s.dailyQuota).effectiveQuota
+      : s.dailyQuota;
+    return s.emailsSentToday < effectiveLimit;
+  };
 
-    if (!sender.isExhaustedToday && sender.emailsSentToday < effectiveLimit) {
+  // If a preferred sender email or alias is requested, check if that sender is available
+  if (preferredEmailOrAlias) {
+    const matched = this.findSenderForAlias(preferredEmailOrAlias);
+    if (matched && matched.sender && isSenderAvailable(matched.sender)) {
+      return matched.sender;
+    }
+  }
+
+  // Standard sequential failover (Primary -> Backup 1 -> Backup 2...)
+  for (const sender of senders) {
+    if (isSenderAvailable(sender)) {
       return sender;
     }
   }
@@ -559,24 +640,37 @@ projectSchema.methods.getCapacitySummary = function () {
 
   const totalSentToday = senders.reduce((acc, s) => acc + s.emailsSentToday, 0) || this.emailsSentToday;
 
+  const allAliases = [];
+  senders.forEach((s) => {
+    if (s.aliases && Array.isArray(s.aliases)) {
+      s.aliases.forEach((a) => {
+        allAliases.push({
+          id: a._id,
+          email: a.email,
+          displayName: a.displayName || s.displayName || this.name,
+          senderEmail: s.email,
+          senderId: s._id,
+          isDefault: !!a.isDefault,
+        });
+      });
+    }
+  });
+
   return {
     totalDailyQuota,
     totalEffectiveDailyQuota,
     totalSentToday,
     remainingToday: Math.max(0, totalEffectiveDailyQuota - totalSentToday),
     sendersCount: senders.length,
+    allAliases,
     senders: senders.map((s, idx) => {
       const warmup = calculateWarmupStage(s.warmupStartedAt, s.dailyQuota);
       const effectiveQuota = s.warmupEnabled !== false ? warmup.effectiveQuota : s.dailyQuota;
-      const displayedEmail = (idx === 0 && this.defaultFromEmail) ? this.defaultFromEmail : s.email;
-      const displayedName = (idx === 0 && this.defaultFromEmail)
-        ? `${s.displayName || this.senderDisplayName || 'Disheera'} (Relay: ${s.email})`
-        : (s.displayName || this.senderDisplayName || 'Disheera');
       return {
         id: s._id,
-        email: displayedEmail,
+        email: s.email,
         authEmail: s.email,
-        displayName: displayedName,
+        displayName: s.displayName || this.senderDisplayName || 'Disheera',
         priority: s.priority,
         role: s.priority === 0 || idx === 0 ? 'Primary' : `Backup #${s.priority || idx}`,
         dailyQuota: s.dailyQuota,
@@ -586,6 +680,13 @@ projectSchema.methods.getCapacitySummary = function () {
         isActive: s.isActive,
         isExhaustedToday: !!s.isExhaustedToday,
         warmupEnabled: s.warmupEnabled !== false,
+        aliases: (s.aliases || []).map((a) => ({
+          id: a._id,
+          email: a.email,
+          displayName: a.displayName || '',
+          isDefault: !!a.isDefault,
+          addedAt: a.addedAt,
+        })),
         warmup: {
           enabled: s.warmupEnabled !== false,
           day: warmup.day,

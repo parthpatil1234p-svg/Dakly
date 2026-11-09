@@ -24,6 +24,9 @@ const {
   addProjectMember,
   updateProjectMember,
   removeProjectMember,
+  addSenderAlias,
+  removeSenderAlias,
+  getProjectAliases,
 } = require('../controllers/projectController');
 const { optionalProtect } = require('../middleware/authJwt');
 const rateLimit = require('express-rate-limit');
@@ -48,6 +51,9 @@ router.patch('/:id', updateProject);
 router.post('/:id/senders', addSender);
 router.get('/:id/senders', getSenders);
 router.delete('/:id/senders/:senderId', removeSender);
+router.get('/:id/aliases', getProjectAliases);
+router.post('/:id/senders/:senderId/aliases', addSenderAlias);
+router.delete('/:id/senders/:senderId/aliases/:aliasEmail', removeSenderAlias);
 router.delete('/:id', deleteProject);
 
 // 1-Click API Key Rotation / Regeneration

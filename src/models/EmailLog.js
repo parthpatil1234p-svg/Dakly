@@ -19,6 +19,15 @@ const emailLogSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    fromEmail: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    isAlias: {
+      type: Boolean,
+      default: false,
+    },
     to: {
       type: String,
       required: true,

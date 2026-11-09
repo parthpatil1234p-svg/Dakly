@@ -52,6 +52,15 @@ const invoiceResult = await dakly.sendInvoice({
   amount: '$299.00',
   invoiceUrl: 'https://app.acme.com/invoices/001.pdf'
 });
+
+// 5. Send Dynamically via Gmail Sender Alias ("Send mail as")
+const aliasResult = await dakly.send({
+  from: '"Acme Support" <support@yourcustomdomain.com>',
+  to: 'customer@example.com',
+  subject: 'Order Confirmation',
+  html: '<h1>Your order has shipped!</h1>'
+});
+console.log('Dispatched from alias:', aliasResult.from, 'via relay:', aliasResult.sender);
 ```
 
 ### Checking Delivery Status
