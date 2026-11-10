@@ -53,6 +53,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import SpotlightCard from './components/SpotlightCard';
+import AdBanner from './components/AdBanner';
 import {
   API_BASE_URL,
   loginUser,
@@ -278,6 +279,8 @@ export default function App() {
   const [newAliasIsDefault, setNewAliasIsDefault] = useState(false);
   const [isSavingAlias, setIsSavingAlias] = useState(false);
   const [playFrom, setPlayFrom] = useState('');
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const [curlCopied, setCurlCopied] = useState(false);
 
@@ -1717,7 +1720,46 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
 
           </SpotlightCard>
 
+          {/* Monetized Google AdSense Banner */}
+          <AdBanner className="mt-6" />
+
+          {/* Public Auth Footer */}
+          <footer className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
+            <div className="flex items-center justify-center space-x-4">
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(true)}
+                className="hover:text-indigo-600 dark:hover:text-indigo-400 transition underline underline-offset-2"
+              >
+                Privacy Policy
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(true)}
+                className="hover:text-indigo-600 dark:hover:text-indigo-400 transition underline underline-offset-2"
+              >
+                Terms of Service
+              </button>
+              <span>•</span>
+              <a
+                href="https://github.com/parthpatil1234p-svg/Dakly"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-indigo-600 dark:hover:text-indigo-400 transition underline underline-offset-2"
+              >
+                GitHub
+              </a>
+            </div>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              © {new Date().getFullYear()} Dakly. Zero-Setup Headless Email Microservice.
+            </p>
+          </footer>
+
         </div>
+
+        {/* Legal & Privacy Policy Modals for Auth View */}
+        {renderLegalModals()}
 
       </div>
     );
@@ -5042,6 +5084,61 @@ curl -X POST "${API_BASE_URL}/api/send" \\
         )}
 
       </main>
+
+      {/* Dashboard Monetized AdSense Banner */}
+      <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 my-6">
+        <AdBanner />
+      </div>
+
+      {/* Main Website Footer */}
+      <footer className="mt-auto border-t border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-[#080a0f]/80 backdrop-blur-md py-8 text-xs text-slate-500 dark:text-slate-400">
+        <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 p-1 flex items-center justify-center">
+              <img src="/logo-square-animated.svg" alt="Dakly" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <span className="font-bold text-slate-900 dark:text-white">Dakly</span> • Zero-Setup Headless Transactional Email Engine
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-6 flex-wrap justify-center gap-y-2">
+            <button
+              type="button"
+              onClick={() => setShowPrivacyModal(true)}
+              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+            >
+              Privacy Policy
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowTermsModal(true)}
+              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+            >
+              Terms of Service
+            </button>
+            <a
+              href="https://github.com/parthpatil1234p-svg/Dakly"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition flex items-center space-x-1"
+            >
+              <span>GitHub</span>
+            </a>
+            <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Port 587 STARTTLS Online</span>
+            </span>
+          </div>
+
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
+            © {new Date().getFullYear()} Dakly. MIT License.
+          </div>
+        </div>
+      </footer>
+
+      {/* Legal & Privacy Policy Modals for Dashboard View */}
+      {renderLegalModals()}
 
       {/* MODAL: CREATE PROJECT */}
       {showNewProjModal && (

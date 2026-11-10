@@ -1,0 +1,21 @@
+{
+  "name": "Dakly - Transactional Email Engine",
+  "short_name": "Dakly",
+  "description": "Zero-setup headless transactional email delivery engine for developers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080a0f",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/logo-square-animated.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

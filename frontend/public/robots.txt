@@ -1,0 +1,10 @@
+# Dakly Robots.txt - Search Engine Crawler Directive
+User-agent: *
+Allow: /
+Allow: /api/send
+Allow: /api/ping
+Disallow: /api/auth/
+Disallow: /api/projects/*/senders
+
+# Sitemaps
+Sitemap: https://dakly.vercel.app/sitemap.xml
