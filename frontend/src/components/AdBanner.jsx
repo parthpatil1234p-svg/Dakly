@@ -15,9 +15,9 @@ export default function AdBanner({
   className = '',
   label = 'Sponsored by Google Ads',
 }) {
-  const adClient = import.meta.env.VITE_GOOGLE_ADSENSE_ID || 'ca-pub-XXXXXXXXXXXXXXXX';
-  const adSlot = slot || import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_FOOTER || '1234567890';
-  const isLiveAdSense = Boolean(adClient && adClient !== 'ca-pub-XXXXXXXXXXXXXXXX');
+  const adClient = import.meta.env.VITE_GOOGLE_ADSENSE_ID || 'ca-pub-2484983247170714';
+  const adSlot = slot || import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_FOOTER || '';
+  const isLiveAdSense = Boolean(adClient && adClient.startsWith('ca-pub-'));
   const [adFailed, setAdFailed] = useState(false);
 
   useEffect(() => {
