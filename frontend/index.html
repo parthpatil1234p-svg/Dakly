@@ -81,12 +81,20 @@
     <!-- Google AdSense Official Monetization Script -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2484983247170714" crossorigin="anonymous"></script>
 
+    <!-- Google AdSense AMP Auto Ads Script -->
+    <script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-[#080a0f] text-slate-100 min-h-screen antialiased selection:bg-indigo-600 selection:text-white">
+    <!-- Google AdSense AMP Auto Ads -->
+    <amp-auto-ads type="adsense"
+            data-ad-client="ca-pub-2484983247170714">
+    </amp-auto-ads>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
