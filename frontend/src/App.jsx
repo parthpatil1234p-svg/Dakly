@@ -50,6 +50,9 @@ import {
   ShieldAlert,
   Globe,
   Key,
+  ChevronDown,
+  ChevronUp,
+  HelpCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import SpotlightCard from './components/SpotlightCard';
@@ -199,6 +202,34 @@ const DEFAULT_TEMPLATES = [
   },
 ];
 
+// Developer FAQ for SEO & Generative AI Indexing
+const FAQS = [
+  {
+    q: 'What is Dakly and how does it work?',
+    a: 'Dakly is a zero-setup, free headless transactional email engine. It turns free Gmail and Google Workspace accounts into production-grade SMTP relays with automated multi-account failover, progressive Smart Warm-up, custom sender aliases, and real-time open/click telemetry — zero credit card or domain setup needed.'
+  },
+  {
+    q: 'How does Dakly handle Google\'s 500 emails/day quota limit?',
+    a: 'Dakly has an automated Multi-Gmail Failover Pool. You can attach multiple backup Gmail accounts to a single project. When your primary account reaches 500 sends, Dakly instantly and dynamically routes outgoing traffic to healthy backup accounts without dropping a single email.'
+  },
+  {
+    q: 'Can I send from my custom domain using sender aliases?',
+    a: 'Yes! If you configure a custom alias (e.g. support@yourcompany.com) in your Google account settings, Dakly automatically detects the alias and delivers emails with your custom alias as the From address.'
+  },
+  {
+    q: 'Is my Google App Password safe with Dakly?',
+    a: 'Absolutely. Passwords are encrypted at rest using military-grade AES-256-GCM authenticated encryption with unique per-record cryptographic initialization vectors (IV). Credentials are only decrypted in-memory during active transport dispatch.'
+  },
+  {
+    q: 'How does Dakly prevent spam flags and account bans?',
+    a: 'Dakly includes an automated 14-day Smart Warm-up schedule, a leaky-bucket pacing queue to eliminate sudden volume bursts, and an automated Bounce Guard that immediately suppresses hard-bounced addresses (550 Mailbox Not Found).'
+  },
+  {
+    q: 'How do open rate and link click tracking work?',
+    a: 'Dakly inserts a transparent 1x1 tracking pixel for opens and cryptographically signs redirect links for clicks. You can track telemetry live in the dashboard or receive instant HMAC-SHA256 authenticated webhooks directly on your server.'
+  }
+];
+
 export default function App() {
   // Theme State: 'light' (white background) by default, or 'dark'
   const [theme, setTheme] = useState(() => {
@@ -233,6 +264,7 @@ export default function App() {
   const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
   // App State
   const [projects, setProjects] = useState([]);
@@ -1706,7 +1738,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-indigo-600/10 dark:bg-indigo-600/15 rounded-full blur-[140px] pointer-events-none"></div>
         <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-        <div className="relative z-10 max-w-md w-full">
+        <div className="relative z-10 max-w-xl w-full">
           
           {/* Logo Brand */}
           <div className="text-center mb-8">
@@ -1844,6 +1876,47 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
 
           {/* Monetized Google AdSense Banner */}
           <AdBanner className="mt-6" />
+
+          {/* Frequently Asked Questions (FAQ) - High-Converting SEO & User Accordion */}
+          <section aria-label="Frequently Asked Questions" className="mt-8 space-y-2 text-left">
+            <div className="flex items-center space-x-2 px-1 mb-3">
+              <HelpCircle className="w-4 h-4 text-indigo-500" />
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                Frequently Asked Questions
+              </h2>
+            </div>
+
+            <div className="space-y-2">
+              {FAQS.map((faq, idx) => {
+                const isOpen = openFaqIndex === idx;
+                return (
+                  <div
+                    key={idx}
+                    className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-[#0c0f17] overflow-hidden transition-all shadow-xs"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                      className="w-full px-4 py-3 text-left flex items-center justify-between text-xs font-semibold text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+                      aria-expanded={isOpen}
+                    >
+                      <span className="pr-2">{faq.q}</span>
+                      {isOpen ? (
+                        <ChevronUp className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                      )}
+                    </button>
+                    {isOpen && (
+                      <div className="px-4 pb-3 pt-1 text-xs text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-white/5 leading-relaxed">
+                        {faq.a}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
 
           {/* Public Auth Footer */}
           <footer className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">

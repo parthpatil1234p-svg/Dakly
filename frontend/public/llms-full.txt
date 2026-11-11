@@ -1,0 +1,176 @@
+# Dakly Full Technical Reference & Architecture Specification
+
+## Overview
+Dakly is an open-source, zero-setup headless transactional email engine. It turns free Gmail and Google Workspace accounts into production-grade transactional SMTP relays equipped with multi-sender failover, rate pacing, smart warmup, sender aliases, real-time open/click tracking, bounce suppression, and enterprise-grade security.
+
+- Canonical URL: https://dakly.vercel.app
+- Engine API Endpoint: https://dakly-engin.vercel.app
+- Source Code: https://github.com/parthpatil1234p-svg/Dakly
+- Authors: Parth Patil & The Dakly Engineering Team
+
+---
+
+## 1. Authentication & Security Architecture
+
+### API Key Structure
+Every project created in Dakly is assigned a unique, cryptographically secure 24-byte API key formatted as:
+`gkey_live_<48_hex_characters>`
+
+API keys are passed via the HTTP header:
+`x-api-key: gkey_live_...`
+
+### Credential Encryption
+Google App Passwords are never stored in plaintext. They are encrypted using `AES-256-GCM` with a PBKDF2-derived master secret key:
+- Each credential record generates a fresh 16-byte random Initialization Vector (IV).
+- The 16-byte GCM authentication tag is stored alongside the ciphertext.
+- Decryption happens exclusively in-memory during active SMTP transport initialization.
+
+### IP Whitelisting & CIDR Subnets
+Dakly projects support IP access control with:
+- Exact IPv4/IPv6 addresses (e.g., `203.0.113.195`).
+- CIDR notation blocks (e.g., `10.0.0.0/8`, `192.168.1.0/24`).
+- Wildcard subnet patterns (e.g., `192.168.1.*`).
+- Extraction behind reverse proxies via `x-forwarded-for`, `x-real-ip`, and `cf-connecting-ip`.
+
+---
+
+## 2. REST API Reference
+
+### POST `/api/send`
+Dispatches a transactional email through the active sender failover pool.
+
+#### Request Headers
+- `Content-Type: application/json`
+- `x-api-key: gkey_live_...` (Required)
+
+#### Request Body Schema
+```json
+{
+  "to": "user@example.com",
+  "subject": "Your Order Confirmation",
+  "html": "<h1>Thank you for your order!</h1><p>Items will ship shortly.</p>",
+  "text": "Thank you for your order! Items will ship shortly.",
+  "fromAlias": "orders@company.com",
+  "otp": "492019",
+  "template": "welcome",
+  "templateVars": {
+    "name": "Jane Doe",
+    "dashboardUrl": "https://example.com/app"
+  },
+  "attachments": [
+    {
+      "filename": "invoice.pdf",
+      "content": "JVBERi0xLjQK...",
+      "contentType": "application/pdf"
+    }
+  ]
+}
+```
+
+#### Response (Success - HTTP 200)
+```json
+{
+  "success": true,
+  "id": "msg_9f82bc7190",
+  "sender": "primary@gmail.com",
+  "status": "SENT",
+  "tracking": {
+    "openTracking": true,
+    "clickTracking": true
+  }
+}
+```
+
+#### Response (Suppressed - HTTP 400 / 200)
+```json
+{
+  "success": false,
+  "status": "BLOCKED_SUPPRESSED",
+  "reason": "Recipient bounced previously: 550 Mailbox does not exist",
+  "suppressedAt": "2026-11-10T14:32:00Z"
+}
+```
+
+---
+
+## 3. Node.js & Python SDK References
+
+### Node.js SDK
+```javascript
+import { Dakly, DaklySuppressedError, DaklyRateLimitError } from '@dakly/sdk';
+
+const dakly = new Dakly('gkey_live_your_key', {
+  baseUrl: 'https://dakly-engin.vercel.app'
+});
+
+try {
+  // Send OTP
+  const res = await dakly.sendOtp({
+    to: 'customer@gmail.com',
+    otp: '918234',
+    expiresInMinutes: 5
+  });
+  console.log('OTP dispatched:', res.id);
+} catch (err) {
+  if (err instanceof DaklySuppressedError) {
+    console.error('Email suppressed:', err.message);
+  } else if (err instanceof DaklyRateLimitError) {
+    console.error('Rate limit reached:', err.message);
+  }
+}
+```
+
+### Python SDK
+```python
+from dakly import Dakly, DaklySuppressedError
+
+client = Dakly(api_key="gkey_live_your_key")
+
+try:
+    response = client.send_otp(
+        to="client@example.com",
+        otp="582910",
+        expires_in_minutes=10
+    )
+    print(f"Sent successfully via {response['sender']}")
+except DaklySuppressedError as e:
+    print(f"Address suppressed: {e}")
+```
+
+---
+
+## 4. Webhooks & HMAC Verification
+
+When enabled, Dakly delivers event payloads with `x-dakly-signature`:
+`x-dakly-signature: sha256=<hex_hmac_digest>`
+
+Compute HMAC using project's webhook secret:
+```javascript
+import crypto from 'crypto';
+
+function verifyWebhook(payload, signatureHeader, secret) {
+  const hmac = crypto.createHmac('sha256', secret);
+  const digest = 'sha256=' + hmac.update(payload).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signatureHeader));
+}
+```
+
+Events:
+- `email.sent`
+- `email.delivered`
+- `email.opened`
+- `email.clicked`
+- `email.bounced`
+
+---
+
+## 5. Frequently Asked Questions (Developer FAQ)
+
+### Is Dakly free forever?
+Yes, Dakly is MIT-licensed and uses Google's standard free Gmail accounts with App Passwords. There are no recurring monthly costs or hidden fees.
+
+### How does multi-Gmail failover bypass the 500 emails/day quota?
+Google allows 500 emails/day per free Gmail account. By adding 5 backup accounts to your Dakly project, Dakly automatically balances and cascades sends across accounts, giving you a pool of 2,500+ emails/day.
+
+### Can I send from a custom domain like support@mydomain.com?
+Yes! In your Google account settings, add `support@mydomain.com` as a "Send mail as" alias. Dakly detects this alias and sends through your Gmail account with the alias as the `From` address.

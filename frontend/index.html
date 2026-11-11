@@ -8,11 +8,16 @@
     <title>Dakly | Zero-Setup Headless Transactional Email Engine for Developers</title>
     <meta name="title" content="Dakly | Zero-Setup Headless Transactional Email Engine for Developers" />
     <meta name="description" content="Free zero-setup headless transactional email delivery engine for developers. Turn free Gmail accounts into production-grade SMTP relays with automated multi-account failover, progressive Smart Warm-up, custom sender aliases, and real-time open/click analytics." />
-    <meta name="keywords" content="transactional email, email microservice, gmail smtp relay, free email api, developer email service, otp email, sender aliases, smart warmup, nodemailer alternative, email delivery engine, open rate tracking, click tracking" />
+    <meta name="keywords" content="transactional email, email microservice, gmail smtp relay, free email api, developer email service, otp email, sender aliases, smart warmup, nodemailer alternative, resend alternative, sendgrid alternative, email delivery engine, open rate tracking, click tracking" />
     <meta name="author" content="Parth Patil / Dakly" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="theme-color" content="#080a0f" />
     <link rel="canonical" href="https://dakly.vercel.app/" />
+
+    <!-- AI Agent & LLM Ingestion Manifest (llms.txt standard) -->
+    <link rel="alternate" type="text/plain" href="https://dakly.vercel.app/llms.txt" title="LLMs.txt Full Context Manifest" />
 
     <!-- Favicons & Mobile Icons -->
     <link rel="icon" type="image/svg+xml" href="/logo-square-animated.svg" />
@@ -40,7 +45,7 @@
     <meta name="twitter:image" content="https://dakly.vercel.app/og-image.svg" />
     <meta name="twitter:creator" content="@dakly_io" />
 
-    <!-- Structured Data (JSON-LD) for Search Engine Rich Snippets -->
+    <!-- Structured Data (JSON-LD) for Search Engine Rich Snippets & LLM AI Citation -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -49,9 +54,20 @@
           "@type": "SoftwareApplication",
           "name": "Dakly",
           "applicationCategory": "DeveloperApplication",
-          "operatingSystem": "All, Cloud, Web",
+          "operatingSystem": "All, Cloud, Web, Linux, macOS, Windows",
+          "softwareVersion": "1.0.0",
           "url": "https://dakly.vercel.app",
           "description": "Zero-setup headless transactional email delivery engine for developers. Connect Gmail with Google App Passwords, failover across multiple senders, Smart Warm-up, custom sender aliases, and real-time open/click tracking.",
+          "featureList": [
+            "Multi-Gmail Account Automatic Failover Pool",
+            "Progressive Smart Warm-up & Rate Pacing Protection",
+            "Custom Sender Aliases with Dynamic Account Routing",
+            "Real-time Open & Click Tracking Telemetry with Webhooks",
+            "Automatic Bounce Guard & Suppression List",
+            "Military-Grade AES-256-GCM Credential Encryption",
+            "Multi-Tenant Workspace RBAC & IP Whitelisting",
+            "Official Node.js and Python SDKs"
+          ],
           "offers": {
             "@type": "Offer",
             "price": "0",
@@ -73,6 +89,95 @@
             "target": "https://dakly.vercel.app/?q={search_term_string}",
             "query-input": "required name=search_term_string"
           }
+        },
+        {
+          "@type": "Organization",
+          "name": "Dakly",
+          "url": "https://dakly.vercel.app",
+          "logo": "https://dakly.vercel.app/logo-square-animated.svg",
+          "sameAs": [
+            "https://github.com/parthpatil1234p-svg/Dakly"
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What is Dakly and how does it work?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Dakly is a free, zero-setup headless transactional email microservice. It allows developers to turn free Gmail and Google Workspace accounts into production-ready transactional email relays without paying expensive monthly fees or undergoing complicated DNS domain verification."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does Dakly handle Google's 500 emails/day quota limit?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Dakly features an automated Multi-Gmail Failover Pool. You can attach multiple Gmail accounts to a single project. When your primary account reaches Google's daily 500-email threshold or triggers a temporary rate limit, Dakly dynamically routes outgoing traffic to healthy backup accounts without dropping messages or interrupting delivery."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I send emails from a custom domain using Gmail sender aliases?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes! Dakly supports custom sender aliases. If you configure a custom alias (such as support@yourcompany.com) in your Google account settings, Dakly automatically detects the alias and delivers emails with your alias as the From header."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is my Google App Password secure on Dakly?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Google App Passwords are encrypted at rest using military-grade AES-256-GCM authenticated encryption with unique per-record cryptographic initialization vectors (IV). Credentials are only decrypted in-memory during active SMTP transport dispatch."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does Dakly prevent Gmail account bans and spam flags?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Dakly includes Smart Warm-up pacing (gradually ramping up send volume over 14 days), a leaky-bucket pacing queue to eliminate sudden volume spikes, and an automated Bounce Guard that immediately suppresses addresses that hard-bounce (550 Mailbox Not Found)."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Does Dakly support email open and click tracking?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Dakly features real-time open tracking using a transparent 1x1 tracking pixel and click tracking through signed redirect proxies. Telemetry events can be monitored live in the dashboard or delivered to your backend via HMAC-SHA256 authenticated webhooks."
+              }
+            }
+          ]
+        },
+        {
+          "@type": "HowTo",
+          "name": "How to Send Free Transactional Emails with Gmail using Dakly in 60 Seconds",
+          "description": "Step-by-step guide to connecting your Gmail account and sending high-priority transactional emails and OTPs using Dakly.",
+          "step": [
+            {
+              "@type": "HowToStep",
+              "name": "Generate a Google App Password",
+              "text": "Enable 2-Step Verification in your Google Account and generate a 16-character App Password under Security."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Connect Gmail to Dakly",
+              "text": "Open the Dakly Dashboard at https://dakly.vercel.app, create a project, and enter your Gmail address and App Password."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Install the SDK or Call REST API",
+              "text": "Install the official Node.js SDK via 'npm install @dakly/sdk' or use the REST API at https://dakly-engin.vercel.app/api/send."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Send Your Email",
+              "text": "Dispatch transactional emails, OTPs, welcome messages, or invoices with automated failover and telemetry."
+            }
+          ]
         }
       ]
     }
@@ -95,7 +200,70 @@
             data-ad-client="ca-pub-2484983247170714">
     </amp-auto-ads>
 
-    <div id="root"></div>
+    <!-- Root App Container (React Mount Target) -->
+    <div id="root">
+      <!-- Prerendered Semantic SEO & AEO Content (Accessible for Googlebot, Bingbot & LLM Crawlers; Replaced upon React hydration) -->
+      <header style="padding: 2rem; text-align: center; max-width: 900px; margin: 0 auto;">
+        <h1>Dakly | Zero-Setup Headless Transactional Email Engine for Developers</h1>
+        <p>Turn free Gmail and Google Workspace accounts into production-grade transactional SMTP relays. Zero monthly subscriptions, zero DNS records, and automated multi-sender failover pool.</p>
+      </header>
+
+      <main style="max-width: 900px; margin: 0 auto; padding: 1rem;">
+        <section>
+          <h2>Key Capabilities & Architecture</h2>
+          <ul>
+            <li><strong>Multi-Gmail Failover Pool:</strong> Seamlessly cascade sends across backup Gmail accounts when the 500 emails/day threshold is reached.</li>
+            <li><strong>Smart Warm-up & Rate Pacing:</strong> 14-day progressive schedule and leaky-bucket queue prevent spam flagging.</li>
+            <li><strong>Sender Aliases Support:</strong> Send dynamically from custom domains configured in your Google account.</li>
+            <li><strong>Real-time Telemetry:</strong> Track email open rates and link clicks with HMAC-signed webhooks.</li>
+            <li><strong>Automatic Bounce Guard:</strong> Hard bounces (550 Mailbox Not Found) are automatically suppressed to protect sender reputation.</li>
+            <li><strong>Military-Grade AES-256-GCM Security:</strong> Google App Passwords encrypted at rest with unique initialization vectors.</li>
+          </ul>
+        </section>
+
+        <section style="margin-top: 2rem;">
+          <h2>Quickstart with Node.js SDK</h2>
+          <pre style="background: #111422; padding: 1rem; border-radius: 8px; overflow-x: auto;"><code>npm install @dakly/sdk
+
+import { Dakly } from '@dakly/sdk';
+const dakly = new Dakly('YOUR_API_KEY');
+
+await dakly.sendOtp({
+  to: 'user@example.com',
+  otp: '849204',
+  expiresInMinutes: 10
+});</code></pre>
+        </section>
+
+        <section style="margin-top: 2rem;">
+          <h2>Frequently Asked Questions (FAQ)</h2>
+          <article>
+            <h3>Is Dakly completely free?</h3>
+            <p>Yes. Dakly is MIT-licensed and connects to standard free Gmail accounts with App Passwords. No credit card or monthly plan required.</p>
+          </article>
+          <article>
+            <h3>How do I bypass the 500 emails/day limit?</h3>
+            <p>By connecting multiple backup Gmail accounts in your Dakly dashboard. Dakly automatically cascades traffic across all accounts in your pool.</p>
+          </article>
+          <article>
+            <h3>Can I send emails from support@mycompany.com?</h3>
+            <p>Yes. Add your custom email alias in Google Account settings as a 'Send mail as' alias, and Dakly will dynamically route sends using that alias.</p>
+          </article>
+        </section>
+      </main>
+
+      <footer style="text-align: center; padding: 2rem; color: #888;">
+        <p>© Dakly. MIT Open Source License. Headless Transactional Email Microservice.</p>
+      </footer>
+    </div>
+
+    <!-- Noscript Fallback for Search Crawlers without JS -->
+    <noscript>
+      <div style="padding: 2rem; text-align: center; color: #fff; background: #080a0f;">
+        <p>Dakly requires JavaScript for the interactive cloud dashboard. Please enable JavaScript to access the control panel.</p>
+      </div>
+    </noscript>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

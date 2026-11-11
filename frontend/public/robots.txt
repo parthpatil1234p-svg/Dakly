@@ -1,10 +1,43 @@
-# Dakly Robots.txt - Search Engine Crawler Directive
+# Dakly Robots.txt - Search Engine & AI Crawler Directives
 User-agent: *
 Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
 Allow: /api/send
 Allow: /api/ping
 Disallow: /api/auth/
 Disallow: /api/projects/*/senders
 
-# Sitemaps
+# AI Search Crawlers & LLM Ingestion (AEO / GEO Optimization)
+User-agent: Googlebot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Sitemap & LLMs Manifests
 Sitemap: https://dakly.vercel.app/sitemap.xml
