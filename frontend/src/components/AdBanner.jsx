@@ -4,18 +4,25 @@ import { Sparkles, ExternalLink } from 'lucide-react';
 /**
  * AdBanner - Google AdSense Monetization Banner Component
  * 
- * Configured for Google AdSense Publisher: ca-pub-2484983247170714
- * Default Footer Ad Slot: 5973953697
+ * Supports:
+ * - Display Auto Banner: slot="5973953697", format="auto"
+ * - Multiplex / Matched Content: slot="3867645044", format="autorelaxed"
  */
 export default function AdBanner({
   slot,
-  format = 'auto',
+  format,
   className = '',
   label = 'Sponsored by Google Ads',
 }) {
+  const isAutorelaxed = format === 'autorelaxed';
+  const defaultSlot = isAutorelaxed
+    ? (import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_RELAXED || '3867645044')
+    : (import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_FOOTER || '5973953697');
+
   const adClient = import.meta.env.VITE_GOOGLE_ADSENSE_ID || 'ca-pub-2484983247170714';
-  const adSlot = slot || import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_FOOTER || '5973953697';
-  
+  const adSlot = slot || defaultSlot;
+  const adFormat = format || (adSlot === '3867645044' ? 'autorelaxed' : 'auto');
+
   const hasValidSlot = Boolean(adSlot && adSlot.trim().length > 0);
   const isLiveAdSense = Boolean(adClient && adClient.startsWith('ca-pub-') && hasValidSlot);
 
@@ -42,10 +49,10 @@ export default function AdBanner({
       <div className="px-4 py-1.5 border-b border-slate-200/60 dark:border-white/5 flex items-center justify-between text-[11px] font-mono">
         <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold flex items-center space-x-1.5">
           <Sparkles className="w-3 h-3 text-amber-500" />
-          <span>{label}</span>
+          <span>{adFormat === 'autorelaxed' ? 'Recommended For Developers' : label}</span>
         </span>
         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-          Google AdSense #{adSlot}
+          Google AdSense #{adSlot} ({adFormat})
         </span>
       </div>
 
@@ -54,11 +61,11 @@ export default function AdBanner({
         {isLiveAdSense ? (
           <ins
             className="adsbygoogle"
-            style={{ display: 'block', width: '100%', minHeight: '90px' }}
+            style={{ display: 'block', width: '100%', minHeight: isAutorelaxed ? '160px' : '90px' }}
             data-ad-client={adClient}
             data-ad-slot={adSlot}
-            data-ad-format={format}
-            data-full-width-responsive="true"
+            data-ad-format={adFormat}
+            {...(adFormat !== 'autorelaxed' ? { 'data-full-width-responsive': 'true' } : {})}
           ></ins>
         ) : (
           <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 text-left">

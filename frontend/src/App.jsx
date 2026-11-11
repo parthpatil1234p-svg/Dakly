@@ -5207,9 +5207,14 @@ curl -X POST "${API_BASE_URL}/api/send" \\
 
       </main>
 
-      {/* Dashboard Monetized AdSense Banner */}
-      <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 my-6">
-        <AdBanner />
+      {/* Dashboard Monetized AdSense Banner (Display) */}
+      <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 my-4">
+        <AdBanner slot="5973953697" format="auto" />
+      </div>
+
+      {/* Multiplex / Matched Content AdSense Unit (Autorelaxed) */}
+      <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 mb-6">
+        <AdBanner slot="3867645044" format="autorelaxed" />
       </div>
 
       {/* Main Website Footer */}
