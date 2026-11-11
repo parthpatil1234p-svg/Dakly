@@ -4,9 +4,8 @@ import { Sparkles, ExternalLink } from 'lucide-react';
 /**
  * AdBanner - Google AdSense Monetization Banner Component
  * 
- * When configured with a valid Google AdSense Publisher ID (VITE_GOOGLE_ADSENSE_ID)
- * and Ad Slot ID (VITE_GOOGLE_ADSENSE_SLOT_FOOTER), it serves responsive Google Ad units.
- * Otherwise, or if an adblocker is active, it renders an elegant developer partner card.
+ * Configured for Google AdSense Publisher: ca-pub-2484983247170714
+ * Default Footer Ad Slot: 5973953697
  */
 export default function AdBanner({
   slot,
@@ -15,16 +14,15 @@ export default function AdBanner({
   label = 'Sponsored by Google Ads',
 }) {
   const adClient = import.meta.env.VITE_GOOGLE_ADSENSE_ID || 'ca-pub-2484983247170714';
-  const adSlot = slot || import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_FOOTER || '';
+  const adSlot = slot || import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_FOOTER || '5973953697';
   
-  // Only attempt live AdSense injection if a valid numeric slot ID is present
-  const hasValidSlot = Boolean(adSlot && adSlot.trim().length > 0 && adSlot !== '1234567890');
+  const hasValidSlot = Boolean(adSlot && adSlot.trim().length > 0);
   const isLiveAdSense = Boolean(adClient && adClient.startsWith('ca-pub-') && hasValidSlot);
 
   useEffect(() => {
     if (isLiveAdSense) {
       try {
-        if (typeof window !== 'undefined' && window.adsbygoogle) {
+        if (typeof window !== 'undefined') {
           (window.adsbygoogle = window.adsbygoogle || []).push({});
         }
       } catch (err) {
@@ -47,16 +45,16 @@ export default function AdBanner({
           <span>{label}</span>
         </span>
         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-          {isLiveAdSense ? 'Google AdSense Active' : 'Ad Space Ready'}
+          Google AdSense #{adSlot}
         </span>
       </div>
 
       {/* Ad Container */}
-      <div className="p-3 sm:p-4 min-h-[90px] flex items-center justify-center text-center">
+      <div className="p-3 sm:p-4 min-h-[90px] flex items-center justify-center text-center overflow-hidden">
         {isLiveAdSense ? (
           <ins
             className="adsbygoogle"
-            style={{ display: 'block', width: '100%' }}
+            style={{ display: 'block', width: '100%', minHeight: '90px' }}
             data-ad-client={adClient}
             data-ad-slot={adSlot}
             data-ad-format={format}
