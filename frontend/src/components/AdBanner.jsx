@@ -1,6 +1,11 @@
 import React, { useEffect } from 'react';
 import { Sparkles, ExternalLink } from 'lucide-react';
 
+// Public Google AdSense Publisher & Ad Slot IDs (No .env required)
+const AD_CLIENT = 'ca-pub-2484983247170714';
+const DEFAULT_DISPLAY_SLOT = '5973953697';
+const DEFAULT_RELAXED_SLOT = '3867645044';
+
 /**
  * AdBanner - Google AdSense Monetization Banner Component
  * 
@@ -15,13 +20,11 @@ export default function AdBanner({
   label = 'Sponsored by Google Ads',
 }) {
   const isAutorelaxed = format === 'autorelaxed';
-  const defaultSlot = isAutorelaxed
-    ? (import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_RELAXED || '3867645044')
-    : (import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_FOOTER || '5973953697');
+  const defaultSlot = isAutorelaxed ? DEFAULT_RELAXED_SLOT : DEFAULT_DISPLAY_SLOT;
 
-  const adClient = import.meta.env.VITE_GOOGLE_ADSENSE_ID || 'ca-pub-2484983247170714';
+  const adClient = AD_CLIENT;
   const adSlot = slot || defaultSlot;
-  const adFormat = format || (adSlot === '3867645044' ? 'autorelaxed' : 'auto');
+  const adFormat = format || (adSlot === DEFAULT_RELAXED_SLOT ? 'autorelaxed' : 'auto');
 
   const hasValidSlot = Boolean(adSlot && adSlot.trim().length > 0);
   const isLiveAdSense = Boolean(adClient && adClient.startsWith('ca-pub-') && hasValidSlot);
