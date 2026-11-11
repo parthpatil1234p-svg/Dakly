@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Sparkles, ExternalLink } from 'lucide-react';
 
 /**
  * AdBanner - Google AdSense Monetization Banner Component
  * 
- * When configured with a valid Google AdSense Publisher ID (VITE_GOOGLE_ADSENSE_ID),
- * it serves responsive Google Ad units.
- * While pending approval or in local dev, it renders an elegant developer partner card
- * so the layout looks intentional and attractive.
+ * When configured with a valid Google AdSense Publisher ID (VITE_GOOGLE_ADSENSE_ID)
+ * and Ad Slot ID (VITE_GOOGLE_ADSENSE_SLOT_FOOTER), it serves responsive Google Ad units.
+ * Otherwise, or if an adblocker is active, it renders an elegant developer partner card.
  */
 export default function AdBanner({
   slot,
@@ -17,21 +16,22 @@ export default function AdBanner({
 }) {
   const adClient = import.meta.env.VITE_GOOGLE_ADSENSE_ID || 'ca-pub-2484983247170714';
   const adSlot = slot || import.meta.env.VITE_GOOGLE_ADSENSE_SLOT_FOOTER || '';
-  const isLiveAdSense = Boolean(adClient && adClient.startsWith('ca-pub-'));
-  const [adFailed, setAdFailed] = useState(false);
+  
+  // Only attempt live AdSense injection if a valid numeric slot ID is present
+  const hasValidSlot = Boolean(adSlot && adSlot.trim().length > 0 && adSlot !== '1234567890');
+  const isLiveAdSense = Boolean(adClient && adClient.startsWith('ca-pub-') && hasValidSlot);
 
   useEffect(() => {
-    if (isLiveAdSense && !adFailed) {
+    if (isLiveAdSense) {
       try {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && window.adsbygoogle) {
           (window.adsbygoogle = window.adsbygoogle || []).push({});
         }
       } catch (err) {
         console.warn('AdSense load issue or AdBlocker active:', err);
-        setAdFailed(true);
       }
     }
-  }, [isLiveAdSense, adFailed]);
+  }, [isLiveAdSense]);
 
   return (
     <aside
@@ -46,14 +46,14 @@ export default function AdBanner({
           <Sparkles className="w-3 h-3 text-amber-500" />
           <span>{label}</span>
         </span>
-        <span className="text-[10px] text-slate-400 dark:text-slate-500">
-          {isLiveAdSense && !adFailed ? 'Google AdSense Live' : 'Ad Space Ready'}
+        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+          {isLiveAdSense ? 'Google AdSense Active' : 'Ad Space Ready'}
         </span>
       </div>
 
       {/* Ad Container */}
       <div className="p-3 sm:p-4 min-h-[90px] flex items-center justify-center text-center">
-        {isLiveAdSense && !adFailed ? (
+        {isLiveAdSense ? (
           <ins
             className="adsbygoogle"
             style={{ display: 'block', width: '100%' }}

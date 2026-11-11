@@ -1397,6 +1397,128 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
   };
 
   // ==============================================================
+  // HELPER: RENDER PRIVACY & TERMS MODALS (AdSense & Legal Requirement)
+  // ==============================================================
+  const renderLegalModals = () => {
+    return (
+      <>
+        {/* MODAL: PRIVACY POLICY */}
+        {showPrivacyModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div className="glass-card rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 max-w-2xl w-full space-y-5 shadow-2xl bg-white dark:bg-[#0d1017] my-auto max-h-[85vh] overflow-y-auto text-xs sm:text-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                  <span>🛡️</span>
+                  <span>Privacy Policy</span>
+                </h3>
+                <button onClick={() => setShowPrivacyModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4 text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p>
+                  <strong>Last Updated: November 2026</strong>
+                </p>
+                <p>
+                  Dakly ("we", "our", or "service") is dedicated to protecting your privacy. This Privacy Policy details how we collect, use, and protect your information when using the Dakly transactional email microservice and dashboard.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">1. Information We Collect & Encryption</h4>
+                <p>
+                  We collect your account email, display name, and necessary SMTP credentials (such as Google App Passwords) strictly to deliver transactional emails on your behalf.
+                  All Google App Passwords and secret credentials are encrypted using <strong>military-grade AES-256-GCM authenticated encryption</strong> and are never viewable or stored in plain text.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">2. Google AdSense & Advertising Cookies</h4>
+                <p>
+                  This website uses <strong>Google AdSense</strong>, an advertising service provided by Google LLC. Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites on the Internet.
+                </p>
+                <p>
+                  Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to our site and/or other sites on the Internet.
+                  You may opt out of personalized advertising by visiting <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">Google Ads Settings</a> or <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">AboutAds.info</a>.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">3. Email Analytics & Telemetry</h4>
+                <p>
+                  Dakly provides optional open rate and click tracking via secure reverse-proxy redirect endpoints and transparent 1x1 tracking beacons. This telemetry is only accessible by authorized members of your project workspace.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">4. Contact Us</h4>
+                <p>
+                  If you have questions regarding this Privacy Policy or your data, you can reach out via our GitHub repository or contact the platform maintainers.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowPrivacyModal(false)}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs"
+                >
+                  Understood & Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: TERMS OF SERVICE */}
+        {showTermsModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div className="glass-card rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 max-w-2xl w-full space-y-5 shadow-2xl bg-white dark:bg-[#0d1017] my-auto max-h-[85vh] overflow-y-auto text-xs sm:text-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                  <span>📜</span>
+                  <span>Terms of Service</span>
+                </h3>
+                <button onClick={() => setShowTermsModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4 text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p>
+                  <strong>Last Updated: November 2026</strong>
+                </p>
+                <p>
+                  By accessing or using Dakly, you agree to be bound by these Terms of Service.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">1. Acceptable Use & Anti-Spam Policy</h4>
+                <p>
+                  Dakly is designed strictly for legitimate transactional emails (such as authentication OTPs, receipts, password resets, and account notifications). 
+                  You agree NOT to use Dakly for sending unsolicited bulk marketing emails (spam), phishing attempts, malware distribution, or illegal content. Violations will result in immediate API key revocation.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">2. Quota & Google SMTP Compliance</h4>
+                <p>
+                  Dakly operates by relaying emails through user-connected Gmail accounts over secure STARTTLS on Port 587. Users agree to abide by Google's Terms of Service and daily sending limits (500 dispatches/day per Gmail account).
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">3. Disclaimer & Limitation of Liability</h4>
+                <p>
+                  Dakly is provided "as is" without warranty of any kind. Under no circumstances shall the creators be liable for any downtime, delivery failure, or data loss arising from third-party provider policies.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(false)}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs"
+                >
+                  Accept & Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  // ==============================================================
   // MODAL: WHAT DAKLY CAN DO (POPUP MODAL ON VISIT)
   // ==============================================================
   const renderWelcomeModal = () => {
