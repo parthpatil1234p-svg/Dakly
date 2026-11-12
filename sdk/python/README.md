@@ -2,9 +2,9 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/dakly.svg?color=blue)](https://pypi.org/project/dakly/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Zero Dependencies](https://img.shields.io/badge/dependencies-0-success.svg)](https://dakly.vercel.app)
+[![Zero Dependencies](https://img.shields.io/badge/dependencies-0-success.svg)](https://dakly.cc.cd)
 
-The official zero-dependency Python client library for **[Dakly](https://dakly.vercel.app)** — the high-performance, developer-first Gmail microservice.
+The official zero-dependency Python client library for **[Dakly](https://dakly.cc.cd)** — the high-performance, developer-first Gmail microservice.
 
 ---
 

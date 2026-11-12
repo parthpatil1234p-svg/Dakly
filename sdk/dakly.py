@@ -1,6 +1,6 @@
 """
 Dakly - Standalone Zero-Dependency SDK (Single File Drop-In)
-https://dakly.vercel.app
+https://dakly.cc.cd
 
 Usage:
     from dakly import Dakly
@@ -145,7 +145,7 @@ class Dakly:
     def send_template(self, to: str, template: str, vars: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         return self.send(to=to, template=template, vars=vars or {}, **kwargs)
 
-    def send_welcome(self, to: str, name: str = "there", app_name: str = "Our Platform", login_url: str = "https://dakly.vercel.app", **kwargs) -> Dict[str, Any]:
+    def send_welcome(self, to: str, name: str = "there", app_name: str = "Our Platform", login_url: str = "https://dakly.cc.cd", **kwargs) -> Dict[str, Any]:
         return self.send_template(
             to=to,
             template="welcome",

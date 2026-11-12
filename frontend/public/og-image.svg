@@ -73,7 +73,7 @@
   <!-- Bottom Bar -->
   <g transform="translate(100, 560)">
     <text x="0" y="0" fill="#64748b" font-family="-apple-system, BlinkMacSystemFont, 'JetBrains Mono', monospace" font-size="15" font-weight="500">
-      https://dakly.vercel.app • Open-Source Developer API
+      https://dakly.cc.cd • Open-Source Developer API
     </text>
   </g>
 </svg>

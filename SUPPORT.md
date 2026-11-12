@@ -44,4 +44,4 @@ Do **NOT** report security vulnerabilities via public issues or discussions.
 ## 6. Commercial & Private Support
 For mission-critical production inquiries, custom enterprise deployment, or sponsorship:
 - Email: [support@dakly.dev](mailto:support@dakly.dev)
-- Live Dashboard: [https://dakly.vercel.app](https://dakly.vercel.app)
+- Live Dashboard: [https://dakly.cc.cd](https://dakly.cc.cd)

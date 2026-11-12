@@ -2,9 +2,9 @@
 
 [![npm version](https://img.shields.io/npm/v/dakly.svg?color=indigo)](https://www.npmjs.com/package/dakly)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Zero Dependencies](https://img.shields.io/badge/dependencies-0-success.svg)](https://dakly.vercel.app)
+[![Zero Dependencies](https://img.shields.io/badge/dependencies-0-success.svg)](https://dakly.cc.cd)
 
-The official zero-dependency Node.js and TypeScript client library for **[Dakly](https://dakly.vercel.app)** — the high-performance, developer-first Gmail microservice.
+The official zero-dependency Node.js and TypeScript client library for **[Dakly](https://dakly.cc.cd)** — the high-performance, developer-first Gmail microservice.
 
 Send transactional emails, verification OTP codes, college PDFs, and onboarding sequences using your existing Gmail accounts without paying \$20/month for SendGrid or Resend.
 
@@ -26,7 +26,7 @@ pnpm add dakly
 
 ## 🔑 Quick Start
 
-Grab your free API Key from the [Dakly Dashboard](https://dakly.vercel.app).
+Grab your free API Key from the [Dakly Dashboard](https://dakly.cc.cd).
 
 ```javascript
 import { Dakly } from 'dakly';
@@ -226,4 +226,4 @@ app.post('/api/welcome', async (req, res) => {
 ---
 
 ## 📄 License
-MIT © [Dakly Technologies](https://dakly.vercel.app)
+MIT © [Dakly Technologies](https://dakly.cc.cd)

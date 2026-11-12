@@ -120,7 +120,7 @@ const DEFAULT_TEMPLATES = [
     description: 'High-energy welcome letter with feature highlights list and primary CTA button.',
     sampleVars: {
       name: 'Aman',
-      actionUrl: 'https://dakly.vercel.app/dashboard',
+      actionUrl: 'https://dakly.cc.cd/dashboard',
       actionText: 'Get Started Now',
       introMessage: 'We are thrilled to welcome you! Your account is active and ready to roll.',
     },
@@ -139,7 +139,7 @@ const DEFAULT_TEMPLATES = [
     description: 'Security-first password recovery with prominent action button, raw link fallback, and IP notice.',
     sampleVars: {
       name: 'Priya',
-      resetUrl: 'https://dakly.vercel.app/reset-password?token=sec_984129',
+      resetUrl: 'https://dakly.cc.cd/reset-password?token=sec_984129',
       validMinutes: 15,
       ipAddress: '103.21.144.92',
       deviceInfo: 'Chrome on macOS',
@@ -164,7 +164,7 @@ const DEFAULT_TEMPLATES = [
       notesTitle: 'Unit 3: Trees, Binary Search & Graph Algorithms',
       semester: 'Semester 4',
       description: 'Comprehensive handwritten revision notes with solved university question papers.',
-      downloadUrl: 'https://dakly.vercel.app',
+      downloadUrl: 'https://dakly.cc.cd',
     },
     fields: [
       { key: 'studentName', label: 'Student Name', placeholder: 'Sneha' },
@@ -188,7 +188,7 @@ const DEFAULT_TEMPLATES = [
       date: '19 Oct 2026',
       paymentMethod: 'UPI / Card',
       planName: 'Dakly Pro Developer Pass',
-      receiptUrl: 'https://dakly.vercel.app',
+      receiptUrl: 'https://dakly.cc.cd',
     },
     fields: [
       { key: 'customerName', label: 'Customer Name', placeholder: 'Vikram Sharma' },

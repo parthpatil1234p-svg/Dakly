@@ -40,4 +40,4 @@ User-agent: Bingbot
 Allow: /
 
 # Sitemap & LLMs Manifests
-Sitemap: https://dakly.vercel.app/sitemap.xml
+Sitemap: https://dakly.cc.cd/sitemap.xml

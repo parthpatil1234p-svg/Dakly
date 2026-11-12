@@ -8,7 +8,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Dakly Technologies",
     author_email="support@dakly.com",
-    url="https://dakly.vercel.app",
+    url="https://dakly.cc.cd",
     packages=find_packages(),
     python_requires=">=3.8",
     install_requires=[],

@@ -5,17 +5,17 @@
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
   <url>
-    <loc>https://dakly.vercel.app/</loc>
+    <loc>https://dakly.cc.cd/</loc>
     <lastmod>2026-11-12T00:00:00+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://dakly.vercel.app/og-image.svg</image:loc>
+      <image:loc>https://dakly.cc.cd/og-image.svg</image:loc>
       <image:title>Dakly | Zero-Setup Headless Transactional Email Engine</image:title>
       <image:caption>Free Gmail transactional email microservice with automated failover, Smart Warm-up, and real-time analytics.</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://dakly.vercel.app/logo-square-animated.svg</image:loc>
+      <image:loc>https://dakly.cc.cd/logo-square-animated.svg</image:loc>
       <image:title>Dakly Logo</image:title>
       <image:caption>Dakly Transactional Email Microservice Engine Icon</image:caption>
     </image:image>

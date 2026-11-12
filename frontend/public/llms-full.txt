@@ -3,7 +3,7 @@
 ## Overview
 Dakly is an open-source, zero-setup headless transactional email engine. It turns free Gmail and Google Workspace accounts into production-grade transactional SMTP relays equipped with multi-sender failover, rate pacing, smart warmup, sender aliases, real-time open/click tracking, bounce suppression, and enterprise-grade security.
 
-- Canonical URL: https://dakly.vercel.app
+- Canonical URL: https://dakly.cc.cd
 - Engine API Endpoint: https://dakly-engin.vercel.app
 - Source Code: https://github.com/parthpatil1234p-svg/Dakly
 - Authors: Parth Patil & The Dakly Engineering Team

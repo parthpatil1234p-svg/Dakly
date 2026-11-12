@@ -1,6 +1,6 @@
 /**
  * Dakly - Standalone Zero-Dependency SDK (Single File Drop-In)
- * https://dakly.vercel.app
+ * https://dakly.cc.cd
  * 
  * Works in Node.js 18+, Bun, Deno, Browser, and Next.js / Edge.
  * 
@@ -190,7 +190,7 @@ class Dakly {
       vars: {
         name: options.name || 'there',
         appName: options.appName || 'Our Platform',
-        loginUrl: options.loginUrl || 'https://dakly.vercel.app',
+        loginUrl: options.loginUrl || 'https://dakly.cc.cd',
         supportEmail: options.supportEmail || 'support@dakly.com',
       },
     });

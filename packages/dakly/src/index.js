@@ -331,7 +331,7 @@ class Dakly {
       vars: {
         name: options.name || 'there',
         appName: options.appName || 'Our Platform',
-        loginUrl: options.loginUrl || 'https://dakly.vercel.app',
+        loginUrl: options.loginUrl || 'https://dakly.cc.cd',
         supportEmail: options.supportEmail || 'support@dakly.com',
       },
     });

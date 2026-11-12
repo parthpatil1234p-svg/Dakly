@@ -513,9 +513,11 @@ async function trackClick(req, res) {
       } catch (_) {}
     }
 
+    const defaultFrontend = process.env.FRONTEND_URL || 'https://dakly.cc.cd';
+
     // Safety check: only redirect to valid http/https URLs to prevent javascript: or file: exploits
     if (!targetUrl || (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://'))) {
-      return res.redirect(302, 'https://dakly.vercel.app');
+      return res.redirect(302, defaultFrontend);
     }
 
     const userAgent = req.headers['user-agent'] || '';
@@ -564,7 +566,7 @@ async function trackClick(req, res) {
     }
 
     // Validate target destination URL to prevent Open Redirect attacks to internal cloud metadata
-    let safeDestination = 'https://dakly.vercel.app';
+    let safeDestination = defaultFrontend;
     try {
       const parsed = new URL(targetUrl);
       if (
@@ -582,14 +584,14 @@ async function trackClick(req, res) {
         }
       }
     } catch {
-      safeDestination = 'https://dakly.vercel.app';
+      safeDestination = defaultFrontend;
     }
 
     // Immediate 302 Redirect to destination
     return res.redirect(302, safeDestination);
   } catch (error) {
     console.error('Track Click Error:', error.message);
-    res.redirect(302, 'https://dakly.vercel.app');
+    res.redirect(302, process.env.FRONTEND_URL || 'https://dakly.cc.cd');
   }
 }
 

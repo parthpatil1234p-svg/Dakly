@@ -473,7 +473,7 @@ const TEMPLATE_CATALOG = [
     description: 'High-energy welcome letter with feature highlights list and primary CTA button.',
     sampleVars: {
       name: 'Aman',
-      actionUrl: 'https://dakly.vercel.app/dashboard',
+      actionUrl: 'https://dakly.cc.cd/dashboard',
       actionText: 'Get Started Now',
       introMessage: 'We are thrilled to welcome you! Your account is active and ready to roll.',
       features: [
@@ -492,7 +492,7 @@ const TEMPLATE_CATALOG = [
     description: 'Security-first password recovery with prominent action button, raw link fallback, and IP notice.',
     sampleVars: {
       name: 'Priya',
-      resetUrl: 'https://dakly.vercel.app/reset-password?token=sec_984129',
+      resetUrl: 'https://dakly.cc.cd/reset-password?token=sec_984129',
       validMinutes: 15,
       ipAddress: '103.21.144.92',
       deviceInfo: 'Chrome on macOS',
@@ -511,7 +511,7 @@ const TEMPLATE_CATALOG = [
       notesTitle: 'Unit 3: Trees, Binary Search & Graph Algorithms',
       semester: 'Semester 4',
       description: 'Comprehensive handwritten revision notes with solved university question papers.',
-      downloadUrl: 'https://dakly.vercel.app',
+      downloadUrl: 'https://dakly.cc.cd',
       hasAttachment: true,
     },
     render: renderNotesDelivery,
@@ -533,7 +533,7 @@ const TEMPLATE_CATALOG = [
         { description: 'Dakly Pro Subscription (1 Year)', amount: '₹1,270.00' },
         { description: 'GST (18%)', amount: '₹229.00' },
       ],
-      receiptUrl: 'https://dakly.vercel.app',
+      receiptUrl: 'https://dakly.cc.cd',
     },
     render: renderReceipt,
   },

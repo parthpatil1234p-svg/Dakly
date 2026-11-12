@@ -43,6 +43,8 @@ app.use(
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  'https://dakly.cc.cd',
+  'http://dakly.cc.cd',
   'https://dakly.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000',
@@ -119,7 +121,7 @@ app.get('/health', async (req, res) => {
 
 // Official Web Dashboard Redirect
 app.get('/dashboard', globalLimiter, (req, res) => {
-  res.redirect(process.env.FRONTEND_URL || 'https://dakly.vercel.app');
+  res.redirect(process.env.FRONTEND_URL || 'https://dakly.cc.cd');
 });
 
 // API Welcome & Microservice Status (Pure JSON API Engine Status)
@@ -130,7 +132,7 @@ app.get('/', globalLimiter, (req, res) => {
     status: 'ONLINE',
     version: '1.0.0',
     cluster: '100% OPERATIONAL',
-    dashboard: process.env.FRONTEND_URL || 'https://dakly.vercel.app',
+    dashboard: process.env.FRONTEND_URL || 'https://dakly.cc.cd',
     documentation: 'https://github.com/parthpatil1234p-svg/Dakly#readme',
     endpoints: {
       health: 'GET /health',

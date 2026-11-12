@@ -193,7 +193,7 @@ await dakly.sendWelcome({
   to: 'founder@startup.com',
   name: 'Rahul Sharma',
   appName: 'Dakly Cloud',
-  loginUrl: 'https://dakly.vercel.app/login'
+  loginUrl: 'https://dakly.cc.cd/login'
 });
 
 // 3. College Notes & PDF Attachment Delivery

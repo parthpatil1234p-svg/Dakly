@@ -216,7 +216,7 @@ class Dakly:
         to: str,
         name: str = "there",
         app_name: str = "Our Platform",
-        login_url: str = "https://dakly.vercel.app",
+        login_url: str = "https://dakly.cc.cd",
         support_email: str = "support@dakly.com",
         subject: Optional[str] = None,
     ) -> Dict[str, Any]:
