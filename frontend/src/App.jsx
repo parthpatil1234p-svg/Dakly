@@ -53,6 +53,8 @@ import {
   ChevronDown,
   ChevronUp,
   HelpCircle,
+  Bot,
+  Wand2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import SpotlightCard from './components/SpotlightCard';
@@ -242,6 +244,95 @@ const FAQS = [
   }
 ];
 
+// Helper to generate ready-to-paste AI Integration Prompts (Cursor / Claude / ChatGPT / Copilot)
+const generateAiSetupPrompt = (framework = 'nextjs', apiKey = '', apiUrl = API_BASE_URL) => {
+  const effectiveKey = apiKey || 'gkey_live_your_project_api_key_here';
+
+  if (framework === 'nextjs') {
+    return `I want to integrate transactional emails (user welcome emails, OTP verification, and notifications) into my Next.js App Router project using Dakly (https://dakly.cc.cd), a zero-cost headless email microservice.
+
+### My Credentials:
+- Dakly API Key: ${effectiveKey}
+- API Base URL: ${apiUrl}
+
+### Requirements:
+1. Install the official SDK:
+   \`npm install @dakly/sdk\`
+2. Add the environment variable to \`.env.local\`:
+   \`DAKLY_API_KEY="${effectiveKey}"\`
+3. Create a reusable client singleton at \`lib/email.ts\` (or \`lib/email.js\`):
+   - Initialize \`new Dakly(process.env.DAKLY_API_KEY)\`.
+   - Export \`sendOtpEmail({ to, otp })\` using \`dakly.sendOtp({ to, otp, expiresInMinutes: 10 })\`.
+   - Export \`sendWelcomeEmail({ to, name })\` using \`dakly.sendWelcome({ to, name, appName: 'My App' })\`.
+   - Catch and properly handle \`DaklySuppressedError\` (recipient hard-bounced) and \`DaklyRateLimitError\`.
+4. Create an API route at \`app/api/auth/send-otp/route.ts\` demonstrating how to accept \`{ to }\`, generate a 6-digit OTP, send it via \`sendOtpEmail\`, and return \`{ success: true }\`.
+5. Ensure type safety with TypeScript, clean error responses, and no external SMTP dependencies.`;
+  }
+
+  if (framework === 'node' || framework === 'express') {
+    return `I want to integrate transactional email and OTP dispatch into my Node.js / Express backend using Dakly (https://dakly.cc.cd), a free zero-setup email microservice.
+
+### My Credentials:
+- Dakly API Key: ${effectiveKey}
+- API Base URL: ${apiUrl}
+
+### Requirements:
+1. Install the official SDK:
+   \`npm install @dakly/sdk\`
+2. Add the environment variable to \`.env\`:
+   \`DAKLY_API_KEY="${effectiveKey}"\`
+3. Create a service module at \`services/emailService.js\`:
+   - Initialize \`const { Dakly, DaklySuppressedError } = require('@dakly/sdk');\`
+   - \`const dakly = new Dakly(process.env.DAKLY_API_KEY);\`
+   - Export \`sendOtp(to, otp)\` and \`sendWelcome(to, name)\`.
+   - Implement error guards for \`DaklySuppressedError\` so invalid emails fail gracefully without crashing.
+4. Show an Express route handler \`POST /api/auth/request-otp\` using this service.
+5. Provide clean error handling, logging, and zero Nodemailer boilerplate.`;
+  }
+
+  if (framework === 'python') {
+    return `I want to integrate transactional email delivery and OTP verification into my Python project (FastAPI / Django / Flask) using Dakly (https://dakly.cc.cd), a free headless email microservice.
+
+### My Credentials:
+- Dakly API Key: ${effectiveKey}
+- API Base URL: ${apiUrl}
+
+### Requirements:
+1. Install the official Python package:
+   \`pip install dakly\`
+2. Configure \`.env\`:
+   \`DAKLY_API_KEY="${effectiveKey}"\`
+3. Create \`services/email_service.py\`:
+   - Initialize \`from dakly import Dakly, DaklySuppressedError\`
+   - \`client = Dakly(api_key=os.getenv("DAKLY_API_KEY"))\`
+   - Define \`send_otp_email(to: str, otp: str)\` using \`client.send_otp(to=to, otp=otp, expires_in_minutes=10)\`.
+   - Define \`send_welcome_email(to: str, name: str)\` using \`client.send_welcome(to=to, name=name)\`.
+   - Catch \`DaklySuppressedError\` to safely catch bounced email addresses.
+4. Provide a sample FastAPI route endpoint demonstrating usage.`;
+  }
+
+  // Universal / Raw REST
+  return `I want to integrate transactional emails and OTP dispatch into my application using the Dakly REST API (https://dakly.cc.cd).
+
+### My Credentials:
+- Dakly API Key: ${effectiveKey}
+- API Endpoint: ${apiUrl}/api/send
+- Health Ping: ${apiUrl}/api/ping
+
+### Requirements:
+1. Write a clean HTTP client helper that sends a POST request to \`${apiUrl}/api/send\` with headers:
+   - \`Content-Type: application/json\`
+   - \`x-api-key: ${effectiveKey}\`
+2. Implement functions for:
+   - Sending OTP: payload \`{ "to": "user@example.com", "otp": "839201" }\`
+   - Sending Welcome: payload \`{ "to": "user@example.com", "template": "welcome", "templateVars": { "name": "Alex" } }\`
+   - Sending Custom HTML: payload \`{ "to": "user@example.com", "subject": "Hello", "html": "<h1>Welcome</h1>" }\`
+3. Handle responses:
+   - Status 200: email sent successfully.
+   - Status 400 with \`status: "BLOCKED_SUPPRESSED"\`: address is suppressed due to bounce.
+   - Status 429: rate limit exceeded.`;
+};
+
 export default function App() {
   // Theme State: 'light' (white background) by default, or 'dark'
   const [theme, setTheme] = useState(() => {
@@ -344,6 +435,8 @@ export default function App() {
 
   // Modals
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
+  const [showAiPromptModal, setShowAiPromptModal] = useState(false);
+  const [aiPromptFramework, setAiPromptFramework] = useState('nextjs'); // 'nextjs' | 'node' | 'python' | 'curl'
   const [showNewProjModal, setShowNewProjModal] = useState(false);
   const [showAddSenderModal, setShowAddSenderModal] = useState(false);
   const [showLogoModal, setShowLogoModal] = useState(false);
@@ -1724,6 +1817,131 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
   };
 
   // ==============================================================
+  // MODAL: 1-CLICK DETAILED AI SETUP PROMPT (Cursor / Claude / ChatGPT)
+  // ==============================================================
+  const renderAiPromptModal = () => {
+    if (!showAiPromptModal) return null;
+    const currentPrompt = generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL);
+
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div className="rounded-2xl border border-slate-200 dark:border-indigo-500/30 max-w-3xl w-full my-auto overflow-hidden shadow-2xl bg-white dark:bg-[#0d1017] text-slate-800 dark:text-slate-100">
+          
+          {/* Header */}
+          <div className="p-5 sm:p-6 bg-slate-50 dark:bg-gradient-to-r dark:from-indigo-950/70 dark:via-[#12151f] dark:to-[#0d1017] border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-600/10 dark:bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <Bot className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    1-Click Detailed AI Setup Prompt
+                  </h3>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                    Cursor • Claude • Copilot
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Paste this detailed prompt into Cursor Composer, Claude Code, or ChatGPT to wire Dakly into your project in 10 seconds.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowAiPromptModal(false)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 dark:hover:text-white dark:hover:bg-white/10 transition"
+              title="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="p-5 sm:p-6 space-y-4">
+            
+            {/* Framework Selectors */}
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Target Framework / Environment:
+              </span>
+              <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                {[
+                  { id: 'nextjs', label: 'Next.js App Router' },
+                  { id: 'node', label: 'Express.js / Node' },
+                  { id: 'python', label: 'Python (FastAPI / Django)' },
+                  { id: 'curl', label: 'Raw HTTP / REST' },
+                ].map((fw) => (
+                  <button
+                    key={fw.id}
+                    onClick={() => setAiPromptFramework(fw.id)}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                      aiPromptFramework === fw.id
+                        ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+                        : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {fw.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Prompt Preview Code Box */}
+            <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 bg-slate-900 text-slate-100 font-mono text-xs">
+              <div className="px-4 py-2 bg-slate-950/80 border-b border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+                <span className="flex items-center space-x-1.5">
+                  <Wand2 className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Prompt for Cursor Composer, Claude, Copilot, or ChatGPT</span>
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono">
+                  {currentPrompt.length} chars
+                </span>
+              </div>
+              <pre className="p-4 max-h-[300px] overflow-y-auto whitespace-pre-wrap leading-relaxed text-[11px] text-slate-200">
+                {currentPrompt}
+              </pre>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>
+                  {activeProject?.apiKey ? "✅ Injected your real project API Key into the prompt!" : "💡 Create a free account or project to auto-fill your real API key."}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(currentPrompt);
+                  setCopiedSnippetKey('modal_ai_prompt');
+                  confetti({ particleCount: 30, spread: 60 });
+                  setTimeout(() => setCopiedSnippetKey(null), 2500);
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/25 active:scale-[0.98]"
+              >
+                {copiedSnippetKey === 'modal_ai_prompt' ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-300" />
+                    <span>Copied Prompt to Clipboard! 🎉</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Copy Detailed AI Setup Prompt</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ==============================================================
   // VIEW: AUTH SCREEN (If Not Logged In)
   // ==============================================================
   if (!authToken) {
@@ -1756,6 +1974,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
 
         {/* Welcome Capabilities Popup on Visit */}
         {renderWelcomeModal()}
+        {renderAiPromptModal()}
 
         {/* Ambient Glow Backdrops */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-indigo-600/10 dark:bg-indigo-600/15 rounded-full blur-[140px] pointer-events-none"></div>
@@ -1775,7 +1994,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5 font-medium">
               Multi-tenant transactional email & OTP engine for developers.
             </p>
-            <div className="mt-3.5 flex items-center justify-center gap-2.5 flex-wrap">
+            <div className="mt-3.5 flex items-center justify-center gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() => setShowWelcomeModal(true)}
@@ -1783,6 +2002,15 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 <span>Inspect Capabilities ✨</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowAiPromptModal(true)}
+                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/25 text-[11px] font-semibold transition active:scale-[0.98]"
+              >
+                <Bot className="w-3.5 h-3.5 text-emerald-500" />
+                <span>1-Click AI Setup Prompt 🤖</span>
               </button>
 
               <a
@@ -2009,6 +2237,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
 
       {/* Welcome Capabilities Popup on Visit */}
       {renderWelcomeModal()}
+      {renderAiPromptModal()}
 
       {/* Top Header Navbar */}
       <header className="sticky top-0 z-40 border-b border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-[#07080c]/80 backdrop-blur-md transition-colors">
@@ -2082,6 +2311,16 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
             >
               <Sparkles className="w-4.5 h-4.5 text-amber-500" />
               <span className="hidden sm:inline">Capabilities</span>
+            </button>
+
+            {/* AI Setup Prompt Studio Button */}
+            <button
+              onClick={() => setShowAiPromptModal(true)}
+              className="inline-flex items-center space-x-2 px-3.5 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 text-sm font-semibold transition shadow-xs"
+              title="Copy 1-click detailed setup prompt for Cursor, Claude, or ChatGPT"
+            >
+              <Bot className="w-4.5 h-4.5 text-emerald-500" />
+              <span className="hidden lg:inline font-mono text-xs sm:text-sm">AI Prompt 🤖</span>
             </button>
 
             <button
@@ -2397,6 +2636,99 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                       </div>
                     </div>
 
+                  </div>
+                </SpotlightCard>
+
+                {/* 1-Click AI Setup Prompt Spotlight Card (Cursor / Claude / Copilot / ChatGPT) */}
+                <SpotlightCard
+                  spotlightColor="rgba(16, 185, 129, 0.18)"
+                  borderColor="rgba(16, 185, 129, 0.35)"
+                  className="p-6 sm:p-7 border border-emerald-500/20 bg-gradient-to-r from-emerald-50/70 via-white to-teal-50/70 dark:from-emerald-950/20 dark:via-[#090d14] dark:to-teal-950/20 shadow-xs rounded-2xl"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-white/10">
+                    <div className="flex items-start space-x-3.5">
+                      <div className="p-3 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                        <Bot className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2.5">
+                          <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-wide">
+                            AI Setup Prompt Studio
+                          </h3>
+                          <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                            Cursor • Claude • ChatGPT • Copilot
+                          </span>
+                        </div>
+                        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
+                          Feed this prompt into your AI coding assistant. It automatically has your live project API key, SDK installation steps, singleton client, and error handling ready to write.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2.5">
+                      <button
+                        onClick={() => setShowAiPromptModal(true)}
+                        className="inline-flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition shadow-md shadow-emerald-500/20 active:scale-[0.98]"
+                      >
+                        <Wand2 className="w-4.5 h-4.5" />
+                        <span>Open Prompt Modal ⚡</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Framework Selector Pills inside card */}
+                  <div className="mt-5 space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center space-x-2 overflow-x-auto pb-1">
+                        {[
+                          { id: 'nextjs', label: 'Next.js App Router (TypeScript)' },
+                          { id: 'node', label: 'Node.js / Express' },
+                          { id: 'python', label: 'Python (FastAPI / Django)' },
+                          { id: 'curl', label: 'Universal REST / cURL' },
+                        ].map((fw) => (
+                          <button
+                            key={fw.id}
+                            type="button"
+                            onClick={() => setAiPromptFramework(fw.id)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                              aiPromptFramework === fw.id
+                                ? 'bg-emerald-600 text-white shadow-xs font-semibold'
+                                : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10'
+                            }`}
+                          >
+                            {fw.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prompt = generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL);
+                          navigator.clipboard.writeText(prompt);
+                          setCopiedSnippetKey('card_ai_prompt');
+                          confetti({ particleCount: 30, spread: 60 });
+                          setTimeout(() => setCopiedSnippetKey(null), 2500);
+                        }}
+                        className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white/10 hover:bg-slate-800 text-white text-xs font-bold transition shadow-xs"
+                      >
+                        {copiedSnippetKey === 'card_ai_prompt' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Copied Prompt! 🎉</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copy Full Prompt</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto max-h-[160px] leading-relaxed shadow-inner">
+                      {generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL)}
+                    </pre>
                   </div>
                 </SpotlightCard>
                 
@@ -4798,6 +5130,7 @@ async def handle_dakly_webhook(request: Request):
                     { id: 'express', label: 'Express.js Backend' },
                     { id: 'fetch', label: 'Raw JavaScript fetch' },
                     { id: 'curl', label: 'cURL CLI' },
+                    { id: 'ai_prompt', label: '🤖 AI Prompt (Cursor / Claude)', badge: '1-Click Prompt ⚡' },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -4817,6 +5150,90 @@ async def handle_dakly_webhook(request: Request):
                     </button>
                   ))}
                 </div>
+
+                {/* If AI Prompt Tab Selected: Full Interactive AI Studio */}
+                {snippetLang === 'ai_prompt' && (
+                  <SpotlightCard
+                    spotlightColor="rgba(16, 185, 129, 0.2)"
+                    borderColor="rgba(16, 185, 129, 0.4)"
+                    className="p-6 border border-emerald-500/25 bg-gradient-to-br from-emerald-50/50 via-white to-indigo-50/50 dark:from-emerald-950/25 dark:via-[#0b0e14] dark:to-indigo-950/25 shadow-lg rounded-2xl space-y-5"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/10">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <Bot className="w-5 h-5 text-emerald-500" />
+                          <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                            Autonomous AI Coding Assistant Prompt (Zero-Manual Integration)
+                          </h3>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                          Paste this prompt into Cursor Composer (<kbd className="font-mono bg-slate-200 dark:bg-white/10 px-1.5 py-0.5 rounded text-[10px]">Ctrl+I</kbd> / <kbd className="font-mono bg-slate-200 dark:bg-white/10 px-1.5 py-0.5 rounded text-[10px]">Cmd+I</kbd>), Claude Code, Copilot, or ChatGPT to generate your email service in seconds.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          const prompt = generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL);
+                          navigator.clipboard.writeText(prompt);
+                          setCopiedSnippetKey('snippets_ai_prompt');
+                          confetti({ particleCount: 35, spread: 65 });
+                          setTimeout(() => setCopiedSnippetKey(null), 2500);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center space-x-2 shadow-md shadow-emerald-600/25 active:scale-[0.98] shrink-0"
+                      >
+                        {copiedSnippetKey === 'snippets_ai_prompt' ? (
+                          <>
+                            <Check className="w-4 h-4 text-white" />
+                            <span>Copied to Clipboard! 🎉</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            <span>Copy AI Setup Prompt</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Framework Tabs */}
+                    <div className="flex items-center space-x-2 overflow-x-auto pb-1">
+                      {[
+                        { id: 'nextjs', label: 'Next.js App Router (TypeScript)' },
+                        { id: 'node', label: 'Node.js / Express' },
+                        { id: 'python', label: 'Python (FastAPI / Django)' },
+                        { id: 'curl', label: 'Universal REST / cURL' },
+                      ].map((fw) => (
+                        <button
+                          key={fw.id}
+                          type="button"
+                          onClick={() => setAiPromptFramework(fw.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                            aiPromptFramework === fw.id
+                              ? 'bg-emerald-600 text-white shadow-xs font-semibold'
+                              : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10'
+                          }`}
+                        >
+                          {fw.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="rounded-xl overflow-hidden border border-slate-800 bg-[#07090e] text-slate-100 font-mono text-xs">
+                      <div className="px-4 py-2 bg-slate-950/80 border-b border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+                        <span className="flex items-center space-x-1.5">
+                          <Wand2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Ready-to-run prompt with live API key injected</span>
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL).length} characters
+                        </span>
+                      </div>
+                      <pre className="p-4 max-h-[380px] overflow-y-auto whitespace-pre-wrap leading-relaxed text-[11px] text-slate-200">
+                        {generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL)}
+                      </pre>
+                    </div>
+                  </SpotlightCard>
+                )}
 
                 {/* 1. Quick Setup & Ping */}
                 <SpotlightCard
