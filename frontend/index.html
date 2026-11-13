@@ -187,8 +187,10 @@
     <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-KLWPL4RZ"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
+      gtag('config', 'GTM-KLWPL4RZ');
     </script>
 
     <!-- Google AdSense Official Monetization Script -->
