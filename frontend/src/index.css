@@ -6,7 +6,7 @@
   body {
     background-color: #f8fafc;
     color: #0f172a;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-image: radial-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px);
     background-size: 28px 28px;
     background-position: -1px -1px;
@@ -19,6 +19,35 @@
     color: #f1f5f9;
     background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   }
+
+  code, pre, kbd, samp, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+}
+
+/* Linear & Raycast Aesthetic Gradients */
+.hero-gradient-title {
+  background: linear-gradient(135deg, #0f172a 0%, #312e81 40%, #4338ca 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html.dark .hero-gradient-title {
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 40%, #818cf8 80%, #34d399 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle-gradient {
+  background: linear-gradient(135deg, #475569 0%, #1e293b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html.dark .hero-subtitle-gradient {
+  background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Glass Card & Surfaces */
@@ -64,6 +93,22 @@ html.dark .glass-card:hover {
 
 .radar-beacon {
   animation: radar-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* Subtle Shimmer Border Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-badge {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.25) 50%, rgba(99, 102, 241, 0.1) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 4s infinite linear;
 }
 
 /* Custom Sleek Scrollbars */
