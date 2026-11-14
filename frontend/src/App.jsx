@@ -60,6 +60,8 @@ import confetti from 'canvas-confetti';
 import SpotlightCard from './components/SpotlightCard';
 import AdBanner from './components/AdBanner';
 
+const ModelViewer3D = React.lazy(() => import('./components/ModelViewer3D'));
+
 function GithubIcon({ className = 'w-4 h-4' }) {
   return (
     <svg className={`${className} fill-current`} viewBox="0 0 24 24" aria-hidden="true">
@@ -1980,7 +1982,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-indigo-600/10 dark:bg-indigo-600/15 rounded-full blur-[140px] pointer-events-none"></div>
         <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-        <div className="relative z-10 max-w-xl w-full">
+        <div className="relative z-10 max-w-6xl w-full px-4 sm:px-6">
           
           {/* Logo Brand */}
           <div className="text-center mb-8">
@@ -2025,12 +2027,60 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
             </div>
           </div>
 
-          {/* Auth Spotlight Card */}
-          <SpotlightCard
-            spotlightColor="rgba(99, 102, 241, 0.16)"
-            borderColor="rgba(99, 102, 241, 0.4)"
-            className="p-6 sm:p-8 space-y-6"
-          >
+          {/* Main Hero 2-Column Grid: 3D Architecture Canvas + Sign In/Up */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start mb-8">
+            
+            {/* Left Column: Interactive 3D Model Showcase */}
+            <div className="lg:col-span-7 space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                    Interactive 3D Architecture
+                  </span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                  Rotate & Orbit Model
+                </span>
+              </div>
+
+              <React.Suspense fallback={
+                <div className="h-[420px] rounded-2xl bg-slate-900/40 border border-white/5 animate-pulse flex flex-col items-center justify-center text-xs font-mono text-slate-500 space-y-2">
+                  <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Loading 3D Canvas...</span>
+                </div>
+              }>
+                <ModelViewer3D height="420px" initialModelId="envelope" showSwitcher={true} />
+              </React.Suspense>
+
+              {/* 4 Quick Spec Badges */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-center">
+                  <div className="text-xs font-black text-slate-900 dark:text-white">&lt; 350ms</div>
+                  <div className="text-[10px] text-slate-500 font-mono">OTP Latency</div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-center">
+                  <div className="text-xs font-black text-emerald-600 dark:text-emerald-400">100% Failover</div>
+                  <div className="text-[10px] text-slate-500 font-mono">Multi-Gmail</div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-center">
+                  <div className="text-xs font-black text-indigo-600 dark:text-indigo-400">Zero Bounce</div>
+                  <div className="text-[10px] text-slate-500 font-mono">Suppression Guard</div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-center">
+                  <div className="text-xs font-black text-amber-500">$0 / Month</div>
+                  <div className="text-[10px] text-slate-500 font-mono">Free Forever</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Auth Spotlight Card & AdBanner */}
+            <div className="lg:col-span-5 space-y-5">
+              <SpotlightCard
+                spotlightColor="rgba(99, 102, 241, 0.16)"
+                borderColor="rgba(99, 102, 241, 0.4)"
+                className="p-6 sm:p-7 space-y-6"
+              >
             
             {/* Tab: Sign In vs Sign Up */}
             <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-100 dark:bg-[#080a0f] border border-slate-200 dark:border-white/10">
@@ -2135,8 +2185,11 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
 
           </SpotlightCard>
 
-          {/* Monetized Google AdSense Banner */}
-          <AdBanner className="mt-6" />
+              {/* Monetized Google AdSense Banner */}
+              <AdBanner className="mt-4" />
+            </div>
+
+          </div>
 
           {/* Frequently Asked Questions (FAQ) - High-Converting SEO & User Accordion */}
           <section aria-label="Frequently Asked Questions" className="mt-8 space-y-2 text-left">
@@ -3221,6 +3274,41 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                     ))
                     )}
                   </div>
+                </SpotlightCard>
+
+                {/* 3D Interactive Architecture Showcase Card */}
+                <SpotlightCard
+                  spotlightColor="rgba(99, 102, 241, 0.16)"
+                  borderColor="rgba(99, 102, 241, 0.35)"
+                  className="p-6 sm:p-7 space-y-4"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-white/10">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500">
+                        <Sparkles className="w-5 h-5 text-indigo-500" />
+                      </div>
+                      <div>
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                          <span>Interactive 3D Engine Architecture</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                            BLENDER 3D
+                          </span>
+                        </h3>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                          Inspect the 4 architectural components powering Dakly's multi-tenant delivery engine. Drag to orbit, scroll to zoom.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <React.Suspense fallback={
+                    <div className="h-[380px] rounded-2xl bg-slate-900/40 border border-white/5 animate-pulse flex flex-col items-center justify-center text-xs font-mono text-slate-500 space-y-2">
+                      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Loading 3D Architecture...</span>
+                    </div>
+                  }>
+                    <ModelViewer3D height="380px" initialModelId="router" showSwitcher={true} />
+                  </React.Suspense>
                 </SpotlightCard>
 
               </div>
