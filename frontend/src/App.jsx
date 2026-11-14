@@ -177,7 +177,7 @@ const DEFAULT_TEMPLATES = [
       subject: 'Data Structures & Algorithms',
       notesTitle: 'Unit 3: Trees, Binary Search & Graph Algorithms',
       semester: 'Semester 4',
-      description: 'Comprehensive handwritten revision notes with solved university question papers.',
+      description: 'Complete handwritten revision notes with solved university question papers.',
       downloadUrl: 'https://dakly.cc.cd',
     },
     fields: [
@@ -186,7 +186,7 @@ const DEFAULT_TEMPLATES = [
       { key: 'notesTitle', label: 'Notes Chapter / Title', placeholder: 'Unit 3: Trees & Graphs' },
       { key: 'semester', label: 'Semester / Class', placeholder: 'Semester 4' },
       { key: 'downloadUrl', label: 'Direct Download Link (Optional)', placeholder: 'https://...' },
-      { key: 'description', label: 'Summary / Topic List', placeholder: 'Comprehensive handwritten revision notes...', isTextarea: true },
+      { key: 'description', label: 'Summary / Topic List', placeholder: 'Complete handwritten revision notes...', isTextarea: true },
     ],
   },
   {
@@ -220,27 +220,27 @@ const DEFAULT_TEMPLATES = [
 const FAQS = [
   {
     q: 'What is Dakly and how does it work?',
-    a: 'Dakly is a zero-setup, free headless transactional email engine. It turns free Gmail and Google Workspace accounts into production-grade SMTP relays with automated multi-account failover, progressive Smart Warm-up, custom sender aliases, and real-time open/click telemetry — zero credit card or domain setup needed.'
+    a: 'Dakly is a headless transactional email engine for Gmail and Google Workspace. It adds multi-account failover, send pacing, bounce suppression, and delivery analytics on top of your existing Google credentials without requiring DNS configuration or a credit card.'
   },
   {
     q: 'How does Dakly handle Google\'s 500 emails/day quota limit?',
-    a: 'Dakly has an automated Multi-Gmail Failover Pool. You can attach multiple backup Gmail accounts to a single project. When your primary account reaches 500 sends, Dakly instantly and dynamically routes outgoing traffic to healthy backup accounts without dropping a single email.'
+    a: 'Attach multiple backup Gmail accounts to any project. When the primary sender hits 500 sends, Dakly routes subsequent emails to an active backup account automatically.'
   },
   {
     q: 'Can I send from my custom domain using sender aliases?',
-    a: 'Yes! If you configure a custom alias (e.g. support@yourcompany.com) in your Google account settings, Dakly automatically detects the alias and delivers emails with your custom alias as the From address.'
+    a: 'Yes. If you add a custom alias (such as support@yourdomain.com) in your Google account settings, Dakly uses that alias as the From address.'
   },
   {
     q: 'Is my Google App Password safe with Dakly?',
-    a: 'Absolutely. Passwords are encrypted at rest using military-grade AES-256-GCM authenticated encryption with unique per-record cryptographic initialization vectors (IV). Credentials are only decrypted in-memory during active transport dispatch.'
+    a: 'Yes. App Passwords are encrypted at rest using AES-256-GCM authenticated encryption with unique initialization vectors per record. Credentials are only decrypted in memory during active dispatch.'
   },
   {
     q: 'How does Dakly prevent spam flags and account bans?',
-    a: 'Dakly includes an automated 14-day Smart Warm-up schedule, a leaky-bucket pacing queue to eliminate sudden volume bursts, and an automated Bounce Guard that immediately suppresses hard-bounced addresses (550 Mailbox Not Found).'
+    a: 'Dakly uses a 200ms pacing queue to smooth rapid bursts, a 14-day progressive warm-up ladder, and automatic bounce suppression that drops hard-bounced addresses before sending.'
   },
   {
     q: 'How do open rate and link click tracking work?',
-    a: 'Dakly inserts a transparent 1x1 tracking pixel for opens and cryptographically signs redirect links for clicks. You can track telemetry live in the dashboard or receive instant HMAC-SHA256 authenticated webhooks directly on your server.'
+    a: 'Dakly uses a 1x1 transparent tracking pixel for opens and signed redirect URLs for click tracking. Delivery stats appear live on the dashboard and trigger HMAC-signed webhook events.'
   }
 ];
 
@@ -1569,7 +1569,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                 <h4 className="font-bold text-slate-900 dark:text-white pt-2">1. Information We Collect & Encryption</h4>
                 <p>
                   We collect your account email, display name, and necessary SMTP credentials (such as Google App Passwords) strictly to deliver transactional emails on your behalf.
-                  All Google App Passwords and secret credentials are encrypted using <strong>military-grade AES-256-GCM authenticated encryption</strong> and are never viewable or stored in plain text.
+                  All Google App Passwords and secret credentials are encrypted using <strong>AES-256-GCM authenticated encryption</strong> and are never viewable or stored in plain text.
                 </p>
 
                 <h4 className="font-bold text-slate-900 dark:text-white pt-2">2. Google AdSense & Advertising Cookies</h4>
@@ -1761,10 +1761,10 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
             <SpotlightCard spotlightColor="rgba(139, 92, 246, 0.18)" borderColor="rgba(139, 92, 246, 0.3)" className="p-3.5 space-y-1">
               <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
                 <Lock className="w-4 h-4 text-violet-500" />
-                <span>7. Military-Grade AES-256-GCM Security</span>
+                <span>7. AES-256-GCM Credential Encryption</span>
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                Google App Passwords kabhi plain text mein save nahi hote. Military-grade authenticated encryption se 100% secure rehte hain.
+                Google App Passwords kabhi plain text mein save nahi hote. Unique IV ke saath AES-256-GCM encrypted rehte hain.
               </p>
             </SpotlightCard>
 
@@ -2294,7 +2294,7 @@ print("Delivered status:", response["status"])`}
             </form>
 
             <div className="pt-2 border-t border-slate-200 dark:border-white/5 text-center text-[11px] text-slate-500 font-mono">
-              🔒 Military-grade AES-256-GCM encryption & multi-tenant isolation.
+              🔒 AES-256-GCM encryption & multi-tenant isolation.
             </div>
 
           </SpotlightCard>
