@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const EmailLog = require('../models/EmailLog');
 const Project = require('../models/Project');
-const { isSafeRemoteUrl, isPrivateIp } = require('../utils/ssrfHelper');
+const { isSafeRemoteUrl, isPrivateIp, assertSafeRemoteUrl } = require('../utils/ssrfHelper');
 
 /**
  * Verifies an incoming webhook HMAC signature
@@ -64,32 +64,11 @@ async function dispatchWebhook(project, payload) {
     return { dispatched: false, status: 'EVENT_NOT_SUBSCRIBED' };
   }
 
-  let parsedUrl;
-  try {
-    parsedUrl = new URL(project.webhookUrl);
-  } catch {
-    return { dispatched: false, status: 'UNSAFE_OR_INVALID_URL', reason: 'Invalid URL format.' };
+  if (!isSafeRemoteUrl(project.webhookUrl)) {
+    return { dispatched: false, status: 'UNSAFE_OR_INVALID_URL', reason: 'Disallowed private, loopback, or invalid destination URL.' };
   }
 
-  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-    return { dispatched: false, status: 'UNSAFE_OR_INVALID_URL', reason: 'Disallowed protocol.' };
-  }
-
-  const host = parsedUrl.hostname.toLowerCase();
-  if (
-    host === 'localhost' ||
-    host === '127.0.0.1' ||
-    host === '0.0.0.0' ||
-    host === '169.254.169.254' ||
-    host.endsWith('.localhost') ||
-    host.endsWith('.local') ||
-    host.endsWith('.internal') ||
-    (/^(\d{1,3}\.){3}\d{1,3}$/.test(host) && isPrivateIp(host))
-  ) {
-    return { dispatched: false, status: 'UNSAFE_OR_INVALID_URL', reason: 'Disallowed private or loopback destination.' };
-  }
-
-  const safeWebhookUrl = parsedUrl.href;
+  const safeWebhookUrl = new URL(project.webhookUrl.trim()).href;
   const timestamp = new Date().toISOString();
   const enhancedPayload = {
     ...payload,
@@ -203,41 +182,14 @@ async function sendTestWebhook(project) {
     };
   }
 
-  let parsedUrl;
-  try {
-    parsedUrl = new URL(project.webhookUrl);
-  } catch {
-    return {
-      success: false,
-      error: 'Invalid Webhook Destination URL format.',
-    };
-  }
-
-  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-    return {
-      success: false,
-      error: 'Only http: and https: protocols are permitted for webhooks.',
-    };
-  }
-
-  const host = parsedUrl.hostname.toLowerCase();
-  if (
-    host === 'localhost' ||
-    host === '127.0.0.1' ||
-    host === '0.0.0.0' ||
-    host === '169.254.169.254' ||
-    host.endsWith('.localhost') ||
-    host.endsWith('.local') ||
-    host.endsWith('.internal') ||
-    (/^(\d{1,3}\.){3}\d{1,3}$/.test(host) && isPrivateIp(host))
-  ) {
+  if (!isSafeRemoteUrl(project.webhookUrl)) {
     return {
       success: false,
       error: 'Disallowed Webhook Destination: localhost and private network addresses are blocked for security.',
     };
   }
 
-  const safeWebhookUrl = parsedUrl.href;
+  const safeWebhookUrl = new URL(project.webhookUrl.trim()).href;
 
   const testPayload = {
     event: 'webhook.test',

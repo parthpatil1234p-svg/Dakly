@@ -108,16 +108,24 @@ function isQuotaOrAuthLimitError(errorMsg = '') {
 function parseFromHeader(fromStr) {
   if (!fromStr || typeof fromStr !== 'string') return { displayName: '', email: '' };
   const trimmed = fromStr.trim();
-  const match = trimmed.match(/^(?:"?([^"<]+)"?\s*)?<([^>]+)>$/);
-  if (match) {
+  if (trimmed.length > 320) return { displayName: '', email: '' };
+
+  const angleStart = trimmed.indexOf('<');
+  const angleEnd = trimmed.lastIndexOf('>');
+
+  if (angleStart !== -1 && angleEnd > angleStart) {
+    const rawName = trimmed.slice(0, angleStart).trim();
+    const cleanName = rawName.replace(/^["']|["']$/g, '').trim();
+    const cleanEmail = trimmed.slice(angleStart + 1, angleEnd).trim().toLowerCase();
     return {
-      displayName: (match[1] || '').trim(),
-      email: (match[2] || '').trim().toLowerCase(),
+      displayName: cleanName,
+      email: cleanEmail,
     };
   }
+
   return {
     displayName: '',
-    email: trimmed.toLowerCase(),
+    email: trimmed.replace(/^["']|["']$/g, '').toLowerCase(),
   };
 }
 

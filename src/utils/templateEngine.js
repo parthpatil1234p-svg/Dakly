@@ -573,11 +573,16 @@ function renderCustomTemplate(customTpl, vars = {}, project = {}) {
   const isFullDoc = /<html[\s>]/i.test(renderedHtml) || /<!doctype html/i.test(renderedHtml);
   const finalHtml = isFullDoc ? renderedHtml : wrapShell(renderedHtml, project);
 
-  const plainText = renderedHtml
+  let stripped = renderedHtml
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  let prev;
+  do {
+    prev = stripped;
+    stripped = stripped.replace(/<[^>]*>/g, ' ');
+  } while (stripped !== prev);
+  stripped = stripped.replace(/[<>]/g, '');
+  const plainText = stripped.replace(/\s+/g, ' ').trim();
 
   return {
     html: finalHtml,

@@ -646,7 +646,8 @@ async function getSuppressionList(req, res) {
 
     const query = { projectId: project._id };
     if (search && search.trim()) {
-      query.email = { $regex: search.trim(), $options: 'i' };
+      const safeSearch = search.trim().slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.email = { $regex: safeSearch, $options: 'i' };
     }
 
     const pageNum = Math.max(1, parseInt(page, 10));
@@ -1241,8 +1242,18 @@ async function addSenderAlias(req, res) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
+    if (cleanEmail.length < 3 || cleanEmail.length > 254) {
+      return res.status(400).json({ success: false, error: 'Invalid alias email format.' });
+    }
+    const atIndex = cleanEmail.indexOf('@');
+    const dotIndex = cleanEmail.lastIndexOf('.');
+    if (
+      atIndex <= 0 ||
+      atIndex !== cleanEmail.lastIndexOf('@') ||
+      dotIndex <= atIndex + 1 ||
+      dotIndex === cleanEmail.length - 1 ||
+      /\s/.test(cleanEmail)
+    ) {
       return res.status(400).json({ success: false, error: 'Invalid alias email format.' });
     }
 
