@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Send,
   ShieldCheck,
@@ -387,6 +387,8 @@ export default function App() {
   const [templateSendResult, setTemplateSendResult] = useState(null);
   const [templateCodeLang, setTemplateCodeLang] = useState('node'); // 'node' | 'python' | 'fetch' | 'curl'
   const [copiedTemplateCode, setCopiedTemplateCode] = useState(false);
+  const [templateIframeHeight, setTemplateIframeHeight] = useState(720);
+  const templateIframeRef = useRef(null);
 
   // Landing Page Interactive Simulator
 
@@ -780,6 +782,72 @@ export default function App() {
       clearTimeout(timer);
     };
   }, [selectedTemplateId, templateVars, activeProject]);
+
+  const syncIframeHeight = () => {
+    try {
+      const iframe = templateIframeRef.current;
+      if (!iframe) return;
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc) {
+        if (doc.documentElement) {
+          doc.documentElement.style.overflow = 'hidden';
+        }
+        if (doc.body) {
+          doc.body.style.overflow = 'hidden';
+          doc.body.style.margin = '0';
+          doc.body.style.padding = '0';
+        }
+        const scrollH = Math.max(
+          doc.body?.scrollHeight || 0,
+          doc.documentElement?.scrollHeight || 0,
+          doc.body?.offsetHeight || 0,
+          doc.documentElement?.offsetHeight || 0
+        );
+        if (scrollH > 150) {
+          setTemplateIframeHeight(scrollH + 32);
+        }
+      }
+    } catch (_) {}
+  };
+
+  useEffect(() => {
+    syncIframeHeight();
+    const t1 = setTimeout(syncIframeHeight, 80);
+    const t2 = setTimeout(syncIframeHeight, 250);
+    const t3 = setTimeout(syncIframeHeight, 600);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [templatePreviewHtml, previewDevice, selectedTemplateId]);
+
+  const preparedPreviewHtml = useMemo(() => {
+    if (!templatePreviewHtml) return '';
+    const injectStyle = `
+      <style>
+        html, body {
+          overflow: hidden !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background-color: #ffffff !important;
+        }
+        ::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        * {
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
+        }
+      </style>
+    `;
+    if (templatePreviewHtml.includes('</head>')) {
+      return templatePreviewHtml.replace('</head>', `${injectStyle}</head>`);
+    }
+    return `${injectStyle}${templatePreviewHtml}`;
+  }, [templatePreviewHtml]);
 
   const handleSendTemplate = async (e) => {
     if (e) e.preventDefault();
@@ -2277,18 +2345,21 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                     </div>
 
                     {/* Sandboxed Iframe Container */}
-                    <div className="flex justify-center bg-slate-100 dark:bg-[var(--surface)] p-3 sm:p-4 rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden min-h-[560px]">
+                    <div className="flex justify-center bg-slate-100 dark:bg-[var(--surface-soft)] p-3 sm:p-4 rounded-lg border border-slate-200 dark:border-white/10 transition-all">
                       <iframe
+                        ref={templateIframeRef}
                         title="Template Live Preview"
-                        srcDoc={templatePreviewHtml || '<div style="padding: 40px; text-align: center; color: #64748b; font-family: sans-serif;">Rendering preview...</div>'}
+                        srcDoc={preparedPreviewHtml || '<div style="padding: 40px; text-align: center; color: #64748b; font-family: sans-serif;">Rendering preview...</div>'}
+                        onLoad={syncIframeHeight}
                         style={{
                           width: previewDevice === 'mobile' ? '375px' : '100%',
-                          height: '560px',
+                          height: `${templateIframeHeight}px`,
+                          minHeight: '480px',
                           border: 'none',
-                          borderRadius: '12px',
+                          borderRadius: '8px',
                           background: '#ffffff',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                          transition: 'width 0.2s ease',
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+                          transition: 'width 0.2s ease, height 0.2s ease',
                         }}
                       />
                     </div>
