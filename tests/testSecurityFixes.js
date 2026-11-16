@@ -9,7 +9,7 @@
 'use strict';
 
 const assert = require('assert');
-const { isSafeRemoteUrl, isPrivateIp } = require('../src/utils/ssrfHelper');
+const { isSafeRemoteUrl, isPrivateIp, sanitizeUrlString, assertSafeRemoteUrl } = require('../src/utils/ssrfHelper');
 const { compileTemplate } = require('../src/utils/templateEngine');
 
 console.log('🧪 Starting Dakly CodeQL Security Verification Tests...\n');
@@ -61,6 +61,10 @@ console.log('🧪 Starting Dakly CodeQL Security Verification Tests...\n');
       true,
       `SSRF Guard should allow legitimate public URL: ${url}`
     );
+    const cleaned = sanitizeUrlString(url);
+    assert.strictEqual(cleaned, url, 'sanitizeUrlString should preserve ASCII URL chars');
+    const asserted = assertSafeRemoteUrl(url);
+    assert.strictEqual(new URL(asserted).href, new URL(url).href, 'assertSafeRemoteUrl should return valid href');
   }
 
   console.log('✅ Test 1 Passed: SSRF protection strictly blocks loopback, private IPs, metadata, and invalid protocols.');

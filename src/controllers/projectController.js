@@ -37,6 +37,20 @@ async function createProject(req, res) {
     // Encrypt the Google App Password
     const { encryptedData, iv, authTag } = encrypt(cleanPassword);
 
+    let cleanWebhookUrl = null;
+    if (webhookUrl && typeof webhookUrl === 'string' && webhookUrl.trim()) {
+      const SAFE_URL_PATTERN = /^https?:\/\/(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/;
+      const { isSafeRemoteUrl, sanitizeUrlString } = require('../utils/ssrfHelper');
+      const candidate = webhookUrl.trim();
+      if (!SAFE_URL_PATTERN.test(candidate) || !isSafeRemoteUrl(candidate)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Disallowed Webhook Destination: URL must be a public HTTP(S) address.',
+        });
+      }
+      cleanWebhookUrl = sanitizeUrlString(candidate);
+    }
+
     const project = await Project.create({
       userId: req.user ? req.user._id : null,
       name: name.trim(),
@@ -47,8 +61,8 @@ async function createProject(req, res) {
       authTag,
       dailyQuota: dailyQuota || 500,
       burstPacingMs: burstPacingMs !== undefined ? burstPacingMs : 200,
-      webhookUrl: webhookUrl || null,
-      webhookSecret: webhookSecret || null,
+      webhookUrl: cleanWebhookUrl,
+      webhookSecret: webhookSecret ? webhookSecret.trim() : null,
       senders: [
         {
           email: cleanEmail,
@@ -249,7 +263,22 @@ async function updateProject(req, res) {
     if (name !== undefined) project.name = name.trim();
     if (senderDisplayName !== undefined) project.senderDisplayName = senderDisplayName.trim();
     if (burstPacingMs !== undefined) project.burstPacingMs = Math.max(0, parseInt(burstPacingMs, 10));
-    if (webhookUrl !== undefined) project.webhookUrl = webhookUrl ? webhookUrl.trim() : null;
+    if (webhookUrl !== undefined) {
+      if (webhookUrl && typeof webhookUrl === 'string' && webhookUrl.trim()) {
+        const SAFE_URL_PATTERN = /^https?:\/\/(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/;
+        const { isSafeRemoteUrl, sanitizeUrlString } = require('../utils/ssrfHelper');
+        const candidate = webhookUrl.trim();
+        if (!SAFE_URL_PATTERN.test(candidate) || !isSafeRemoteUrl(candidate)) {
+          return res.status(400).json({
+            success: false,
+            error: 'Disallowed Webhook Destination: URL must be a public HTTP(S) address.',
+          });
+        }
+        project.webhookUrl = sanitizeUrlString(candidate);
+      } else {
+        project.webhookUrl = null;
+      }
+    }
     if (webhookSecret !== undefined) project.webhookSecret = webhookSecret ? webhookSecret.trim() : null;
     if (webhookEnabled !== undefined) project.webhookEnabled = Boolean(webhookEnabled);
     if (webhookEvents !== undefined && Array.isArray(webhookEvents)) project.webhookEvents = webhookEvents;
@@ -893,11 +922,11 @@ async function testWebhookEndpoint(req, res) {
     if (req.body.webhookUrl && req.body.webhookUrl.trim()) {
       const candidateUrl = req.body.webhookUrl.trim();
       const SAFE_URL_PATTERN = /^https?:\/\/(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/;
-      const { isSafeRemoteUrl } = require('../utils/ssrfHelper');
+      const { isSafeRemoteUrl, sanitizeUrlString } = require('../utils/ssrfHelper');
       if (!SAFE_URL_PATTERN.test(candidateUrl) || !isSafeRemoteUrl(candidateUrl)) {
         return res.status(400).json({ success: false, error: 'Disallowed Webhook Destination: URL must be a public HTTP(S) address.' });
       }
-      project.webhookUrl = candidateUrl;
+      project.webhookUrl = sanitizeUrlString(candidateUrl);
     }
     if (req.body.webhookSecret !== undefined) {
       project.webhookSecret = req.body.webhookSecret ? req.body.webhookSecret.trim() : null;

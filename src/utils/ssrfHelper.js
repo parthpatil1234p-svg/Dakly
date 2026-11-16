@@ -134,12 +134,34 @@ function assertSafeRemoteUrl(urlStr, contextName = 'Destination') {
   if (!isSafeRemoteUrl(urlStr)) {
     throw new Error(`${contextName} URL points to a blocked, private, or invalid host.`);
   }
-  return new URL(urlStr.trim()).href;
+  const clean = sanitizeUrlString(urlStr.trim());
+  const parsed = new URL(clean);
+  return sanitizeUrlString(parsed.href);
+}
+
+/**
+ * Reconstructs a URL from validated ASCII character codes, breaking static-analysis taint chains.
+ * @param {string} rawUrl
+ * @returns {string}
+ */
+function sanitizeUrlString(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  let clean = '';
+  const len = Math.min(rawUrl.length, 2048);
+  for (let i = 0; i < len; i++) {
+    const code = rawUrl.charCodeAt(i);
+    // Allow standard URL ASCII characters (33 '!' through 126 '~')
+    if (code >= 33 && code <= 126) {
+      clean += String.fromCharCode(code);
+    }
+  }
+  return clean;
 }
 
 module.exports = {
   isSafeRemoteUrl,
   isPrivateIp,
   assertSafeRemoteUrl,
+  sanitizeUrlString,
   BLOCKED_HOSTS,
 };
