@@ -10,35 +10,23 @@ import {
   EyeOff,
   Plus,
   Layers,
-  FileText,
-  Code,
-  LayoutDashboard,
   PlayCircle,
   Paperclip,
   UploadCloud,
   FileCheck,
   X,
-  Server,
   RefreshCw,
   Terminal,
   Inbox,
-  Lock,
-  User,
-  LogOut,
   Mail,
   KeyRound,
   Sparkles,
   Activity,
-  Wifi,
   Radio,
   AlertCircle,
   ArrowRight,
-  Sun,
-  Moon,
   Image as ImageIcon,
-  Camera,
   Trash2,
-  BarChart3,
   MousePointerClick,
   Smartphone,
   Monitor,
@@ -50,27 +38,16 @@ import {
   ShieldAlert,
   Globe,
   Key,
-  ChevronDown,
-  ChevronUp,
-  HelpCircle,
   Bot,
   Wand2,
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import Landing from './components/Landing';
+import ConsoleNavigation from './components/ConsoleNavigation';
+import Overview from './components/Overview';
+import Dialog from './components/Dialog';
 import SpotlightCard from './components/SpotlightCard';
-import AdBanner from './components/AdBanner';
 
-function GithubIcon({ className = 'w-4 h-4' }) {
-  return (
-    <svg className={`${className} fill-current`} viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-      />
-    </svg>
-  );
-}
+
 import {
   API_BASE_URL,
   loginUser,
@@ -88,7 +65,6 @@ import {
   pingApiKey,
   uploadProjectLogo,
   deleteProjectLogo,
-  fetchTemplates,
   previewTemplate,
   fetchSuppressionList,
   addSuppressionEmail,
@@ -111,7 +87,7 @@ const DEFAULT_TEMPLATES = [
     id: 'otp',
     name: 'Modern OTP & Auth Code',
     badge: 'Security',
-    badgeColor: 'border-blue-500/30 text-blue-600 bg-blue-500/10 dark:text-blue-400',
+    badgeColor: 'border-brand-500/30 text-brand-600 bg-brand-500/10 dark:text-brand-400',
     description: 'Crisp one-time verification code card with security alerts, expiry time, and brand logo.',
     sampleVars: {
       name: 'Rahul',
@@ -170,7 +146,7 @@ const DEFAULT_TEMPLATES = [
     id: 'notes_delivery',
     name: 'College Notes & Study Material',
     badge: 'Education',
-    badgeColor: 'border-violet-500/30 text-violet-600 bg-violet-500/10 dark:text-violet-400',
+    badgeColor: 'border-brand-500/30 text-brand-600 bg-brand-500/10 dark:text-brand-400',
     description: 'Academic resource card with course details, semester pill, and PDF attachment badge.',
     sampleVars: {
       studentName: 'Sneha',
@@ -217,34 +193,9 @@ const DEFAULT_TEMPLATES = [
 ];
 
 // Developer FAQ for SEO & Generative AI Indexing
-const FAQS = [
-  {
-    q: 'What is Dakly and how does it work?',
-    a: 'Dakly is a headless transactional email engine for Gmail and Google Workspace. It adds multi-account failover, send pacing, bounce suppression, and delivery analytics on top of your existing Google credentials without requiring DNS configuration or a credit card.'
-  },
-  {
-    q: 'How does Dakly handle Google\'s 500 emails/day quota limit?',
-    a: 'Attach multiple backup Gmail accounts to any project. When the primary sender hits 500 sends, Dakly routes subsequent emails to an active backup account automatically.'
-  },
-  {
-    q: 'Can I send from my custom domain using sender aliases?',
-    a: 'Yes. If you add a custom alias (such as support@yourdomain.com) in your Google account settings, Dakly uses that alias as the From address.'
-  },
-  {
-    q: 'Is my Google App Password safe with Dakly?',
-    a: 'Yes. App Passwords are encrypted at rest using AES-256-GCM authenticated encryption with unique initialization vectors per record. Credentials are only decrypted in memory during active dispatch.'
-  },
-  {
-    q: 'How does Dakly prevent spam flags and account bans?',
-    a: 'Dakly uses a 200ms pacing queue to smooth rapid bursts, a 14-day progressive warm-up ladder, and automatic bounce suppression that drops hard-bounced addresses before sending.'
-  },
-  {
-    q: 'How do open rate and link click tracking work?',
-    a: 'Dakly uses a 1x1 transparent tracking pixel for opens and signed redirect URLs for click tracking. Delivery stats appear live on the dashboard and trigger HMAC-signed webhook events.'
-  }
-];
 
-// Helper to generate ready-to-paste AI Integration Prompts (Cursor / Claude / ChatGPT / Copilot)
+
+// Helper to generate ready-to-run AI Integration Prompts (Cursor / Claude / ChatGPT / Copilot)
 const generateAiSetupPrompt = (framework = 'nextjs', apiKey = '', apiUrl = API_BASE_URL) => {
   const effectiveKey = apiKey || 'gkey_live_your_project_api_key_here';
 
@@ -367,10 +318,15 @@ export default function App() {
   const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
-  const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
   // App State
   const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [projectsError, setProjectsError] = useState('');
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState('');
+  const [logsError, setLogsError] = useState('');
+  const [projectError, setProjectError] = useState('');
   const [activeProject, setActiveProject] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [isKeyVisible, setIsKeyVisible] = useState(false);
@@ -386,7 +342,7 @@ export default function App() {
 
   // Playground Form State
   const [playTo, setPlayTo] = useState('');
-  const [playSubject, setPlaySubject] = useState('🎉 Dakly Live Test');
+  const [playSubject, setPlaySubject] = useState('Dakly test email');
   const [playMode, setPlayMode] = useState('otp'); // 'otp' | 'html' | 'text'
   const [playOtp, setPlayOtp] = useState('849201');
   const [playHtml, setPlayHtml] = useState(`<div style="font-family: Arial, sans-serif; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; max-width: 500px; margin: 0 auto; background: #fff;">
@@ -417,7 +373,6 @@ export default function App() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
-  const [curlCopied, setCurlCopied] = useState(false);
 
   // Templates Tab State
   const [selectedTemplateId, setSelectedTemplateId] = useState('otp');
@@ -434,12 +389,8 @@ export default function App() {
   const [copiedTemplateCode, setCopiedTemplateCode] = useState(false);
 
   // Landing Page Interactive Simulator
-  const [landingCodeLang, setLandingCodeLang] = useState('nextjs'); // 'nextjs' | 'node' | 'python' | 'curl'
-  const [simulatedSend, setSimulatedSend] = useState(false);
-  const [isSimulating, setIsSimulating] = useState(false);
 
   // Modals
-  const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   const [showAiPromptModal, setShowAiPromptModal] = useState(false);
   const [aiPromptFramework, setAiPromptFramework] = useState('nextjs'); // 'nextjs' | 'node' | 'python' | 'curl'
   const [showNewProjModal, setShowNewProjModal] = useState(false);
@@ -456,7 +407,7 @@ export default function App() {
   // Suppression & Bounce Protection State
   const [showSuppressionModal, setShowSuppressionModal] = useState(false);
   const [suppressions, setSuppressions] = useState([]);
-  const [suppressionTotal, setSuppressionTotal] = useState(0);
+  const [, setSuppressionTotal] = useState(0);
   const [suppressionSearch, setSuppressionSearch] = useState('');
   const [isLoadingSuppression, setIsLoadingSuppression] = useState(false);
   const [newSuppressionEmail, setNewSuppressionEmail] = useState('');
@@ -571,7 +522,7 @@ export default function App() {
       );
 
       if (res.success) {
-        setWebhookSaveMsg('✅ Webhook settings saved successfully!');
+        setWebhookSaveMsg(' Webhook settings saved successfully!');
         setActiveProject((prev) => ({
           ...prev,
           webhookUrl: res.project.webhookUrl,
@@ -595,10 +546,10 @@ export default function App() {
           )
         );
       } else {
-        setWebhookSaveMsg(`❌ Error: ${res.error || 'Failed to save webhook settings.'}`);
+        setWebhookSaveMsg(` Error: ${res.error || 'Failed to save webhook settings.'}`);
       }
     } catch (err) {
-      setWebhookSaveMsg(`❌ Error: ${err.message}`);
+      setWebhookSaveMsg(` Error: ${err.message}`);
     } finally {
       setIsSavingWebhook(false);
       setTimeout(() => setWebhookSaveMsg(''), 4000);
@@ -616,7 +567,7 @@ export default function App() {
           webhookSecret: res.webhookSecret,
           webhookSecretConfigured: true,
         }));
-        setWebhookSaveMsg('🔑 New Webhook Secret generated! Remember to click Save.');
+        setWebhookSaveMsg(' New Webhook Secret generated! Remember to click Save.');
       } else {
         alert(res.error || 'Failed to generate secret.');
       }
@@ -692,12 +643,7 @@ export default function App() {
           prev.map((p) => (p.id === activeProject.id ? { ...p, apiKey: res.apiKey } : p))
         );
         setRotateKeyMsg('API key successfully regenerated! The old key has been revoked.');
-        confetti({
-          particleCount: 70,
-          spread: 60,
-          origin: { y: 0.6 },
-          colors: ['#6366f1', '#10b981'],
-        });
+        
         setTimeout(() => setShowRotateKeyModal(false), 2000);
       } else {
         alert(res.error || 'Failed to rotate API key.');
@@ -741,7 +687,7 @@ export default function App() {
       if (res.success) {
         activeProject.ipWhitelist = res.ipWhitelist;
         activeProject.ipWhitelistEnabled = res.ipWhitelistEnabled;
-        setIpWhitelistSaveMsg('✅ IP Whitelist configuration saved successfully!');
+        setIpWhitelistSaveMsg(' IP Whitelist configuration saved successfully!');
         setTimeout(() => setIpWhitelistSaveMsg(''), 4000);
       } else {
         alert(res.error || 'Failed to update IP whitelist');
@@ -768,12 +714,7 @@ export default function App() {
         setTeamMembers(res.members || []);
         setInviteMemberEmail('');
         setMemberActionMsg(res.message || 'Teammate invited successfully!');
-        confetti({
-          particleCount: 50,
-          spread: 50,
-          origin: { y: 0.6 },
-          colors: ['#6366f1', '#a855f7'],
-        });
+        
         setTimeout(() => setMemberActionMsg(''), 4000);
       } else {
         alert(res.error || 'Failed to invite team member');
@@ -869,11 +810,7 @@ export default function App() {
       setTemplateSendResult(res);
 
       if (res.success) {
-        confetti({
-          particleCount: 50,
-          spread: 60,
-          origin: { y: 0.7 },
-        });
+        
         loadStats(activeProject.apiKey);
         loadLogs(activeProject.apiKey, 1, logSearch, logStatus);
       }
@@ -949,43 +886,46 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
   };
 
   async function loadProjects(token) {
+    setProjectsLoading(true);
+    setProjectsError('');
     try {
       const data = await fetchProjects(token);
-      if (data.success && data.projects.length > 0) {
-        setProjects(data.projects);
-        const savedId = localStorage.getItem('dakly_dashboard_active_id');
-        const found = data.projects.find((p) => p.id === savedId);
-        setActiveProject(found || data.projects[0]);
-      } else {
-        setProjects([]);
-        setActiveProject(null);
-      }
-    } catch (err) {
-      console.error('Failed to load projects:', err);
+      if (!data.success || !Array.isArray(data.projects)) throw new Error(data.error || 'Projects unavailable.');
+      setProjects(data.projects);
+      const savedId = localStorage.getItem('dakly_dashboard_active_id');
+      setActiveProject(data.projects.find(p => p.id === savedId) || data.projects[0] || null);
+    } catch {
+      setProjectsError('We couldn’t load your projects. Check your connection and try again.');
+    } finally {
+      setProjectsLoading(false);
     }
   }
 
   async function loadStats(apiKey) {
+    setStatsLoading(true);
+    setStatsError('');
+    setStats(null);
     try {
       const data = await fetchStats(apiKey);
-      if (data.success) {
-        setStats(data);
-      }
-    } catch (err) {
-      console.error('Failed to load stats:', err);
+      if (!data.success) throw new Error(data.error || 'Sender data unavailable.');
+      setStats(data);
+    } catch {
+      setStatsError('Sender activity couldn’t load. Try again to check quota and delivery.');
+    } finally {
+      setStatsLoading(false);
     }
   }
 
   async function loadLogs(apiKey, page = 1, search = '', status = '') {
     setIsRefreshingLogs(true);
+    setLogsError('');
     try {
       const data = await fetchLogs(apiKey, { page, limit: 10, search, status });
-      if (data.success) {
-        setLogs(data.logs);
-        setLogsPagination(data.pagination);
-      }
-    } catch (err) {
-      console.error('Failed to load logs:', err);
+      if (!data.success) throw new Error(data.error || 'Delivery logs unavailable.');
+      setLogs(data.logs || []);
+      setLogsPagination(data.pagination || { page: 1, total: 0, totalPages: 1 });
+    } catch {
+      setLogsError('Delivery logs couldn’t load. Check your connection and refresh.');
     } finally {
       setIsRefreshingLogs(false);
     }
@@ -1045,14 +985,6 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
     setTimeout(() => setCopiedKey(false), 2000);
   }
 
-  function handleCopyCurl() {
-    if (!activeProject) return;
-    const cmd = `curl -H "x-api-key: ${activeProject.apiKey}" ${API_BASE_URL}/api/ping`;
-    navigator.clipboard.writeText(cmd);
-    setCurlCopied(true);
-    setTimeout(() => setCurlCopied(false), 2000);
-  }
-
   async function handlePingKey() {
     if (!activeProject?.apiKey) return;
     setIsPinging(true);
@@ -1061,7 +993,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
       const res = await pingApiKey(activeProject.apiKey);
       setPingResult(res);
       if (res.success) {
-        confetti({ particleCount: 35, spread: 65, origin: { y: 0.6 } });
+        
         if (authToken) loadProjects(authToken);
         loadStats(activeProject.apiKey);
       }
@@ -1105,13 +1037,13 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
       );
       if (res.success) {
         setNewSuppressionEmail('');
-        setSuppressionActionMsg('✅ Email added to blocklist!');
+        setSuppressionActionMsg(' Email added to blocklist!');
         loadSuppressions(projId, suppressionSearch);
       } else {
-        setSuppressionActionMsg(`❌ ${res.error}`);
+        setSuppressionActionMsg(` ${res.error}`);
       }
     } catch (err) {
-      setSuppressionActionMsg(`❌ ${err.message}`);
+      setSuppressionActionMsg(` ${err.message}`);
     } finally {
       setIsAddingSuppression(false);
     }
@@ -1377,14 +1309,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
       const res = await sendEmail(activeProject.apiKey, payload);
       setLastResponse(res);
 
-      if (res.success) {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#6366f1', '#10b981', '#38bdf8'],
-        });
-      }
+      
 
       loadStats(activeProject.apiKey);
       loadLogs(activeProject.apiKey, 1, logSearch, logStatus);
@@ -1397,18 +1322,22 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
 
   async function handleCreateProjectSubmit(e) {
     e.preventDefault();
+    setProjectError('');
+    const password = newProjForm.appPassword.replace(/\s/g, '');
+    if (password.length !== 16) {
+      setProjectError('Enter the 16-character App Password from Google. Spaces are removed automatically.');
+      return;
+    }
     setModalLoading(true);
     try {
-      const data = await createProject(newProjForm, authToken);
-      if (data.success) {
-        setShowNewProjModal(false);
-        setNewProjForm({ name: '', senderEmail: '', appPassword: '', senderDisplayName: '' });
-        await loadProjects(authToken);
-      } else {
-        alert('Error: ' + data.error);
-      }
+      const data = await createProject({ ...newProjForm, name: newProjForm.name.trim(), senderEmail: newProjForm.senderEmail.trim(), appPassword: password }, authToken);
+      if (!data.success) throw new Error(data.error || 'Google could not connect this sender. Check the address and App Password.');
+      setShowNewProjModal(false);
+      setNewProjForm({ name: '', senderEmail: '', appPassword: '', senderDisplayName: '' });
+      setActiveTab('playground');
+      await loadProjects(authToken);
     } catch (err) {
-      alert('Failed: ' + err.message);
+      setProjectError(err.message === 'Failed to fetch' ? 'We couldn’t reach Dakly. Check your connection, then try again.' : err.message);
     } finally {
       setModalLoading(false);
     }
@@ -1508,7 +1437,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
     try {
       const res = await uploadProjectLogo(activeProject.id, logoFile.dataUri, authToken);
       if (res.success) {
-        confetti({ particleCount: 35, spread: 60, origin: { y: 0.6 } });
+        
         await loadProjects(authToken);
         setShowLogoModal(false);
         setLogoFile(null);
@@ -1541,1734 +1470,15 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
   // ==============================================================
   // HELPER: RENDER PRIVACY & TERMS MODALS (AdSense & Legal Requirement)
   // ==============================================================
-  const renderLegalModals = () => {
-    return (
-      <>
-        {/* MODAL: PRIVACY POLICY */}
-        {showPrivacyModal && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-            <div className="glass-card rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 max-w-2xl w-full space-y-5 shadow-2xl bg-white dark:bg-[#0d1017] my-auto max-h-[85vh] overflow-y-auto text-xs sm:text-sm">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                  <span>🛡️</span>
-                  <span>Privacy Policy</span>
-                </h3>
-                <button onClick={() => setShowPrivacyModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="space-y-4 text-slate-600 dark:text-slate-300 leading-relaxed">
-                <p>
-                  <strong>Last Updated: November 2026</strong>
-                </p>
-                <p>
-                  Dakly ("we", "our", or "service") is dedicated to protecting your privacy. This Privacy Policy details how we collect, use, and protect your information when using the Dakly transactional email microservice and dashboard.
-                </p>
-
-                <h4 className="font-bold text-slate-900 dark:text-white pt-2">1. Information We Collect & Encryption</h4>
-                <p>
-                  We collect your account email, display name, and necessary SMTP credentials (such as Google App Passwords) strictly to deliver transactional emails on your behalf.
-                  All Google App Passwords and secret credentials are encrypted using <strong>AES-256-GCM authenticated encryption</strong> and are never viewable or stored in plain text.
-                </p>
-
-                <h4 className="font-bold text-slate-900 dark:text-white pt-2">2. Google AdSense & Advertising Cookies</h4>
-                <p>
-                  This website uses <strong>Google AdSense</strong>, an advertising service provided by Google LLC. Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites on the Internet.
-                </p>
-                <p>
-                  Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to our site and/or other sites on the Internet.
-                  You may opt out of personalized advertising by visiting <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">Google Ads Settings</a> or <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 underline font-semibold">AboutAds.info</a>.
-                </p>
-
-                <h4 className="font-bold text-slate-900 dark:text-white pt-2">3. Email Analytics & Telemetry</h4>
-                <p>
-                  Dakly provides optional open rate and click tracking via secure reverse-proxy redirect endpoints and transparent 1x1 tracking beacons. This telemetry is only accessible by authorized members of your project workspace.
-                </p>
-
-                <h4 className="font-bold text-slate-900 dark:text-white pt-2">4. Contact Us</h4>
-                <p>
-                  If you have questions regarding this Privacy Policy or your data, you can reach out via our GitHub repository or contact the platform maintainers.
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowPrivacyModal(false)}
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs"
-                >
-                  Understood & Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL: TERMS OF SERVICE */}
-        {showTermsModal && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-            <div className="glass-card rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-white/10 max-w-2xl w-full space-y-5 shadow-2xl bg-white dark:bg-[#0d1017] my-auto max-h-[85vh] overflow-y-auto text-xs sm:text-sm">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                  <span>📜</span>
-                  <span>Terms of Service</span>
-                </h3>
-                <button onClick={() => setShowTermsModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="space-y-4 text-slate-600 dark:text-slate-300 leading-relaxed">
-                <p>
-                  <strong>Last Updated: November 2026</strong>
-                </p>
-                <p>
-                  By accessing or using Dakly, you agree to be bound by these Terms of Service.
-                </p>
-
-                <h4 className="font-bold text-slate-900 dark:text-white pt-2">1. Acceptable Use & Anti-Spam Policy</h4>
-                <p>
-                  Dakly is designed strictly for legitimate transactional emails (such as authentication OTPs, receipts, password resets, and account notifications). 
-                  You agree NOT to use Dakly for sending unsolicited bulk marketing emails (spam), phishing attempts, malware distribution, or illegal content. Violations will result in immediate API key revocation.
-                </p>
-
-                <h4 className="font-bold text-slate-900 dark:text-white pt-2">2. Quota & Google SMTP Compliance</h4>
-                <p>
-                  Dakly operates by relaying emails through user-connected Gmail accounts over secure STARTTLS on Port 587. Users agree to abide by Google's Terms of Service and daily sending limits (500 dispatches/day per Gmail account).
-                </p>
-
-                <h4 className="font-bold text-slate-900 dark:text-white pt-2">3. Disclaimer & Limitation of Liability</h4>
-                <p>
-                  Dakly is provided "as is" without warranty of any kind. Under no circumstances shall the creators be liable for any downtime, delivery failure, or data loss arising from third-party provider policies.
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowTermsModal(false)}
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs"
-                >
-                  Accept & Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  };
-
-  // ==============================================================
-  // MODAL: WHAT DAKLY CAN DO (POPUP MODAL ON VISIT)
-  // ==============================================================
-  const renderWelcomeModal = () => {
-    if (!showWelcomeModal) return null;
-    return (
-      <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-        <div className="rounded-2xl border border-slate-200 dark:border-indigo-500/30 max-w-3xl w-full my-auto overflow-hidden shadow-2xl shadow-indigo-500/10 dark:shadow-indigo-500/20 bg-white dark:bg-[#0d1017] text-slate-800 dark:text-slate-100">
-          
-          {/* Header */}
-          <div className="relative p-5 sm:p-6 bg-slate-50 dark:bg-gradient-to-br dark:from-indigo-950/70 dark:via-[#12151f] dark:to-[#0d1017] border-b border-slate-200 dark:border-white/10">
-            <button
-              onClick={() => setShowWelcomeModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 dark:hover:text-white dark:hover:bg-white/10 transition"
-              title="Close modal"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 text-xs font-semibold tracking-wider uppercase mb-1.5">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Engine Architecture & Performance Specs</span>
-            </div>
-
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center space-x-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 shadow-md p-1.5 flex items-center justify-center flex-shrink-0">
-                <img src="/logo-square-animated.svg" alt="Dakly Logo" className="w-full h-full object-contain" />
-              </div>
-              <span>Built to Ship: What Dakly Does for Your Architecture</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-              Zero monthly SaaS fees, sub-second OTP latency, and instant drop-in REST integration for any web or mobile stack.
-            </p>
-          </div>
-
-          {/* Capabilities 8-Card Grid with Spotlight Glow */}
-          <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[58vh] overflow-y-auto">
-            
-            <SpotlightCard spotlightColor="rgba(245, 158, 11, 0.18)" borderColor="rgba(245, 158, 11, 0.3)" className="p-3.5 space-y-1">
-              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
-                <Zap className="w-4 h-4 text-amber-500" />
-                <span>1. Sub-Second OTP & Verification (&lt; 1s)</span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                4-6 digit OTPs, magic links aur password resets 1 second ke andar deliver karta hai via persistent STARTTLS Port 587.
-              </p>
-            </SpotlightCard>
-
-            <SpotlightCard spotlightColor="rgba(99, 102, 241, 0.18)" borderColor="rgba(99, 102, 241, 0.3)" className="p-3.5 space-y-1">
-              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
-                <FileCheck className="w-4 h-4 text-indigo-500" />
-                <span>2. 100% Custom HTML & Styling Freedom</span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                Koi fixed template nahi. Welcome cards, receipts, status updates aur alerts ko apne man-pasand HTML/CSS se design karein.
-              </p>
-            </SpotlightCard>
-
-            <SpotlightCard spotlightColor="rgba(16, 185, 129, 0.18)" borderColor="rgba(16, 185, 129, 0.3)" className="p-3.5 space-y-1">
-              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
-                <Paperclip className="w-4 h-4 text-emerald-500" />
-                <span>3. 15MB Multi-Format Attachments</span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                PDFs (College Notes, Invoices), Images (QR Codes, Receipts), Excel/CSV sheets, aur ZIP files direct link ya base64 se bhejein.
-              </p>
-            </SpotlightCard>
-
-            <SpotlightCard spotlightColor="rgba(6, 182, 212, 0.18)" borderColor="rgba(6, 182, 212, 0.3)" className="p-3.5 space-y-1">
-              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
-                <Layers className="w-4 h-4 text-cyan-500" />
-                <span>4. 1,000+ Free Emails/Day Failover</span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                Primary + Backup Gmail attach karein. Jab Primary 500 emails poore karega, Dakly auto-backup account par switch ho jayega.
-              </p>
-            </SpotlightCard>
-
-            <SpotlightCard spotlightColor="rgba(244, 63, 94, 0.18)" borderColor="rgba(244, 63, 94, 0.3)" className="p-3.5 space-y-1">
-              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
-                <ShieldCheck className="w-4 h-4 text-rose-500" />
-                <span>5. Anti-Spam Burst Pacing Queue</span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                Traffic spike hone par 200ms spacing queue lagata hai taaki Google aapke Gmail ko block na kare aur emails spam mein na jayein.
-              </p>
-            </SpotlightCard>
-
-            <SpotlightCard spotlightColor="rgba(16, 185, 129, 0.18)" borderColor="rgba(16, 185, 129, 0.3)" className="p-3.5 space-y-1">
-              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
-                <Activity className="w-4 h-4 text-emerald-500" />
-                <span>6. Live Traffic Pulse & API Diagnostics</span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                Dashboard se 1-click mein API Key test karein, real-time inbound traffic dekhein, aur live stream audit logs track karein.
-              </p>
-            </SpotlightCard>
-
-            <SpotlightCard spotlightColor="rgba(139, 92, 246, 0.18)" borderColor="rgba(139, 92, 246, 0.3)" className="p-3.5 space-y-1">
-              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
-                <Lock className="w-4 h-4 text-violet-500" />
-                <span>7. AES-256-GCM Credential Encryption</span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                Google App Passwords kabhi plain text mein save nahi hote. Unique IV ke saath AES-256-GCM encrypted rehte hain.
-              </p>
-            </SpotlightCard>
-
-            <SpotlightCard spotlightColor="rgba(245, 158, 11, 0.18)" borderColor="rgba(245, 158, 11, 0.3)" className="p-3.5 space-y-1">
-              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
-                <Terminal className="w-4 h-4 text-amber-500" />
-                <span>8. Zero Packages / Drop-in Replacement</span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                Apne project mein Nodemailer install karne ki zaroorat nahi. Sirf ek native fetch() call se bina koi purana code tode chalega.
-              </p>
-            </SpotlightCard>
-
-            <SpotlightCard spotlightColor="rgba(236, 72, 153, 0.18)" borderColor="rgba(236, 72, 153, 0.3)" className="p-3.5 space-y-1">
-              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
-                <ImageIcon className="w-4 h-4 text-pink-500" />
-                <span>9. 1:1 Brand Logo Storage & Anti-Piracy</span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                Apne sender emails ke liye 1:1 square brand logo set karein (banner blocked). 1 image limit aur binary magic-byte verification ke saath pirated aur malware files 100% blocked hain.
-              </p>
-            </SpotlightCard>
-
-            <SpotlightCard spotlightColor="rgba(59, 130, 246, 0.18)" borderColor="rgba(59, 130, 246, 0.3)" className="p-3.5 space-y-1">
-              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm">
-                <Mail className="w-4 h-4 text-blue-500" />
-                <span>10. Pre-built Templates & Variable System</span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                OTP, Welcome, Password Reset, College Notes/PDF, aur Receipts ke ready-made responsive templates. Bas template aur variables pass karein aur dynamic email deliver karein.
-              </p>
-            </SpotlightCard>
-
-          </div>
-
-          {/* Footer CTA */}
-          <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#080a0f] flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center space-x-1.5 text-center sm:text-left">
-              <span>💡</span>
-              <span>Kabhi bhi upar <b>"Capabilities"</b> button dabakar yeh list dobara dekh sakte hain.</span>
-            </div>
-
-            <button
-              onClick={() => setShowWelcomeModal(false)}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-indigo-500/25 flex items-center justify-center space-x-2"
-            >
-              <span>Theek Hai, Aage Badhein!</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
-        </div>
-      </div>
-    );
-  };
-
-  // ==============================================================
-  // MODAL: 1-CLICK DETAILED AI SETUP PROMPT (Cursor / Claude / ChatGPT)
-  // ==============================================================
-  const renderAiPromptModal = () => {
-    if (!showAiPromptModal) return null;
-    const currentPrompt = generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL);
-
-    return (
-      <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-        <div className="rounded-2xl border border-slate-200 dark:border-indigo-500/30 max-w-3xl w-full my-auto overflow-hidden shadow-2xl bg-white dark:bg-[#0d1017] text-slate-800 dark:text-slate-100">
-          
-          {/* Header */}
-          <div className="p-5 sm:p-6 bg-slate-50 dark:bg-gradient-to-r dark:from-indigo-950/70 dark:via-[#12151f] dark:to-[#0d1017] border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600/10 dark:bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                <Bot className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                    1-Click Detailed AI Setup Prompt
-                  </h3>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                    Cursor • Claude • Copilot
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Paste this detailed prompt into Cursor Composer, Claude Code, or ChatGPT to wire Dakly into your project in 10 seconds.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowAiPromptModal(false)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 dark:hover:text-white dark:hover:bg-white/10 transition"
-              title="Close modal"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Body */}
-          <div className="p-5 sm:p-6 space-y-4">
-            
-            {/* Framework Selectors */}
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Target Framework / Environment:
-              </span>
-              <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
-                {[
-                  { id: 'nextjs', label: 'Next.js App Router' },
-                  { id: 'node', label: 'Express.js / Node' },
-                  { id: 'python', label: 'Python (FastAPI / Django)' },
-                  { id: 'curl', label: 'Raw HTTP / REST' },
-                ].map((fw) => (
-                  <button
-                    key={fw.id}
-                    onClick={() => setAiPromptFramework(fw.id)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
-                      aiPromptFramework === fw.id
-                        ? 'bg-indigo-600 text-white font-semibold shadow-xs'
-                        : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {fw.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Prompt Preview Code Box */}
-            <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 bg-slate-900 text-slate-100 font-mono text-xs">
-              <div className="px-4 py-2 bg-slate-950/80 border-b border-white/5 flex items-center justify-between text-[11px] text-slate-400">
-                <span className="flex items-center space-x-1.5">
-                  <Wand2 className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Prompt for Cursor Composer, Claude, Copilot, or ChatGPT</span>
-                </span>
-                <span className="text-[10px] text-slate-500 font-mono">
-                  {currentPrompt.length} chars
-                </span>
-              </div>
-              <pre className="p-4 max-h-[300px] overflow-y-auto whitespace-pre-wrap leading-relaxed text-[11px] text-slate-200">
-                {currentPrompt}
-              </pre>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>
-                  {activeProject?.apiKey ? "✅ Injected your real project API Key into the prompt!" : "💡 Create a free account or project to auto-fill your real API key."}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(currentPrompt);
-                  setCopiedSnippetKey('modal_ai_prompt');
-                  confetti({ particleCount: 30, spread: 60 });
-                  setTimeout(() => setCopiedSnippetKey(null), 2500);
-                }}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/25 active:scale-[0.98]"
-              >
-                {copiedSnippetKey === 'modal_ai_prompt' ? (
-                  <>
-                    <Check className="w-4 h-4 text-emerald-300" />
-                    <span>Copied Prompt to Clipboard! 🎉</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    <span>Copy Detailed AI Setup Prompt</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ==============================================================
-  // VIEW: AUTH SCREEN (If Not Logged In)
-  // ==============================================================
-  if (!authToken) {
-    return (
-      <div className="min-h-screen bg-[#f8fafc] dark:bg-[#07080c] text-slate-800 dark:text-slate-100 flex flex-col justify-center items-center p-4 selection:bg-indigo-500 selection:text-white relative overflow-hidden transition-colors duration-200">
-        
-        {/* Top Right GitHub Link & Theme Toggle */}
-        <div className="absolute top-5 right-5 z-20 flex items-center space-x-2.5">
-          <a
-            href="https://github.com/parthpatil1234p-svg/Dakly"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl border transition shadow-sm bg-white/90 hover:bg-slate-100 border-slate-200 text-slate-800 dark:bg-[#12151c]/90 dark:hover:bg-white/10 dark:border-white/10 dark:text-slate-200 hover:border-indigo-500/40"
-            title="Star Dakly on GitHub"
-          >
-            <GithubIcon className="w-4 h-4" />
-            <span className="text-xs font-semibold font-mono">GitHub</span>
-          </a>
-
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl border transition shadow-sm bg-white/90 hover:bg-slate-100 border-slate-200 text-slate-700 dark:bg-[#12151c]/90 dark:hover:bg-white/10 dark:border-white/10 dark:text-slate-300"
-            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
-            <span className="text-xs font-semibold font-mono">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-          </button>
-        </div>
-
-        {/* Welcome Capabilities Popup on Visit */}
-        {renderWelcomeModal()}
-        {renderAiPromptModal()}
-
-        {/* Ambient Glow Backdrops */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-indigo-600/10 dark:bg-indigo-600/15 rounded-full blur-[140px] pointer-events-none"></div>
-        <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-
-        <div className="relative z-10 max-w-6xl w-full px-4 sm:px-6 md:px-8 py-6 sm:py-10">
-          
-          {/* Eyebrow Status Badge */}
-          <div className="text-center mb-4">
-            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-xs font-mono font-semibold shadow-xs">
-              <span className="relative flex h-2 w-2">
-                <span className="radar-beacon absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span>Dakly Engine v1.0 • 100% Free Headless Email Service for Builders</span>
-            </div>
-          </div>
-
-          {/* Hero Headline & Value Proposition */}
-          <div className="text-center mb-8 sm:mb-10 space-y-3.5">
-            <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 mb-2 shadow-2xl shadow-indigo-500/30 p-2 overflow-hidden hover:scale-105 transition-transform duration-300">
-              <img src="/logo-square-animated.svg" alt="Dakly Logo" className="w-full h-full object-contain" />
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight hero-gradient-title max-w-4xl mx-auto leading-[1.12]">
-              The Zero-Cost Transactional Email Engine for Builders.
-            </h1>
-            <p className="text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-              Turn free Gmail accounts into a high-availability, failover-protected email cluster with built-in bounce suppression and sub-second OTP latency. <span className="font-semibold text-slate-900 dark:text-white">Zero credit card. Zero Nodemailer boilerplate.</span>
-            </p>
-
-            <div className="pt-2 flex items-center justify-center gap-2.5 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setShowWelcomeModal(true)}
-                className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/25 text-xs font-bold transition active:scale-[0.98] shadow-xs"
-              >
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>Inspect Capabilities ✨</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowAiPromptModal(true)}
-                className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/25 text-xs font-bold transition active:scale-[0.98] shadow-xs"
-              >
-                <Bot className="w-4 h-4 text-emerald-500" />
-                <span>1-Click AI Setup Prompt 🤖</span>
-              </button>
-
-              <a
-                href="https://github.com/parthpatil1234p-svg/Dakly"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white/10 dark:hover:bg-white/20 dark:text-slate-100 border border-slate-800 dark:border-white/15 text-xs font-bold transition shadow-xs active:scale-[0.98]"
-              >
-                <GithubIcon className="w-4 h-4" />
-                <span>Star on GitHub ⭐</span>
-              </a>
-            </div>
-          </div>
-
-          {/* 2-Column Showcase: Interactive Developer Sandbox + Auth Card */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 lg:gap-8 items-start mb-12">
-            
-            {/* Left Column: Interactive Developer Quickstart & Live Simulator */}
-            <div className="lg:col-span-7 space-y-4">
-              
-              {/* macOS Style Code Window */}
-              <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-slate-950 text-slate-100 shadow-2xl overflow-hidden">
-                {/* Titlebar */}
-                <div className="px-4 py-3 bg-slate-900/90 border-b border-white/5 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
-                    <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
-                    <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
-                    <span className="text-xs font-mono text-slate-400 pl-2">dakly-quickstart</span>
-                  </div>
-
-                  {/* Language Tabs */}
-                  <div className="flex items-center space-x-1 bg-black/40 p-1 rounded-xl border border-white/5">
-                    {[
-                      { id: 'nextjs', label: 'Next.js App' },
-                      { id: 'node', label: 'Node.js' },
-                      { id: 'python', label: 'Python' },
-                      { id: 'curl', label: 'cURL' },
-                    ].map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setLandingCodeLang(t.id)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium transition ${
-                          landingCodeLang === t.id
-                            ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Code Content */}
-                <pre className="p-5 font-mono text-xs leading-relaxed text-slate-200 overflow-x-auto max-h-[290px] select-all">
-                  {landingCodeLang === 'nextjs' && `// npm i @dakly/sdk
-import { Dakly } from '@dakly/sdk';
-
-const dakly = new Dakly(process.env.DAKLY_API_KEY);
-
-// Dispatch 6-digit OTP verification in Next.js App Router
-export async function POST(req: Request) {
-  const { email } = await req.json();
-  const result = await dakly.sendOtp({
-    to: email,
-    otp: '849201',
-    expiresInMinutes: 10
-  });
-  return Response.json(result);
-}`}
-                  {landingCodeLang === 'node' && `// npm i @dakly/sdk
-import { Dakly } from '@dakly/sdk';
-
-const dakly = new Dakly(process.env.DAKLY_API_KEY);
-
-// Auto-failover routes across your backup Gmail accounts
-const result = await dakly.sendOtp({
-  to: 'founder@startup.com',
-  otp: '849201'
-});
-
-console.log('Delivered in:', result.executionTimeMs, 'ms');`}
-                  {landingCodeLang === 'python' && `# pip install dakly
-from dakly import Dakly
-
-client = Dakly(api_key=os.getenv("DAKLY_API_KEY"))
-
-# Send welcome email or OTP verification code
-response = client.send_otp(
-    to="founder@startup.com",
-    otp="849201",
-    expires_in_minutes=10
-)
-print("Delivered status:", response["status"])`}
-                  {landingCodeLang === 'curl' && `curl -X POST "https://dakly-engin.vercel.app/api/send" \\
-  -H "Content-Type: application/json" \\
-  -H "x-api-key: gkey_live_demo_key" \\
-  -d '{"to": "founder@startup.com", "otp": "849201"}'`}
-                </pre>
-
-                {/* Interactive Simulator Bar */}
-                <div className="p-4 bg-slate-900/60 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center space-x-2 text-slate-400">
-                    <Zap className="w-4 h-4 text-amber-400" />
-                    <span>Test live latency right here:</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSimulating(true);
-                      setTimeout(() => {
-                        setIsSimulating(false);
-                        setSimulatedSend(true);
-                        confetti({ particleCount: 35, spread: 60 });
-                      }, 320);
-                    }}
-                    disabled={isSimulating}
-                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-mono text-xs font-bold transition flex items-center justify-center space-x-2 shadow-md shadow-emerald-600/25 active:scale-[0.98]"
-                  >
-                    <Activity className={`w-3.5 h-3.5 ${isSimulating ? 'animate-spin' : ''}`} />
-                    <span>{isSimulating ? 'Dispatching across cluster...' : '⚡ Simulate 320ms OTP Send'}</span>
-                  </button>
-                </div>
-
-                {/* Simulation Result Box */}
-                {simulatedSend && (
-                  <div className="px-5 py-3.5 bg-emerald-950/40 border-t border-emerald-500/25 text-[11px] font-mono text-emerald-300 flex items-center justify-between">
-                    <span className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>{`200 OK • Delivered in 318ms via Gmail Cluster #1 (Bounce Guard: PASS)`}</span>
-                    </span>
-                    <span className="text-emerald-400 font-bold hidden sm:inline">100% SUCCESS</span>
-                  </div>
-                )}
-              </div>
-
-              {/* 4 Quick Spec Badges */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-center shadow-xs">
-                  <div className="text-sm font-black text-slate-900 dark:text-white font-mono">&lt; 320ms</div>
-                  <div className="text-[10px] text-slate-500 font-mono mt-0.5">Average OTP Speed</div>
-                </div>
-                <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-center shadow-xs">
-                  <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">100% Failover</div>
-                  <div className="text-[10px] text-slate-500 font-mono mt-0.5">Multi-Gmail Pool</div>
-                </div>
-                <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-center shadow-xs">
-                  <div className="text-sm font-black text-indigo-600 dark:text-indigo-400 font-mono">Zero Bounce</div>
-                  <div className="text-[10px] text-slate-500 font-mono mt-0.5">Auto Suppression</div>
-                </div>
-                <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-center shadow-xs">
-                  <div className="text-sm font-black text-amber-500 font-mono">$0 / Month</div>
-                  <div className="text-[10px] text-slate-500 font-mono mt-0.5">Free Forever</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Sign In / Create Account SpotlightCard + AdBanner */}
-            <div className="lg:col-span-5 space-y-4">
-              <SpotlightCard
-                spotlightColor="rgba(99, 102, 241, 0.16)"
-                borderColor="rgba(99, 102, 241, 0.4)"
-                className="p-6 sm:p-7 space-y-6 shadow-xl"
-              >
-            
-            {/* Tab: Sign In vs Sign Up */}
-            <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-100 dark:bg-[#080a0f] border border-slate-200 dark:border-white/10">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('login');
-                  setAuthError('');
-                }}
-                className={`py-2 text-xs font-semibold rounded-lg transition ${
-                  authMode === 'login' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('register');
-                  setAuthError('');
-                }}
-                className={`py-2 text-xs font-semibold rounded-lg transition ${
-                  authMode === 'register' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                }`}
-              >
-                Create Account
-              </button>
-            </div>
-
-            {/* Error Notice */}
-            {authError && (
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 text-xs flex items-center space-x-2">
-                <span>⚠️</span>
-                <span>{authError}</span>
-              </div>
-            )}
-
-            {/* Form */}
-            <form onSubmit={handleAuthSubmit} className="space-y-4 text-xs">
-              
-              {authMode === 'register' && (
-                <div>
-                  <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Your Full Name</label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
-                    <input
-                      type="text"
-                      required
-                      value={authForm.name}
-                      onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })}
-                      placeholder="Parth Patil"
-                      className="w-full bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/10 rounded-lg pl-9 pr-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
-                  <input
-                    type="email"
-                    required
-                    value={authForm.email}
-                    onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
-                    placeholder="developer@example.com"
-                    className="w-full bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/10 rounded-lg pl-9 pr-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
-                <div className="relative">
-                  <KeyRound className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={authForm.password}
-                    onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/10 rounded-lg pl-9 pr-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-500/25 mt-2 active:scale-[0.98]"
-              >
-                <span>{authLoading ? 'Verifying...' : authMode === 'login' ? 'Sign In to Console' : 'Register Developer Account'}</span>
-              </button>
-
-            </form>
-
-            <div className="pt-2 border-t border-slate-200 dark:border-white/5 text-center text-[11px] text-slate-500 font-mono">
-              🔒 AES-256-GCM encryption & multi-tenant isolation.
-            </div>
-
-          </SpotlightCard>
-
-          {/* Monetized Google AdSense Banner */}
-          <AdBanner className="mt-4" />
-
-        </div>
-        {/* End Right Column */}
-
-      </div>
-      {/* End 2-Column Showcase */}
-
-      {/* Full-Width Section: Architectural Comparison Matrix */}
-      <section aria-label="Feature Comparison" className="mb-14 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-[#0b0e17]/80 backdrop-blur-md p-6 sm:p-8 shadow-xl">
-        <div className="text-center max-w-2xl mx-auto mb-8">
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-mono font-semibold mb-2">
-            <span>⚡ ARCHITECTURAL MATRIX</span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-            Why Builders Choose Dakly Over Legacy Alternatives
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2">
-            Compare our automated multi-cluster architecture against standard API services and raw nodemailer scripts.
-          </p>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 font-mono">
-                <th className="py-3 px-4 font-semibold">CAPABILITY / SPEC</th>
-                <th className="py-3 px-4 font-semibold text-indigo-600 dark:text-indigo-400">
-                  <div className="flex items-center space-x-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <span>DAKLY ENGINE</span>
-                  </div>
-                </th>
-                <th className="py-3 px-4 font-semibold">RESEND / SENDGRID</th>
-                <th className="py-3 px-4 font-semibold">RAW NODEMAILER</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-white/5 font-mono">
-              <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Monthly Cost</td>
-                <td className="py-3.5 px-4 font-bold text-emerald-600 dark:text-emerald-400">$0 Forever (100% Free)</td>
-                <td className="py-3.5 px-4 text-slate-500">$20 - $120+ / month</td>
-                <td className="py-3.5 px-4 text-slate-500">Free + Server Ops</td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Cluster Failover Pool</td>
-                <td className="py-3.5 px-4 text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  <span>Automatic Multi-Gmail Rotation</span>
-                </td>
-                <td className="py-3.5 px-4 text-slate-500">Single API token failure</td>
-                <td className="py-3.5 px-4 text-slate-500">DIY custom coding required</td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Hard-Bounce Suppression</td>
-                <td className="py-3.5 px-4 text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  <span>Built-in In-Memory Guard</span>
-                </td>
-                <td className="py-3.5 px-4 text-slate-500">Paid add-on / Manual webhook</td>
-                <td className="py-3.5 px-4 text-rose-500 dark:text-rose-400 flex items-center space-x-1.5">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>None (Risks account ban)</span>
-                </td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Average OTP Latency</td>
-                <td className="py-3.5 px-4 font-bold text-indigo-600 dark:text-indigo-400">&lt; 320ms Direct Dispatch</td>
-                <td className="py-3.5 px-4 text-slate-500">~380ms - 650ms</td>
-                <td className="py-3.5 px-4 text-slate-500">Unpredictable (Blocking SMTP)</td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Security & Encryption</td>
-                <td className="py-3.5 px-4 text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                  <span>AES-256-GCM Tenant Isolation</span>
-                </td>
-                <td className="py-3.5 px-4 text-slate-500">Shared DB Infrastructure</td>
-                <td className="py-3.5 px-4 text-amber-500 flex items-center space-x-1.5">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Plaintext .env configs</span>
-                </td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Pre-Designed OTP Templates</td>
-                <td className="py-3.5 px-4 text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  <span>Built-in Clean Responsive HTML</span>
-                </td>
-                <td className="py-3.5 px-4 text-slate-500">React Email setup needed</td>
-                <td className="py-3.5 px-4 text-slate-500">Manual raw HTML strings</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Frequently Asked Questions (FAQ) */}
-      <section aria-label="Frequently Asked Questions" className="mb-14 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-[#0b0e17]/80 backdrop-blur-md p-6 sm:p-8 shadow-xl">
-        <div className="flex items-center space-x-2.5 mb-6">
-          <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-            <HelpCircle className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-              Frequently Asked Questions
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Everything you need to know about Dakly's architecture and limits.</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {FAQS.map((faq, idx) => {
-            const isOpen = openFaqIndex === idx;
-            return (
-              <div
-                key={idx}
-                className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50/50 dark:bg-[#0e121e] overflow-hidden transition-all shadow-xs"
-              >
-                <button
-                  type="button"
-                  onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                  className="w-full px-5 py-3.5 text-left flex items-center justify-between text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
-                  aria-expanded={isOpen}
-                >
-                  <span className="pr-3">{faq.q}</span>
-                  {isOpen ? (
-                    <ChevronUp className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                  )}
-                </button>
-                {isOpen && (
-                  <div className="px-5 pb-4 pt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 border-t border-slate-200/60 dark:border-white/5 leading-relaxed font-sans">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Public Auth Footer */}
-      <footer className="text-center text-xs text-slate-500 dark:text-slate-400 space-y-3 pb-8">
-        <div className="flex items-center justify-center space-x-4 flex-wrap gap-y-2">
-          <button
-            type="button"
-            onClick={() => setShowPrivacyModal(true)}
-            className="hover:text-indigo-600 dark:hover:text-indigo-400 transition underline underline-offset-2"
-          >
-            Privacy Policy
-          </button>
-          <span>•</span>
-          <button
-            type="button"
-            onClick={() => setShowTermsModal(true)}
-            className="hover:text-indigo-600 dark:hover:text-indigo-400 transition underline underline-offset-2"
-          >
-            Terms of Service
-          </button>
-          <span>•</span>
-          <a
-            href="https://github.com/parthpatil1234p-svg/Dakly"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-indigo-600 dark:hover:text-indigo-400 transition underline underline-offset-2 flex items-center space-x-1"
-          >
-            <GithubIcon className="w-3.5 h-3.5" />
-            <span>GitHub Repository</span>
-          </a>
-        </div>
-        <p className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
-          © {new Date().getFullYear()} Dakly Engine. Open Source Headless Email Microservice.
-        </p>
-      </footer>
-
-    </div>
-
-    {/* Legal & Privacy Policy Modals for Auth View */}
-    {renderLegalModals()}
-
-  </div>
-);
-}
-
-  // ==============================================================
-  // VIEW: AUTHENTICATED DASHBOARD
-  // ==============================================================
-  return (
-    <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-[#07080c] text-slate-800 dark:text-slate-100 relative overflow-x-hidden transition-colors duration-200">
-      
-      {/* Ambient Lighting Glow Meshes */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 opacity-40 dark:opacity-100">
-        <div className="absolute -top-32 left-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px]" />
-        <div className="absolute top-1/3 -right-32 w-[450px] h-[450px] bg-violet-600/10 rounded-full blur-[140px]" />
-        <div className="absolute -bottom-24 left-1/3 w-[500px] h-[400px] bg-emerald-600/5 rounded-full blur-[140px]" />
-      </div>
-
-      {/* Welcome Capabilities Popup on Visit */}
-      {renderWelcomeModal()}
-      {renderAiPromptModal()}
-
-      {/* Top Header Navbar */}
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-[#07080c]/80 backdrop-blur-md transition-colors">
-        <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 h-20 sm:h-24 flex items-center justify-between">
-          
-          {/* Logo & Live Status */}
-          <div className="flex items-center space-x-5">
-            <div className="flex items-center space-x-3.5">
-              <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/25 p-1.5 flex items-center justify-center overflow-hidden flex-shrink-0 hover:scale-105 transition-transform duration-200">
-                <img src="/logo-square-animated.svg" alt="Dakly Logo" className="w-full h-full object-contain" />
-              </div>
-              <span className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white flex items-center">
-                Dakly<span className="text-indigo-600 dark:text-indigo-400 font-black text-xs sm:text-sm ml-2.5 px-3 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 font-mono tracking-wider">ENGINE</span>
-              </span>
-            </div>
-            <div className="hidden md:flex items-center space-x-2.5 pl-5 border-l border-slate-200 dark:border-white/10 text-xs sm:text-sm">
-              <span className="relative flex h-3.5 w-3.5">
-                <span className="radar-beacon absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 shadow-sm shadow-emerald-400"></span>
-              </span>
-              <span className="text-slate-600 dark:text-slate-300 font-mono text-xs sm:text-sm font-semibold tracking-wide">
-                Gmail Cluster: <span className="text-emerald-500 dark:text-emerald-400 font-bold">100% OPERATIONAL</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Project Selector, Theme Toggle, Capabilities, User Profile & Logout */}
-          <div className="flex items-center space-x-2.5 sm:space-x-3.5">
-            
-            {projects.length > 0 && (
-              <select
-                value={activeProject?.id || ''}
-                onChange={(e) => handleSelectProject(e.target.value)}
-                className="bg-white dark:bg-[#181b22] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-sm sm:text-base rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer shadow-sm"
-              >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.senderEmail ? `(${p.senderEmail})` : '(No sender)'}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {/* Light / Dark Mode Switcher */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="inline-flex items-center space-x-2 px-3.5 py-2.5 rounded-xl border transition text-sm font-semibold bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700 dark:bg-[#181b22] dark:hover:bg-white/10 dark:border-white/10 dark:text-slate-300 shadow-xs"
-              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
-            >
-              {theme === 'dark' ? <Sun className="w-4.5 h-4.5 text-amber-400" /> : <Moon className="w-4.5 h-4.5 text-indigo-600" />}
-              <span className="hidden sm:inline font-mono text-xs sm:text-sm">{theme === 'dark' ? 'Light' : 'Dark'}</span>
-            </button>
-
-            {/* GitHub Repo Link Button */}
-            <a
-              href="https://github.com/parthpatil1234p-svg/Dakly"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center space-x-2 px-3.5 py-2.5 rounded-xl border transition text-sm font-semibold bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-800 dark:bg-[#181b22] dark:hover:bg-white/10 dark:border-white/10 dark:text-slate-200 shadow-xs hover:border-indigo-500/40"
-              title="Star Dakly on GitHub"
-            >
-              <GithubIcon className="w-4.5 h-4.5" />
-              <span className="hidden md:inline font-mono text-xs sm:text-sm">GitHub</span>
-            </a>
-
-            <button
-              onClick={() => setShowWelcomeModal(true)}
-              className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20 text-sm font-semibold transition"
-              title="Dakly ke saare features aur capabilities dekhein"
-            >
-              <Sparkles className="w-4.5 h-4.5 text-amber-500" />
-              <span className="hidden sm:inline">Capabilities</span>
-            </button>
-
-            {/* AI Setup Prompt Studio Button */}
-            <button
-              onClick={() => setShowAiPromptModal(true)}
-              className="inline-flex items-center space-x-2 px-3.5 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 text-sm font-semibold transition shadow-xs"
-              title="Copy 1-click detailed setup prompt for Cursor, Claude, or ChatGPT"
-            >
-              <Bot className="w-4.5 h-4.5 text-emerald-500" />
-              <span className="hidden lg:inline font-mono text-xs sm:text-sm">AI Prompt 🤖</span>
-            </button>
-
-            <button
-              onClick={() => setShowNewProjModal(true)}
-              className="inline-flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm sm:text-base font-bold transition shadow-sm shadow-indigo-500/20"
-            >
-              <Plus className="w-4.5 h-4.5" />
-              <span className="hidden sm:inline">New Project</span>
-            </button>
-
-            {/* User Profile Pill */}
-            <div className="flex items-center space-x-2.5 pl-3 border-l border-slate-200 dark:border-white/10">
-              <div className="flex items-center space-x-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-[#181b22] border border-slate-200 dark:border-white/10 text-sm font-semibold">
-                <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span className="text-slate-800 dark:text-white truncate max-w-[120px] sm:max-w-[160px]">{currentUser?.name || 'Developer'}</span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-2.5 rounded-xl bg-slate-100 hover:bg-rose-500/10 hover:text-rose-500 dark:bg-[#181b22] dark:hover:bg-rose-500/20 dark:hover:text-rose-400 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/10 transition"
-                title="Sign Out"
-              >
-                <LogOut className="w-4.5 h-4.5" />
-              </button>
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* Tab Sub-Nav */}
-        <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 flex space-x-2.5 overflow-x-auto border-t border-slate-200/80 dark:border-white/5 py-2.5">
-          {[
-            { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-            { id: 'templates', label: 'Email Templates', icon: Mail, badge: 'NEW' },
-            { id: 'playground', label: 'Live Playground', icon: PlayCircle },
-            { id: 'senders', label: 'Senders & Quotas', icon: Server },
-            { id: 'logs', label: 'Audit Logs', icon: FileText },
-            { id: 'webhooks', label: 'Webhooks & Alerts', icon: Radio, badge: activeProject?.webhookUrl ? 'LIVE' : null },
-            { id: 'security', label: 'Security & Team', icon: ShieldCheck, badge: activeProject?.ipWhitelistEnabled ? 'ARMED' : (teamMembers.length > 0 ? `${teamMembers.length + 1} SEATS` : null) },
-            { id: 'snippets', label: 'SDK & Snippets', icon: Code },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 sm:px-5 py-2.5 rounded-xl text-sm sm:text-base font-semibold flex items-center space-x-2.5 transition shrink-0 ${
-                  isActive
-                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/80 dark:bg-white/10 dark:text-white dark:border-transparent font-bold shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5'
-                }`}
-              >
-                <Icon className="w-4.5 h-4.5" />
-                <span>{tab.label}</span>
-                {tab.badge && (
-                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-indigo-600 text-white shadow-xs">
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="flex-1 w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-7 sm:py-8">
-
-        {/* If no project created yet */}
-        {projects.length === 0 ? (
-          <div className="glass-card rounded-2xl p-10 border border-slate-200 dark:border-white/10 text-center max-w-lg mx-auto my-12 space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-3xl flex items-center justify-center mx-auto text-indigo-500 dark:text-indigo-400">
-              🚀
-            </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Welcome to Dakly, {currentUser?.name}!</h2>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              You don't have any transactional email projects registered in your workspace yet. Create your first project with your sender Gmail and Google App Password to get your live API Key.
-            </p>
-            <button
-              onClick={() => setShowNewProjModal(true)}
-              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition shadow-lg shadow-indigo-500/25"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Your First Project</span>
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Active API Key Bar with Spotlight Glow */}
-            <SpotlightCard
-              spotlightColor="rgba(99, 102, 241, 0.18)"
-              borderColor="rgba(99, 102, 241, 0.4)"
-              className="p-5 sm:p-6 mb-7 border border-indigo-200/80 dark:border-indigo-500/25 bg-gradient-to-r from-indigo-50/70 via-white to-purple-50/70 dark:from-indigo-950/20 dark:via-[#0d1017] dark:to-purple-950/20 shadow-xs rounded-2xl"
-            >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center space-x-4">
-                  <div
-                    className="relative group cursor-pointer"
-                    onClick={() => {
-                      setLogoFile(null);
-                      setLogoModalError('');
-                      setShowLogoModal(true);
-                    }}
-                    title="Click to set or change 1:1 Brand Logo"
-                  >
-                    {activeProject?.brandLogo?.data ? (
-                      <img
-                        src={activeProject.brandLogo.data}
-                        alt="Logo"
-                        className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-indigo-500/50 dark:border-indigo-400/50 shadow-md transition group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shadow-inner flex flex-col items-center justify-center font-bold">
-                        <Camera className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                        <span className="text-xs font-mono leading-none mt-1 font-bold">1:1</span>
-                      </div>
-                    )}
-                    <span className="absolute -bottom-1 -right-1 p-1 rounded-full bg-indigo-600 text-white shadow-xs">
-                      <Camera className="w-3 h-3" />
-                    </span>
-                  </div>
-
-                  <div>
-                    <div className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-medium flex items-center flex-wrap gap-2">
-                      <span>Active Project Key:</span>
-                      <span className="text-slate-900 dark:text-white font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 font-mono text-xs sm:text-sm">{activeProject?.name}</span>
-                      {activeProject?.brandLogo?.data && (
-                        <span className="inline-flex items-center text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20">
-                          1:1 Logo Active
-                        </span>
-                      )}
-                      {activeProject?.ipWhitelistEnabled && (
-                        <span className="inline-flex items-center text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                          🛡️ IP Guard Active
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-3 mt-1.5">
-                      <span className="font-mono text-sm sm:text-base md:text-lg text-indigo-600 dark:text-indigo-300 font-bold tracking-wider bg-slate-100 dark:bg-[#07080c] px-4 py-1.5 rounded-xl border border-slate-200 dark:border-white/5">
-                        {isKeyVisible ? activeProject?.apiKey : `${activeProject?.apiKey?.slice(0, 10)}••••••••••••••••••••••••••••••••`}
-                      </span>
-                      <button
-                        onClick={() => setIsKeyVisible(!isKeyVisible)}
-                        className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition"
-                        title="Toggle visibility"
-                      >
-                        {isKeyVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:space-x-3 w-full sm:w-auto">
-                  <button
-                    onClick={() => {
-                      setLogoFile(null);
-                      setLogoModalError('');
-                      setShowLogoModal(true);
-                    }}
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 dark:bg-pink-500/10 dark:hover:bg-pink-500/20 dark:text-pink-300 dark:border-pink-500/20 text-sm font-semibold transition active:scale-[0.98] shadow-xs"
-                    title="Upload or change 1:1 brand logo for this project"
-                  >
-                    <ImageIcon className="w-4 h-4 text-pink-600 dark:text-pink-400" />
-                    <span>{activeProject?.brandLogo?.data ? 'Change 1:1 Logo' : '+ Brand Logo (1:1)'}</span>
-                  </button>
-                  <button
-                    onClick={handlePingKey}
-                    disabled={isPinging}
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-bold transition shadow-md shadow-indigo-500/20 active:scale-[0.98]"
-                    title="Verify API key connectivity & measure server response time"
-                  >
-                    <Activity className={`w-4 h-4 ${isPinging ? 'animate-spin' : 'text-emerald-300'}`} />
-                    <span>{isPinging ? 'Pinging Engine...' : '⚡ Test API Key'}</span>
-                  </button>
-                  <button
-                    onClick={handleCopyApiKey}
-                    className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white text-sm font-semibold transition active:scale-[0.98]"
-                  >
-                    {copiedKey ? <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    <span>{copiedKey ? 'Copied Key!' : 'Copy Key'}</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setRotateKeyMsg('');
-                      setShowRotateKeyModal(true);
-                    }}
-                    className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20 text-sm font-semibold transition active:scale-[0.98]"
-                    title="Rotate and regenerate API key"
-                  >
-                    <RefreshCw className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                    <span>Rotate Key</span>
-                  </button>
-                </div>
-              </div>
-            </SpotlightCard>
-
-            {/* TAB 1: OVERVIEW */}
-            {activeTab === 'overview' && (
-              <div className="space-y-6">
-
-                {/* API Key Connection Diagnostics & Inbound Pulse Card */}
-                <SpotlightCard
-                  spotlightColor="rgba(99, 102, 241, 0.2)"
-                  borderColor="rgba(99, 102, 241, 0.35)"
-                  className="p-6 sm:p-7 border border-indigo-200/80 dark:border-indigo-500/20 bg-gradient-to-r from-indigo-50/70 via-white to-purple-50/70 dark:from-indigo-950/20 dark:via-[#0d1017] dark:to-purple-950/20 shadow-xs rounded-2xl"
-                >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-white/10">
-                    <div className="flex items-start space-x-3.5">
-                      <div className="p-3 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
-                        <Radio className="w-6 h-6 animate-pulse text-indigo-600 dark:text-indigo-400" />
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2.5">
-                          <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-wide">API Connection Diagnostics & Inbound Traffic</h3>
-                          <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center space-x-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping"></span>
-                            <span>LIVE ENGINE</span>
-                          </span>
-                        </div>
-                        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
-                          Verify whether your external application or script is reaching the Dakly Email Engine in real-time.
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handlePingKey}
-                      disabled={isPinging}
-                      className="inline-flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-bold transition self-start md:self-auto shadow-md shadow-indigo-500/20 active:scale-[0.98]"
-                    >
-                      <Activity className={`w-4.5 h-4.5 ${isPinging ? 'animate-spin' : ''}`} />
-                      <span>{isPinging ? 'Testing Key...' : 'Run Live Diagnostic Ping'}</span>
-                    </button>
-                  </div>
-
-                  {/* Diagnostic Columns Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
-                    
-                    {/* Left Column: Live Traffic Pulse */}
-                    <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200/80 dark:border-white/5 space-y-3.5">
-                      <div className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-2">
-                        <Wifi className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                        <span>Inbound Request Pulse</span>
-                      </div>
-
-                      <div className="flex items-center space-x-3">
-                        {activeProject?.lastApiCallAt ? (
-                          <div className="flex items-center space-x-2 text-sm sm:text-base text-emerald-600 dark:text-emerald-400 font-semibold">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>
-                            <span>Active: Last request received from IP <code className="bg-slate-200/80 dark:bg-white/10 px-2 py-0.5 rounded font-mono text-xs sm:text-sm text-slate-800 dark:text-white">{activeProject.lastClientIp || 'verified'}</code> at {new Date(activeProject.lastApiCallAt).toLocaleTimeString()}</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-2 text-sm sm:text-base text-amber-600 dark:text-amber-400 font-medium">
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 dark:bg-amber-400"></span>
-                            <span>Waiting for first API request from your external project...</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                        {activeProject?.lastApiCallAt
-                          ? "✅ Your external application has successfully connected to Dakly! Every email dispatch from your project is authenticated and logged."
-                          : "👉 Paste your API Key in your project's .env file and trigger a signup or test call. As soon as a request hits Dakly, this indicator will turn green!"}
-                      </div>
-
-                      {pingResult && (
-                        <div className={`p-4 rounded-xl border text-sm font-mono mt-3 space-y-1.5 ${pingResult.success ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-300'}`}>
-                          <div className="font-semibold flex items-center space-x-2">
-                            {pingResult.success ? <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" /> : <AlertCircle className="w-5 h-5 text-rose-500 dark:text-rose-400" />}
-                            <span>{pingResult.message || pingResult.error}</span>
-                          </div>
-                          {pingResult.latencyMs && (
-                            <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 pl-7">
-                              Latency: <span className="text-slate-900 dark:text-white font-bold">{pingResult.latencyMs}ms</span> • Engine: <span className="text-emerald-600 dark:text-emerald-400">ONLINE</span> • Quota Left: <span className="text-indigo-600 dark:text-indigo-300">{pingResult.project?.remainingToday ?? 500} emails</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Right Column: 1-Click Terminal Verification Command */}
-                    <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200/80 dark:border-white/5 space-y-3.5 flex flex-col justify-between">
-                      <div>
-                        <div className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <Terminal className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                            <span>Test From Your Terminal / Script</span>
-                          </div>
-                          <span className="text-xs text-slate-500 lowercase font-mono">cURL / HTTP</span>
-                        </div>
-                        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
-                          Run this command in any terminal or cmd to test your API key right now without sending an actual email:
-                        </p>
-                      </div>
-
-                      <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between font-mono text-xs sm:text-sm text-indigo-300 shadow-inner">
-                        <span className="truncate pr-2">
-                          curl -H "x-api-key: {activeProject?.apiKey}" {API_BASE_URL}/api/ping
-                        </span>
-                        <button
-                          onClick={handleCopyCurl}
-                          className="text-slate-400 hover:text-white p-1.5 ml-2 transition flex-shrink-0"
-                          title="Copy command"
-                        >
-                          {curlCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        </button>
-                      </div>
-
-                      <div className="text-xs text-slate-500 flex items-center justify-between">
-                        <span>Returns instant JSON status & activates inbound pulse</span>
-                        {curlCopied && <span className="text-emerald-600 dark:text-emerald-400 font-bold">Copied command!</span>}
-                      </div>
-                    </div>
-
-                  </div>
-                </SpotlightCard>
-
-                {/* 1-Click AI Setup Prompt Spotlight Card (Cursor / Claude / Copilot / ChatGPT) */}
-                <SpotlightCard
-                  spotlightColor="rgba(16, 185, 129, 0.18)"
-                  borderColor="rgba(16, 185, 129, 0.35)"
-                  className="p-6 sm:p-7 border border-emerald-500/20 bg-gradient-to-r from-emerald-50/70 via-white to-teal-50/70 dark:from-emerald-950/20 dark:via-[#090d14] dark:to-teal-950/20 shadow-xs rounded-2xl"
-                >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-white/10">
-                    <div className="flex items-start space-x-3.5">
-                      <div className="p-3 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                        <Bot className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2.5">
-                          <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-wide">
-                            AI Setup Prompt Studio
-                          </h3>
-                          <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
-                            Cursor • Claude • ChatGPT • Copilot
-                          </span>
-                        </div>
-                        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
-                          Feed this prompt into your AI coding assistant. It automatically has your live project API key, SDK installation steps, singleton client, and error handling ready to write.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2.5">
-                      <button
-                        onClick={() => setShowAiPromptModal(true)}
-                        className="inline-flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition shadow-md shadow-emerald-500/20 active:scale-[0.98]"
-                      >
-                        <Wand2 className="w-4.5 h-4.5" />
-                        <span>Open Prompt Modal ⚡</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Framework Selector Pills inside card */}
-                  <div className="mt-5 space-y-4">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center space-x-2 overflow-x-auto pb-1">
-                        {[
-                          { id: 'nextjs', label: 'Next.js App Router (TypeScript)' },
-                          { id: 'node', label: 'Node.js / Express' },
-                          { id: 'python', label: 'Python (FastAPI / Django)' },
-                          { id: 'curl', label: 'Universal REST / cURL' },
-                        ].map((fw) => (
-                          <button
-                            key={fw.id}
-                            type="button"
-                            onClick={() => setAiPromptFramework(fw.id)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                              aiPromptFramework === fw.id
-                                ? 'bg-emerald-600 text-white shadow-xs font-semibold'
-                                : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10'
-                            }`}
-                          >
-                            {fw.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const prompt = generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL);
-                          navigator.clipboard.writeText(prompt);
-                          setCopiedSnippetKey('card_ai_prompt');
-                          confetti({ particleCount: 30, spread: 60 });
-                          setTimeout(() => setCopiedSnippetKey(null), 2500);
-                        }}
-                        className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-white/10 hover:bg-slate-800 text-white text-xs font-bold transition shadow-xs"
-                      >
-                        {copiedSnippetKey === 'card_ai_prompt' ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Copied Prompt! 🎉</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Copy Full Prompt</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto max-h-[160px] leading-relaxed shadow-inner">
-                      {generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL)}
-                    </pre>
-                  </div>
-                </SpotlightCard>
-                
-                {/* 4 Top KPI Cards with Bento Spotlight Glow */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+  const renderSenderPool = () => (
+<SpotlightCard
                   
-                  <SpotlightCard
-                    spotlightColor="rgba(99, 102, 241, 0.16)"
-                    borderColor="rgba(99, 102, 241, 0.35)"
-                    className="p-6 rounded-2xl"
-                  >
-                    <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-semibold">
-                      <span className="font-mono tracking-wider">SENT TODAY</span>
-                      <Send className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <div className="mt-3 flex items-baseline space-x-2">
-                      <span className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{stats?.capacity?.sentToday ?? 0}</span>
-                      <span className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-mono font-medium">/ {stats?.capacity?.totalDailyQuota ?? 500} daily</span>
-                    </div>
-                    <div className="w-full bg-slate-100 dark:bg-white/5 rounded-full h-2 sm:h-2.5 mt-4 overflow-hidden">
-                      <div
-                        className="bg-indigo-600 dark:bg-indigo-500 h-full rounded-full transition-all duration-500 shadow-sm shadow-indigo-500/50"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.round(((stats?.capacity?.sentToday || 0) / (stats?.capacity?.totalDailyQuota || 500)) * 100)
-                          )}%`,
-                        }}
-                      ></div>
-                    </div>
-                  </SpotlightCard>
-
-                  <SpotlightCard
-                    spotlightColor="rgba(16, 185, 129, 0.16)"
-                    borderColor="rgba(16, 185, 129, 0.35)"
-                    className="p-6 rounded-2xl"
-                  >
-                    <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-semibold">
-                      <span className="font-mono tracking-wider">REMAINING QUOTA</span>
-                      <ShieldCheck className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-                    </div>
-                    <div className="mt-3 flex items-baseline space-x-2">
-                      <span className="text-4xl sm:text-5xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
-                        {stats?.capacity?.remainingToday ?? 500}
-                      </span>
-                      <span className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-mono font-medium">emails left</span>
-                    </div>
-                    <div className="mt-4 text-xs sm:text-sm text-slate-400 dark:text-slate-500 font-mono">Resets at 00:00 UTC daily</div>
-                  </SpotlightCard>
-
-                  <SpotlightCard
-                    spotlightColor="rgba(99, 102, 241, 0.16)"
-                    borderColor="rgba(99, 102, 241, 0.35)"
-                    className="p-6 rounded-2xl"
-                  >
-                    <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-semibold">
-                      <span className="font-mono tracking-wider">DELIVERY RATE</span>
-                      <CheckCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <div className="mt-3 flex items-baseline space-x-2">
-                      <span className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
-                        {stats?.metrics?.allTime?.successRate ?? '100%'}
-                      </span>
-                      <span className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-bold font-mono">● High Delivery</span>
-                    </div>
-                    <div className="mt-4 text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-mono">
-                      {stats?.metrics?.allTime?.totalDelivered ?? 0} delivered • {stats?.metrics?.allTime?.totalFailed ?? 0} failed
-                    </div>
-                  </SpotlightCard>
-
-                  <SpotlightCard
-                    spotlightColor="rgba(245, 158, 11, 0.16)"
-                    borderColor="rgba(245, 158, 11, 0.35)"
-                    className="p-6 rounded-2xl"
-                  >
-                    <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-semibold">
-                      <span className="font-mono tracking-wider">DISPATCH SPEED</span>
-                      <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-                    </div>
-                    <div className="mt-3 flex items-baseline space-x-2">
-                      <span className="text-4xl sm:text-5xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">
-                        {stats?.metrics?.performance?.avgExecutionTimeMs || 710}ms
-                      </span>
-                      <span className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-mono">STARTTLS 587</span>
-                    </div>
-                    <div className="mt-4 text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-bold font-mono">⚡ Ultra-Fast Serverless</div>
-                  </SpotlightCard>
-
-                </div>
-
-                {/* Real-time Email Open & Click-Through Tracking Analytics Card */}
-                <SpotlightCard
-                  spotlightColor="rgba(99, 102, 241, 0.16)"
-                  borderColor="rgba(99, 102, 241, 0.35)"
-                  className="p-6 sm:p-8 space-y-6 sm:space-y-7 rounded-2xl"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-white/10">
-                    <div className="flex items-start space-x-3.5">
-                      <div className="p-3 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
-                        <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2.5">
-                          <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Email Open & Click Tracking Telemetry</h3>
-                          <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
-                            Zero-Latency Pixel + Safe Link Redirects
-                          </span>
-                        </div>
-                        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
-                          Automatically measures read receipts and link engagements for all transactional emails without any external third-party tracker.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2.5 self-start sm:self-auto text-xs sm:text-sm font-mono font-semibold">
-                      <span className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300">
-                        {stats?.metrics?.tracking?.totalOpened ?? 0} Opens Recorded
-                      </span>
-                      <span className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300">
-                        {stats?.metrics?.tracking?.totalClicked ?? 0} Clicks Recorded
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Dual Metrics: Open Rate & CTR Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Open Rate Sub-card */}
-                    <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200/80 dark:border-white/5 space-y-3.5">
-                      <div className="flex items-center justify-between text-xs sm:text-sm">
-                        <span className="font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold flex items-center space-x-2">
-                          <Eye className="w-4.5 h-4.5 text-emerald-500" />
-                          <span>Email Open Rate</span>
-                        </span>
-                        <span className="text-xs font-mono text-slate-500">
-                          {stats?.metrics?.tracking?.totalOpened ?? 0} / {stats?.metrics?.allTime?.totalDelivered ?? 0} delivered
-                        </span>
-                      </div>
-                      <div className="flex items-baseline space-x-2.5">
-                        <span className="text-4xl sm:text-5xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                          {stats?.metrics?.tracking?.openRate ?? '0.0%'}
-                        </span>
-                        <span className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-medium">recipients opened</span>
-                      </div>
-                      <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-2.5 sm:h-3 overflow-hidden">
-                        <div
-                          className="bg-emerald-500 h-full rounded-full transition-all duration-700 shadow-xs"
-                          style={{
-                            width: `${Math.min(100, parseFloat(stats?.metrics?.tracking?.openRate || '0'))}%`,
-                          }}
-                        ></div>
-                      </div>
-                      <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                        <span>Apple Mail & Gmail protected</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">Live Telemetry Active</span>
-                      </div>
-                    </div>
-
-                    {/* CTR Sub-card */}
-                    <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200/80 dark:border-white/5 space-y-3.5">
-                      <div className="flex items-center justify-between text-xs sm:text-sm">
-                        <span className="font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold flex items-center space-x-2">
-                          <MousePointerClick className="w-4.5 h-4.5 text-indigo-500" />
-                          <span>Click-Through Rate (CTR)</span>
-                        </span>
-                        <span className="text-xs font-mono text-slate-500">
-                          {stats?.metrics?.tracking?.totalClicked ?? 0} clicked
-                        </span>
-                      </div>
-                      <div className="flex items-baseline space-x-2.5">
-                        <span className="text-4xl sm:text-5xl font-black font-mono text-indigo-600 dark:text-indigo-400">
-                          {stats?.metrics?.tracking?.clickRate ?? '0.0%'}
-                        </span>
-                        <span className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-medium">link engagement</span>
-                      </div>
-                      <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-2.5 sm:h-3 overflow-hidden">
-                        <div
-                          className="bg-indigo-600 dark:bg-indigo-500 h-full rounded-full transition-all duration-700 shadow-xs"
-                          style={{
-                            width: `${Math.min(100, parseFloat(stats?.metrics?.tracking?.clickRate || '0'))}%`,
-                          }}
-                        ></div>
-                      </div>
-                      <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                        <span>Safe 302 redirect filter</span>
-                        <span className="font-bold text-indigo-600 dark:text-indigo-400">Phishing Protected</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Device & Client Breakdown Bar */}
-                  <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200/80 dark:border-white/5 space-y-3.5">
-                    <div className="flex items-center justify-between text-xs sm:text-sm">
-                      <span className="font-mono text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider">
-                        Client Device Distribution
-                      </span>
-                      <span className="text-xs text-slate-500 font-mono">
-                        User-Agent Telemetry
-                      </span>
-                    </div>
-
-                    {/* Multi-segment progress bar */}
-                    <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-4 sm:h-5 flex overflow-hidden p-0.5">
-                      <div
-                        className="bg-indigo-500 h-full rounded-l-full transition-all duration-500"
-                        style={{
-                          width: `${stats?.metrics?.tracking?.devices?.mobilePercent || 0}%`,
-                        }}
-                        title={`Mobile: ${stats?.metrics?.tracking?.devices?.mobilePercent || 0}%`}
-                      ></div>
-                      <div
-                        className="bg-sky-500 h-full transition-all duration-500"
-                        style={{
-                          width: `${stats?.metrics?.tracking?.devices?.desktopPercent || 0}%`,
-                        }}
-                        title={`Desktop: ${stats?.metrics?.tracking?.devices?.desktopPercent || 0}%`}
-                      ></div>
-                      <div
-                        className="bg-purple-500 h-full rounded-r-full transition-all duration-500"
-                        style={{
-                          width: `${stats?.metrics?.tracking?.devices?.otherPercent || 0}%`,
-                        }}
-                        title={`Other / Proxy: ${stats?.metrics?.tracking?.devices?.otherPercent || 0}%`}
-                      ></div>
-                    </div>
-
-                    {/* Breakdown legend */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs sm:text-sm">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 rounded-full bg-indigo-500 flex-shrink-0"></div>
-                        <Smartphone className="w-4 h-4 text-indigo-500" />
-                        <span className="text-slate-600 dark:text-slate-400 font-medium">Mobile:</span>
-                        <span className="font-mono font-bold text-slate-900 dark:text-white">
-                          {stats?.metrics?.tracking?.devices?.mobilePercent ?? 0}%
-                        </span>
-                        <span className="text-slate-400 text-xs">
-                          ({stats?.metrics?.tracking?.devices?.mobile ?? 0})
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 rounded-full bg-sky-500 flex-shrink-0"></div>
-                        <Monitor className="w-4 h-4 text-sky-500" />
-                        <span className="text-slate-600 dark:text-slate-400 font-medium">Desktop:</span>
-                        <span className="font-mono font-bold text-slate-900 dark:text-white">
-                          {stats?.metrics?.tracking?.devices?.desktopPercent ?? 0}%
-                        </span>
-                        <span className="text-slate-400 text-xs">
-                          ({stats?.metrics?.tracking?.devices?.desktop ?? 0})
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 rounded-full bg-purple-500 flex-shrink-0"></div>
-                        <ShieldCheck className="w-4 h-4 text-purple-500" />
-                        <span className="text-slate-600 dark:text-slate-400 font-medium">Other / Mail Proxy:</span>
-                        <span className="font-mono font-bold text-slate-900 dark:text-white">
-                          {stats?.metrics?.tracking?.devices?.otherPercent ?? 0}%
-                        </span>
-                        <span className="text-slate-400 text-xs">
-                          ({stats?.metrics?.tracking?.devices?.other ?? 0})
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </SpotlightCard>
-
-                {/* Senders & Failover Status with Spotlight Glow */}
-                <SpotlightCard
-                  spotlightColor="rgba(139, 92, 246, 0.16)"
-                  borderColor="rgba(139, 92, 246, 0.35)"
-                  className="p-6 sm:p-7 rounded-2xl"
+                  className="p-6 sm:p-7 rounded-lg"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-white/10">
                     <div>
                       <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2.5">
-                        <Layers className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                        <Layers className="w-5 h-5 text-brand-600 dark:text-brand-400" />
                         <span>Active Gmail Senders & Failover Pool</span>
                       </h3>
                       <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
@@ -3281,7 +1491,7 @@ print("Delivered status:", response["status"])`}
                           loadSuppressions(activeProject?.id || activeProject?._id);
                           setShowSuppressionModal(true);
                         }}
-                        className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40 text-xs sm:text-sm font-semibold transition active:scale-[0.98] shadow-xs"
+                        className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40 text-xs sm:text-sm font-semibold transition active:scale-[0.98]"
                         title="View auto-blocked bounce recipients"
                       >
                         <ShieldCheck className="w-4 h-4 text-rose-600 dark:text-rose-400" />
@@ -3289,18 +1499,18 @@ print("Delivered status:", response["status"])`}
                       </button>
                       <button
                         onClick={() => setShowAddSenderModal(true)}
-                        className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition active:scale-[0.98] shadow-md shadow-indigo-500/20"
+                        className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs sm:text-sm font-semibold transition active:scale-[0.98]"
                       >
                         <Plus className="w-4 h-4" />
-                        <span>{stats?.capacity?.senders?.length > 0 ? 'Add Backup Gmail (+500/day)' : '+ Connect Gmail Sender'}</span>
+                        <span>{stats?.capacity?.senders?.length > 0 ? 'Connect another Gmail' : '+ Connect Gmail Sender'}</span>
                       </button>
                     </div>
                   </div>
 
                   <div className="mt-5 space-y-4">
                     {(!stats?.capacity?.senders || stats?.capacity?.senders?.length === 0) ? (
-                      <div className="py-12 px-6 text-center rounded-2xl bg-slate-50/50 dark:bg-[#080a0f]/60 border border-dashed border-amber-500/30 dark:border-amber-500/20 space-y-4">
-                        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center mx-auto shadow-inner">
+                      <div className="py-12 px-6 text-center rounded-lg bg-slate-50/50 dark:bg-[var(--surface)]/60 border border-dashed border-amber-500/30 dark:border-amber-500/20 space-y-4">
+                        <div className="w-14 h-14 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center mx-auto">
                           <Mail className="w-7 h-7" />
                         </div>
                         <div className="max-w-md mx-auto space-y-1.5">
@@ -3315,7 +1525,7 @@ print("Delivered status:", response["status"])`}
                         <button
                           type="button"
                           onClick={() => setShowAddSenderModal(true)}
-                          className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold transition shadow-md shadow-indigo-500/25 active:scale-95"
+                          className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs sm:text-sm font-bold transition active:scale-95"
                         >
                           <Plus className="w-4 h-4" />
                           <span>+ Connect Gmail Sender</span>
@@ -3325,15 +1535,15 @@ print("Delivered status:", response["status"])`}
                       stats.capacity.senders.map((s, idx) => (
                       <div
                         key={idx}
-                        className="p-5 rounded-2xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200/80 dark:border-white/5 space-y-3.5"
+                        className="p-5 rounded-lg bg-slate-50 dark:bg-[var(--surface)] border border-slate-200/80 dark:border-white/5 space-y-3.5"
                       >
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                           <div className="flex items-center space-x-3.5">
                             <span
                               className={`px-3 py-1 rounded-lg text-xs font-bold font-mono ${
                                 s.role === 'Primary'
-                                  ? 'bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30'
-                                  : 'bg-purple-500/10 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30'
+                                  ? 'bg-brand-500/10 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-500/30'
+                                  : 'bg-brand-500/10 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-500/30'
                               }`}
                             >
                               {s.role}
@@ -3360,7 +1570,7 @@ print("Delivered status:", response["status"])`}
                               type="button"
                               onClick={() => handleDeleteSender(s)}
                               disabled={isDeletingSender}
-                              className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 dark:hover:bg-rose-500/15 border border-transparent hover:border-rose-500/20 transition active:scale-95 disabled:opacity-50"
+                              className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 dark:hover:bg-rose-500/15 border border-transparent hover:border-rose-500/20 transition active:scale-95 disabled:opacity-50"
                               title={`Delete ${s.role} sender (${s.email})`}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -3374,10 +1584,10 @@ print("Delivered status:", response["status"])`}
                             <div className="flex items-center space-x-2">
                               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center space-x-1">
                                 <span>Sender Aliases</span>
-                                <span className="text-[10px] text-slate-400 font-normal">("Send mail as")</span>
+                                <span className="text-xs text-slate-400 font-normal">("Send mail as")</span>
                               </span>
                               {s.aliases && s.aliases.length > 0 && (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                                <span className="px-1.5 py-0.5 rounded text-xs font-mono font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
                                   {s.aliases.length}
                                 </span>
                               )}
@@ -3385,7 +1595,7 @@ print("Delivered status:", response["status"])`}
                             <button
                               type="button"
                               onClick={() => openAddAliasModal(s)}
-                              className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium flex items-center space-x-1 hover:underline transition"
+                              className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium flex items-center space-x-1 hover:underline transition"
                             >
                               <Plus className="w-3.5 h-3.5" />
                               <span>Add Alias</span>
@@ -3397,13 +1607,13 @@ print("Delivered status:", response["status"])`}
                               {s.aliases.map((alias, aIdx) => (
                                 <div
                                   key={aIdx}
-                                  className="inline-flex items-center space-x-2 px-2.5 py-1 rounded-lg text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-xs"
+                                  className="inline-flex items-center space-x-2 px-2.5 py-1 rounded-lg text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10"
                                 >
                                   <span className="font-mono text-slate-800 dark:text-slate-200">
                                     {alias.displayName ? `${alias.displayName} <${alias.email}>` : alias.email}
                                   </span>
                                   {alias.isDefault && (
-                                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    <span className="px-1.5 py-0.2 rounded text-xs font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                       Default
                                     </span>
                                   )}
@@ -3448,22 +1658,22 @@ print("Delivered status:", response["status"])`}
 
                           <div className="flex items-center space-x-3 self-end sm:self-auto">
                             {s.warmupEnabled && (s.warmup?.isComplete || s.effectiveQuota >= (s.dailyQuota || 500)) ? (
-                              <span className="text-emerald-500 font-mono text-xs font-semibold">✅ Fully Ramped</span>
+                              <span className="text-emerald-500 font-mono text-xs font-semibold"> Fully Ramped</span>
                             ) : s.warmupEnabled ? (
                               <button
                                 type="button"
                                 onClick={() => handleToggleWarmup(s.id || s.email, s.warmupEnabled)}
-                                className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-mono font-semibold transition"
+                                className="text-xs sm:text-sm text-brand-600 dark:text-brand-400 hover:underline font-mono font-semibold transition"
                               >
-                                ⚡ Skip to 500/day
+                                 Skip to 500/day
                               </button>
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => handleToggleWarmup(s.id || s.email, s.warmupEnabled)}
-                                className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-mono font-semibold transition"
+                                className="text-xs sm:text-sm text-brand-600 dark:text-brand-400 hover:underline font-mono font-semibold transition"
                               >
-                                🔥 Enable Warm-up
+                                 Enable Warm-up
                               </button>
                             )}
 
@@ -3486,7 +1696,260 @@ print("Delivered status:", response["status"])`}
                     )}
                   </div>
                 </SpotlightCard>
+  );
 
+  const renderLegalModals = () => {
+    return (
+      <>
+        {/* MODAL: PRIVACY POLICY */}
+        {showPrivacyModal && (
+          <Dialog title="Privacy policy" onClose={() => setShowPrivacyModal(false)} className="dialog-wide">
+            <div className="legacy-dialog-content">
+              
+              
+              <div className="space-y-4 text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p>
+                  <strong>Last Updated: November 2026</strong>
+                </p>
+                <p>
+                  Dakly ("we", "our", or "service") is dedicated to protecting your privacy. This Privacy Policy details how we collect, use, and protect your information when using the Dakly transactional email microservice and dashboard.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">1. Information We Collect & Encryption</h4>
+                <p>
+                  We collect your account email, display name, and necessary SMTP credentials (such as Google App Passwords) strictly to deliver transactional emails on your behalf.
+                  All Google App Passwords and secret credentials are encrypted using <strong>AES-256-GCM authenticated encryption</strong> and are never viewable or stored in plain text.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">2. Google AdSense & Advertising Cookies</h4>
+                <p>
+                  This website uses <strong>Google AdSense</strong>, an advertising service provided by Google LLC. Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites on the Internet.
+                </p>
+                <p>
+                  Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to our site and/or other sites on the Internet.
+                  You may opt out of personalized advertising by visiting <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer" className="text-brand-600 dark:text-brand-400 underline font-semibold">Google Ads Settings</a> or <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className="text-brand-600 dark:text-brand-400 underline font-semibold">AboutAds.info</a>.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">3. Email Analytics & Telemetry</h4>
+                <p>
+                  Dakly provides optional open rate and click tracking via secure reverse-proxy redirect endpoints and transparent 1x1 tracking beacons. This telemetry is only accessible by authorized members of your project workspace.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">4. Contact Us</h4>
+                <p>
+                  If you have questions regarding this Privacy Policy or your data, you can reach out via our GitHub repository or contact the platform maintainers.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowPrivacyModal(false)}
+                  className="px-5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs"
+                >
+                  Understood & Close
+                </button>
+              </div>
+            </div>
+          </Dialog>
+        )}
+
+        {/* MODAL: TERMS OF SERVICE */}
+        {showTermsModal && (
+          <Dialog title="Terms of service" onClose={() => setShowTermsModal(false)} className="dialog-wide">
+            <div className="legacy-dialog-content">
+              
+              
+              <div className="space-y-4 text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p>
+                  <strong>Last Updated: November 2026</strong>
+                </p>
+                <p>
+                  By accessing or using Dakly, you agree to be bound by these Terms of Service.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">1. Acceptable Use & Anti-Spam Policy</h4>
+                <p>
+                  Dakly is designed strictly for legitimate transactional emails (such as authentication OTPs, receipts, password resets, and account notifications). 
+                  You agree NOT to use Dakly for sending unsolicited bulk marketing emails (spam), phishing attempts, malware distribution, or illegal content. Violations will result in immediate API key revocation.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">2. Quota & Google SMTP Compliance</h4>
+                <p>
+                  Dakly operates by relaying emails through user-connected Gmail accounts over secure STARTTLS on Port 587. Users agree to abide by Google's Terms of Service and daily sending limits (500 dispatches/day per Gmail account).
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">3. Disclaimer & Limitation of Liability</h4>
+                <p>
+                  Dakly is provided "as is" without warranty of any kind. Under no circumstances shall the creators be liable for any downtime, delivery failure, or data loss arising from third-party provider policies.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(false)}
+                  className="px-5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs"
+                >
+                  Accept & Close
+                </button>
+              </div>
+            </div>
+          </Dialog>
+        )}
+      </>
+    );
+  };
+
+  // ==============================================================
+  // MODAL: WHAT DAKLY CAN DO (POPUP MODAL ON VISIT)
+  // ==============================================================
+  const renderAiPromptModal = () => {
+    if (!showAiPromptModal) return null;
+    const currentPrompt = generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL);
+
+    return (
+      <Dialog title="AI setup prompt" onClose={() => setShowAiPromptModal(false)} className="dialog-wide">
+        <div className="legacy-dialog-content">
+          
+          {/* Header */}
+          
+
+          {/* Body */}
+          <div className="p-5 sm:p-6 space-y-4">
+            
+            {/* Framework Selectors */}
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Target Framework / Environment:
+              </span>
+              <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                {[
+                  { id: 'nextjs', label: 'Next.js App Router' },
+                  { id: 'node', label: 'Express.js / Node' },
+                  { id: 'python', label: 'Python (FastAPI / Django)' },
+                  { id: 'curl', label: 'Raw HTTP / REST' },
+                ].map((fw) => (
+                  <button
+                    key={fw.id}
+                    onClick={() => setAiPromptFramework(fw.id)}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                      aiPromptFramework === fw.id
+                        ? 'bg-brand-600 text-white font-semibold '
+                        : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {fw.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Prompt Preview Code Box */}
+            <div className="relative rounded-lg overflow-hidden border border-slate-200 dark:border-white/10 bg-slate-900 text-slate-100 font-mono text-xs">
+              <div className="px-4 py-2 bg-slate-950/80 border-b border-white/5 flex items-center justify-between text-xs text-slate-400">
+                <span className="flex items-center space-x-1.5">
+                  <Wand2 className="w-3.5 h-3.5 text-brand-400" />
+                  <span>Prompt for Cursor Composer, Claude, Copilot, or ChatGPT</span>
+                </span>
+                <span className="text-xs text-slate-500 font-mono">
+                  {currentPrompt.length} chars
+                </span>
+              </div>
+              <pre tabIndex={0} className="p-4 max-h-[300px] overflow-y-auto whitespace-pre-wrap leading-relaxed text-xs text-slate-200">
+                {currentPrompt}
+              </pre>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>
+                  {activeProject?.apiKey ? " Injected your real project API Key into the prompt!" : " Create a free account or project to auto-fill your real API key."}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(currentPrompt);
+                  setCopiedSnippetKey('modal_ai_prompt');
+                  
+                  setTimeout(() => setCopiedSnippetKey(null), 2500);
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition flex items-center justify-center space-x-2 active:scale-[0.98]"
+              >
+                {copiedSnippetKey === 'modal_ai_prompt' ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-300" />
+                    <span>Copied Prompt to Clipboard! </span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Copy Detailed AI Setup Prompt</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Dialog>
+    );
+  };
+
+  // ==============================================================
+  // VIEW: AUTH SCREEN (If Not Logged In)
+  // ==============================================================
+  if (!authToken) {
+    return (
+      <Landing
+        authMode={authMode} setAuthMode={setAuthMode}
+        authForm={authForm} setAuthForm={setAuthForm}
+        authError={authError} setAuthError={setAuthError}
+        authLoading={authLoading} onAuthSubmit={handleAuthSubmit}
+        onPrivacy={() => setShowPrivacyModal(true)}
+        onTerms={() => setShowTermsModal(true)}
+      >{renderLegalModals()}</Landing>
+    );
+  }
+
+  return (
+    <div className="console-app">
+      {renderAiPromptModal()}
+      <ConsoleNavigation activeTab={activeTab} onTab={setActiveTab}
+        projects={projects} activeProject={activeProject} onProject={handleSelectProject}
+        user={currentUser} onLogout={handleLogout} onNewProject={() => setShowNewProjModal(true)}
+        theme={theme} onTheme={toggleTheme} onPrompt={() => setShowAiPromptModal(true)} />
+      {/* Main Container */}
+      <main id="workspace" className="console-main">
+
+        {/* If no project created yet */}
+        {projectsLoading ? (
+          <div className="workspace-empty" role="status"><h1>Opening your workspace…</h1><p>Loading projects and connected senders.</p></div>
+        ) : projectsError ? (
+          <div className="workspace-empty"><h1>Projects couldn’t load.</h1><p role="alert">{projectsError}</p><button className="button button-primary" onClick={() => loadProjects(authToken)}>Try again</button></div>
+        ) : projects.length === 0 ? (
+          <div className="workspace-empty"><p className="eyebrow">Your first project</p><h1>Give your app a sender.</h1><p>A project keeps your Gmail connection, API key, and delivery logs together.</p><ol><li>Have your Gmail address ready.</li><li>Turn on Google 2-Step Verification.</li><li>Create a Google App Password for Dakly.</li></ol><button className="button button-primary" onClick={() => setShowNewProjModal(true)}>Connect Gmail & create project <ArrowRight size={16} aria-hidden="true" /></button></div>
+        ) : (
+          <>
+            <div className="project-key-strip">
+              <span className="mono">Project API key</span>
+              <code>{isKeyVisible ? activeProject?.apiKey : 'gkey_••••••••••••'}</code>
+              <button type="button" className="icon-button" aria-label={isKeyVisible ? 'Hide API key' : 'Show API key'} onClick={() => setIsKeyVisible(!isKeyVisible)}>{isKeyVisible ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+              <button aria-label="Copy API key" className="text-link" onClick={handleCopyApiKey}>{copiedKey ? 'Copied' : 'Copy key'}</button>
+              <button className="text-link" onClick={handlePingKey} disabled={isPinging}>{isPinging ? 'Checking…' : 'Check connection'}</button>
+              <button className="text-link" onClick={() => setActiveTab('security')}>Key settings</button>
+            </div>
+            {pingResult && <div className={pingResult.success ? 'notice' : 'notice notice-error'} role="status">{pingResult.success ? 'API key accepted.' : pingResult.error || 'Connection check failed. Try again.'}{Number.isFinite(pingResult.latencyMs) ? ` Response time: ${pingResult.latencyMs} ms.` : ''}</div>}
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                <Overview project={activeProject} stats={stats} loading={statsLoading} error={statsError}
+                  onRetry={() => loadStats(activeProject.apiKey)}
+                  onSend={() => setActiveTab('playground')} onLogs={() => setActiveTab('logs')}
+                  onTemplates={() => setActiveTab('templates')} onSenders={() => setActiveTab('senders')} />
+                
               </div>
             )}
 
@@ -3498,15 +1961,15 @@ print("Delivered status:", response["status"])`}
                   <div>
                     <div className="flex items-center space-x-2.5">
                       <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center space-x-2.5">
-                        <Mail className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                        <Mail className="w-6 h-6 text-brand-600 dark:text-brand-400" />
                         <span>Pre-built Transactional Email Templates</span>
                       </h2>
-                      <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60">
-                        5 Ready-to-Use
+                      <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300 border border-brand-200/60">
+                        5 templates
                       </span>
                     </div>
                     <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
-                      Zero HTML coding needed. Pass <code className="text-indigo-600 dark:text-indigo-400 font-mono">template</code> &amp; <code className="text-indigo-600 dark:text-indigo-400 font-mono">vars</code> to the API. Dakly automatically interpolates dynamic variables and injects your project's 1:1 brand logo.
+                      Zero HTML coding needed. Pass <code className="text-brand-600 dark:text-brand-400 font-mono">template</code> &amp; <code className="text-brand-600 dark:text-brand-400 font-mono">vars</code> to the API. Dakly automatically interpolates dynamic variables and injects your project's 1:1 brand logo.
                     </p>
                   </div>
 
@@ -3516,7 +1979,7 @@ print("Delivered status:", response["status"])`}
                         const cur = DEFAULT_TEMPLATES.find((t) => t.id === selectedTemplateId);
                         if (cur) setTemplateVars({ ...cur.sampleVars });
                       }}
-                      className="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#12151c] text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition shadow-xs"
+                      className="px-4 py-2 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[var(--surface)] text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition"
                     >
                       Reset Variables
                     </button>
@@ -3528,24 +1991,24 @@ print("Delivered status:", response["status"])`}
                   {DEFAULT_TEMPLATES.map((t) => {
                     const isSelected = selectedTemplateId === t.id;
                     return (
-                      <div
+                      <button type="button" aria-pressed={isSelected}
                         key={t.id}
                         onClick={() => {
                           setSelectedTemplateId(t.id);
                           setTemplateVars({ ...t.sampleVars });
                           setTemplateSendResult(null);
                         }}
-                        className={`cursor-pointer rounded-2xl p-4 sm:p-5 border transition relative ${
+                        className={`cursor-pointer rounded-lg p-4 sm:p-5 border transition relative ${
                           isSelected
-                            ? 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-500 shadow-sm ring-2 ring-indigo-500'
-                            : 'bg-white dark:bg-[#0c0e14] border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
+                            ? 'bg-brand-50/70 dark:bg-brand-950/30 border-brand-500  ring-2 ring-brand-500'
+                            : 'bg-white dark:bg-[var(--surface)] border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2.5">
                           <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border ${t.badgeColor}`}>
                             {t.badge}
                           </span>
-                          {isSelected && <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">● Active</span>}
+                          {isSelected && <span className="text-xs text-brand-600 dark:text-brand-400 font-bold">● Active</span>}
                         </div>
                         <div className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight mb-1.5">
                           {t.name}
@@ -3553,7 +2016,7 @@ print("Delivered status:", response["status"])`}
                         <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
                           {t.description}
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -3563,9 +2026,8 @@ print("Delivered status:", response["status"])`}
                   
                   {/* Left Column: Variable Editor & Send Test Form */}
                   <SpotlightCard
-                    spotlightColor="rgba(99, 102, 241, 0.16)"
-                    borderColor="rgba(99, 102, 241, 0.35)"
-                    className="lg:col-span-6 p-6 sm:p-7 space-y-6 rounded-2xl"
+                    
+                    className="lg:col-span-6 p-6 sm:p-7 space-y-6 rounded-lg"
                   >
                     <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
                       <div>
@@ -3576,7 +2038,7 @@ print("Delivered status:", response["status"])`}
                           Edit variables below — the preview on the right updates instantly in real time.
                         </p>
                       </div>
-                      <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                      <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
                         template: "{selectedTemplateId}"
                       </span>
                     </div>
@@ -3592,19 +2054,19 @@ print("Delivered status:", response["status"])`}
                             <button
                               type="button"
                               onClick={() => setTemplateRecipient(currentUser.email)}
-                              className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline"
+                              className="text-xs text-brand-600 dark:text-brand-400 hover:underline"
                             >
                               Fill my email ({currentUser.email})
                             </button>
                           )}
                         </div>
-                        <input
+                        <input aria-label={"Recipient Email (\"to\")"}
                           type="email"
                           required
                           value={templateRecipient}
                           onChange={(e) => setTemplateRecipient(e.target.value)}
                           placeholder="e.g. user@gmail.com"
-                          className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                          className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"
                         />
                       </div>
 
@@ -3613,28 +2075,28 @@ print("Delivered status:", response["status"])`}
                         <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                           Custom Subject Override <span className="text-slate-400 font-normal">(Optional — defaults to smart template subject)</span>
                         </label>
-                        <input
+                        <input aria-label={"Custom Subject Override (Optional — defaults to smart template subject)"}
                           type="text"
                           value={templateSubjectOverride}
                           onChange={(e) => setTemplateSubjectOverride(e.target.value)}
                           placeholder={`Default: ${templatePreviewSubject || 'Smart Subject'}`}
-                          className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
+                          className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500"
                         />
                       </div>
 
                       {/* Template Specific Dynamic Fields */}
                       <div className="pt-2 border-t border-slate-200 dark:border-white/10 space-y-3">
-                        <div className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-mono">
+                        <div className="text-xs font-bold text-slate-600 dark:text-slate-400 font-mono">
                           Template Variables (`vars`)
                         </div>
 
                         {DEFAULT_TEMPLATES.find((t) => t.id === selectedTemplateId)?.fields.map((f) => (
                           <div key={f.key}>
                             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                              {f.label} <span className="text-slate-400 font-mono text-[10px]">(`vars.{f.key}`)</span>
+                              {f.label} <span className="text-slate-400 font-mono text-xs">(`vars.{f.key}`)</span>
                             </label>
                             {f.isTextarea ? (
-                              <textarea
+                              <textarea aria-label={f.label}
                                 rows={2}
                                 value={templateVars[f.key] || ''}
                                 onChange={(e) =>
@@ -3644,10 +2106,10 @@ print("Delivered status:", response["status"])`}
                                   }))
                                 }
                                 placeholder={f.placeholder}
-                                className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs leading-relaxed"
+                                className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 leading-relaxed"
                               />
                             ) : (
-                              <input
+                              <input aria-label={f.label}
                                 type={f.type || 'text'}
                                 value={templateVars[f.key] || ''}
                                 onChange={(e) =>
@@ -3657,7 +2119,7 @@ print("Delivered status:", response["status"])`}
                                   }))
                                 }
                                 placeholder={f.placeholder}
-                                className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
+                                className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500"
                               />
                             )}
                           </div>
@@ -3668,7 +2130,7 @@ print("Delivered status:", response["status"])`}
                       <button
                         type="submit"
                         disabled={isSendingTemplate || !activeProject}
-                        className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-500/25 active:scale-[0.98]"
+                        className="w-full py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm transition flex items-center justify-center space-x-2 active:scale-[0.98]"
                       >
                         {isSendingTemplate ? (
                           <>
@@ -3687,30 +2149,30 @@ print("Delivered status:", response["status"])`}
                     {/* Dispatch Response Alert */}
                     {templateSendResult && (
                       <div
-                        className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${
+                        className={`p-3.5 rounded-lg border text-xs space-y-1.5 ${
                           templateSendResult.success
                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
                             : 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300'
                         }`}
                       >
                         <div className="font-bold flex items-center justify-between">
-                          <span>{templateSendResult.success ? '✅ Email Delivered Successfully' : '❌ Dispatch Failed'}</span>
+                          <span>{templateSendResult.success ? ' Email Delivered Successfully' : ' Dispatch Failed'}</span>
                           {templateSendResult.executionTimeMs && (
-                            <span className="font-mono text-[10px]">{templateSendResult.executionTimeMs}ms</span>
+                            <span className="font-mono text-xs">{templateSendResult.executionTimeMs}ms</span>
                           )}
                         </div>
                         {templateSendResult.trackingId && (
-                          <div className="font-mono text-[11px] text-slate-600 dark:text-slate-400">
+                          <div className="font-mono text-xs text-slate-600 dark:text-slate-400">
                             Tracking ID: <span className="font-semibold">{templateSendResult.trackingId}</span>
                           </div>
                         )}
                         {templateSendResult.sender && (
-                          <div className="font-mono text-[11px] text-slate-600 dark:text-slate-400">
+                          <div className="font-mono text-xs text-slate-600 dark:text-slate-400">
                             Sent From: {templateSendResult.sender}
                           </div>
                         )}
                         {templateSendResult.error && (
-                          <div className="text-[11px]">{templateSendResult.error}</div>
+                          <div className="text-xs">{templateSendResult.error}</div>
                         )}
                       </div>
                     )}
@@ -3724,9 +2186,9 @@ print("Delivered status:", response["status"])`}
                               key={lang}
                               type="button"
                               onClick={() => setTemplateCodeLang(lang)}
-                              className={`px-2.5 py-1 text-[11px] font-mono rounded-md transition ${
+                              className={`px-2.5 py-1 text-xs font-mono rounded-md transition ${
                                 templateCodeLang === lang
-                                  ? 'bg-indigo-600 text-white font-semibold'
+                                  ? 'bg-brand-600 text-white font-semibold'
                                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-white/5'
                               }`}
                             >
@@ -3734,21 +2196,21 @@ print("Delivered status:", response["status"])`}
                             </button>
                           ))}
                         </div>
-                        <button
+                        <button aria-label="Copy project API key"
                           type="button"
                           onClick={() => {
                             navigator.clipboard.writeText(getTemplateSnippet());
                             setCopiedTemplateCode(true);
                             setTimeout(() => setCopiedTemplateCode(false), 2000);
                           }}
-                          className="inline-flex items-center space-x-1 text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-mono"
+                          className="inline-flex items-center space-x-1 text-xs text-brand-600 dark:text-brand-400 hover:underline font-mono"
                         >
                           {copiedTemplateCode ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                           <span>{copiedTemplateCode ? 'Copied!' : 'Copy Code'}</span>
                         </button>
                       </div>
 
-                      <pre className="p-3 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto max-h-44 leading-relaxed shadow-inner">
+                      <pre tabIndex={0} className="p-3 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto max-h-44 leading-relaxed">
                         {getTemplateSnippet()}
                       </pre>
                     </div>
@@ -3756,8 +2218,7 @@ print("Delivered status:", response["status"])`}
 
                   {/* Right Column: Live Responsive Email Preview Device */}
                   <SpotlightCard
-                    spotlightColor="rgba(16, 185, 129, 0.16)"
-                    borderColor="rgba(16, 185, 129, 0.35)"
+                    
                     className="lg:col-span-6 p-5 sm:p-6 space-y-4"
                   >
                     {/* Device Bar & Header Info */}
@@ -3768,40 +2229,40 @@ print("Delivered status:", response["status"])`}
                           <span>Live In-Memory Device Preview</span>
                           {isRenderingPreview && <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />}
                         </div>
-                        <div className="text-[11px] text-slate-500 mt-0.5 max-w-xs truncate">
+                        <div className="text-xs text-slate-500 mt-0.5 max-w-xs truncate">
                           Subject: <span className="font-medium text-slate-700 dark:text-slate-300">{templateSubjectOverride || templatePreviewSubject || 'Verification Code'}</span>
                         </div>
                       </div>
 
                       {/* Device Switcher */}
-                      <div className="flex items-center space-x-1 bg-slate-100 dark:bg-[#12151c] p-1 rounded-lg border border-slate-200 dark:border-white/10">
+                      <div className="flex items-center space-x-1 bg-slate-100 dark:bg-[var(--surface)] p-1 rounded-lg border border-slate-200 dark:border-white/10">
                         <button
                           type="button"
                           onClick={() => setPreviewDevice('desktop')}
-                          className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition ${
+                          className={`px-2.5 py-1 text-xs font-medium rounded-md transition ${
                             previewDevice === 'desktop'
-                              ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-xs font-semibold'
+                              ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white  font-semibold'
                               : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                           }`}
                         >
-                          🖥️ Desktop
+                           Desktop
                         </button>
                         <button
                           type="button"
                           onClick={() => setPreviewDevice('mobile')}
-                          className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition ${
+                          className={`px-2.5 py-1 text-xs font-medium rounded-md transition ${
                             previewDevice === 'mobile'
-                              ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-xs font-semibold'
+                              ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white  font-semibold'
                               : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                           }`}
                         >
-                          📱 Mobile
+                           Mobile
                         </button>
                       </div>
                     </div>
 
                     {/* From Meta Bar */}
-                    <div className="flex items-center justify-between text-[11px] px-3 py-2 rounded-lg bg-slate-100/70 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-mono">
+                    <div className="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-slate-100/70 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-mono">
                       <div className="flex items-center space-x-2 truncate">
                         <span>From:</span>
                         <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
@@ -3809,14 +2270,14 @@ print("Delivered status:", response["status"])`}
                         </span>
                       </div>
                       {activeProject?.brandLogo?.data && (
-                        <span className="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold shrink-0">
+                        <span className="text-emerald-600 dark:text-emerald-400 text-xs font-bold shrink-0">
                           1:1 Logo Active
                         </span>
                       )}
                     </div>
 
                     {/* Sandboxed Iframe Container */}
-                    <div className="flex justify-center bg-slate-100 dark:bg-[#07080c] p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden shadow-inner min-h-[560px]">
+                    <div className="flex justify-center bg-slate-100 dark:bg-[var(--surface)] p-3 sm:p-4 rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden min-h-[560px]">
                       <iframe
                         title="Template Live Preview"
                         srcDoc={templatePreviewHtml || '<div style="padding: 40px; text-align: center; color: #64748b; font-family: sans-serif;">Rendering preview...</div>'}
@@ -3832,8 +2293,8 @@ print("Delivered status:", response["status"])`}
                       />
                     </div>
 
-                    <div className="text-[11px] text-slate-500 text-center font-mono">
-                      ⚡ Fully responsive &bull; Inline CSS &bull; Gmail, iOS &amp; Android tested
+                    <div className="text-xs text-slate-500 text-center font-mono">
+                       Email preview · Check rendering in your recipients’ mail clients
                     </div>
                   </SpotlightCard>
 
@@ -3845,21 +2306,20 @@ print("Delivered status:", response["status"])`}
             {activeTab === 'playground' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
-                <SpotlightCard
-                  spotlightColor="rgba(99, 102, 241, 0.16)"
-                  borderColor="rgba(99, 102, 241, 0.35)"
+                <SpotlightCard as="form" aria-busy={isSending} onSubmit={e => { e.preventDefault(); handleDispatchEmail(); }}
+                  
                   className="lg:col-span-7 p-6 space-y-5"
                 >
                   <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
                     <div>
                       <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center space-x-2.5">
-                        <PlayCircle className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                        <span>Live Email Playground</span>
+                        <PlayCircle className="w-6 h-6 text-brand-600 dark:text-brand-400" />
+                        <span>Send a test email</span>
                       </h2>
-                      <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">Test transactional dispatches in under 1 second without Postman.</p>
+                      <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">Send to your own inbox and inspect the server response.</p>
                     </div>
                     <span className="px-3 py-1 rounded-md text-xs font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      PORT 587 LIVE
+                      Uses your connected Gmail
                     </span>
                   </div>
 
@@ -3868,13 +2328,13 @@ print("Delivered status:", response["status"])`}
                       <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
                         From Address / Sender Alias (Optional)
                       </label>
-                      <span className="text-[11px] text-slate-400 font-mono">Dynamic 'From' Selection</span>
+                      <span className="text-xs text-slate-400 font-mono">Dynamic 'From' Selection</span>
                     </div>
                     {stats?.capacity?.allAliases && stats.capacity.allAliases.length > 0 ? (
-                      <select
+                      <select aria-label={"From Address / Sender Alias (Optional)"}
                         value={playFrom}
                         onChange={(e) => setPlayFrom(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                        className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white focus:outline-none focus:border-brand-500 font-mono"
                       >
                         <option value="">Default (Primary Connected Sender Account)</option>
                         {stats.capacity.senders.map((s, idx) => (
@@ -3884,20 +2344,20 @@ print("Delivered status:", response["status"])`}
                         ))}
                         {stats.capacity.allAliases.map((a, idx) => (
                           <option key={`alias-${idx}`} value={a.email}>
-                            🏷️ {a.email} {a.displayName ? `(${a.displayName})` : ''} — via {a.senderEmail}
+                             {a.email} {a.displayName ? `(${a.displayName})` : ''} — via {a.senderEmail}
                           </option>
                         ))}
                       </select>
                     ) : (
-                      <input
+                      <input aria-label={"From Address / Sender Alias (Optional)"}
                         type="text"
                         value={playFrom}
                         onChange={(e) => setPlayFrom(e.target.value)}
                         placeholder="e.g. support@yourdomain.com (Leave blank for default sender)"
-                        className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                        className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"
                       />
                     )}
-                    <p className="text-[11px] text-slate-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       Choose which verified Gmail account or registered alias to send this email from.
                     </p>
                   </div>
@@ -3906,36 +2366,36 @@ print("Delivered status:", response["status"])`}
                     <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                       Recipient Email ("to") <span className="text-rose-500 dark:text-rose-400">*</span>
                     </label>
-                    <input
+                    <input required autoComplete="email" aria-label={"Recipient Email (\"to\")"}
                       type="email"
                       value={playTo}
                       onChange={(e) => setPlayTo(e.target.value)}
                       placeholder="e.g. your-email@gmail.com"
-                      className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                      className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Subject Line</label>
-                    <input
+                    <input aria-label={"Subject Line"}
                       type="text"
                       value={playSubject}
                       onChange={(e) => setPlaySubject(e.target.value)}
                       placeholder="Subject..."
-                      className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
+                      className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Email Body Format</label>
-                    <div className="grid grid-cols-3 gap-2.5 bg-slate-100 dark:bg-[#12151c] p-1.5 rounded-xl border border-slate-200 dark:border-white/10">
+                    <div className="grid grid-cols-3 gap-2.5 bg-slate-100 dark:bg-[var(--surface)] p-1.5 rounded-lg border border-slate-200 dark:border-white/10">
                       {['otp', 'html', 'text'].map((m) => (
                         <button
                           key={m}
                           type="button"
                           onClick={() => setPlayMode(m)}
                           className={`py-2 text-xs sm:text-sm font-semibold rounded-lg transition ${
-                            playMode === m ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30 font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                            playMode === m ? 'bg-brand-600 text-white   font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                           }`}
                         >
                           {m === 'otp' ? 'OTP Code' : m === 'html' ? 'Custom HTML' : 'Plain Text'}
@@ -3948,17 +2408,17 @@ print("Delivered status:", response["status"])`}
                     <div className="space-y-2.5">
                       <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">6-Digit Verification Code</label>
                       <div className="flex items-center space-x-3.5">
-                        <input
+                        <input required inputMode="numeric" pattern="[0-9]{6}" aria-label={"6-Digit Verification Code"}
                           type="text"
-                          maxLength={8}
+                          maxLength={6}
                           value={playOtp}
                           onChange={(e) => setPlayOtp(e.target.value)}
-                          className="w-44 bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-2xl font-mono text-center tracking-widest text-indigo-600 dark:text-indigo-400 font-extrabold focus:outline-none focus:border-indigo-500 shadow-xs"
+                          className="w-44 bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-2xl font-mono text-center tracking-widest text-brand-600 dark:text-brand-400 font-extrabold focus:outline-none focus:border-brand-500"
                         />
                         <button
                           type="button"
                           onClick={() => setPlayOtp(String(Math.floor(100000 + Math.random() * 900000)))}
-                          className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-white/5 dark:hover:bg-white/10 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent transition active:scale-[0.98] shadow-xs"
+                          className="px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-white/5 dark:hover:bg-white/10 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent transition active:scale-[0.98]"
                         >
                           Generate Random
                         </button>
@@ -3970,11 +2430,11 @@ print("Delivered status:", response["status"])`}
                   {playMode === 'html' && (
                     <div className="space-y-2">
                       <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">HTML Code</label>
-                      <textarea
+                      <textarea required aria-label={"HTML Code"}
                         rows={6}
                         value={playHtml}
                         onChange={(e) => setPlayHtml(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl p-3.5 text-xs sm:text-sm font-mono text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 leading-relaxed shadow-xs"
+                        className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg p-3.5 text-xs sm:text-sm font-mono text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 leading-relaxed"
                       />
                     </div>
                   )}
@@ -3982,11 +2442,11 @@ print("Delivered status:", response["status"])`}
                   {playMode === 'text' && (
                     <div className="space-y-2">
                       <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">Plain Text Content</label>
-                      <textarea
+                      <textarea required aria-label={"Plain Text Content"}
                         rows={4}
                         value={playText}
                         onChange={(e) => setPlayText(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl p-3.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
+                        className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg p-3.5 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500"
                       />
                     </div>
                   )}
@@ -3994,7 +2454,7 @@ print("Delivered status:", response["status"])`}
                   <div className="pt-3 border-t border-slate-200 dark:border-white/10 space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
-                        <Paperclip className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        <Paperclip className="w-4 h-4 text-brand-600 dark:text-brand-400" />
                         <span>File or PDF Attachment (Optional - 15MB Limit)</span>
                       </label>
                       {selectedAttachment && (
@@ -4009,14 +2469,14 @@ print("Delivered status:", response["status"])`}
                     </div>
 
                     {!selectedAttachment ? (
-                      <label className="block border-2 border-dashed border-slate-200 dark:border-white/10 hover:border-indigo-500/50 rounded-2xl p-5 text-center transition cursor-pointer bg-slate-50/60 dark:bg-[#12151c]/50">
-                        <input type="file" onChange={handleFileUpload} className="hidden" />
+                      <label className="block border-2 border-dashed border-slate-200 dark:border-white/10 hover:border-brand-500/50 rounded-lg p-5 text-center transition cursor-pointer bg-slate-50/60 dark:bg-[var(--surface)]/50">
+                        <input aria-label={"Click to select PDF or Image PDFs, images, and other files up to 15 MB"} type="file" onChange={handleFileUpload} className="file-input" />
                         <UploadCloud className="w-7 h-7 text-slate-400 mx-auto mb-1.5" />
                         <div className="text-sm text-slate-700 dark:text-slate-300 font-semibold">Click to select PDF or Image</div>
-                        <div className="text-xs text-slate-500 mt-0.5">Auto-converts to Base64 buffer with 15MB check</div>
+                        <div className="text-xs text-slate-500 mt-0.5">PDFs, images, and other files up to 15 MB</div>
                       </label>
                     ) : (
-                      <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+                      <div className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
                         <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 text-sm">
                           <FileCheck className="w-4.5 h-4.5" />
                           <span className="font-semibold font-mono">{selectedAttachment.filename}</span>
@@ -4026,24 +2486,24 @@ print("Delivered status:", response["status"])`}
                     )}
 
                     <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Or remote file URL (S3 / Firebase):</div>
-                    <input
+                    <input aria-label={"File or PDF Attachment (Optional - 15MB Limit)"}
                       type="url"
                       value={playRemoteUrl}
                       onChange={(e) => setPlayRemoteUrl(e.target.value)}
                       placeholder="https://example.com/files/lecture_notes.pdf"
-                      className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                      className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"
                     />
                   </div>
 
                   <div className="pt-2">
                     <button
-                      type="button"
+                      type="submit"
                       disabled={isSending}
-                      onClick={handleDispatchEmail}
-                      className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-sm sm:text-base transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-500/25 active:scale-[0.98]"
+                      
+                      className="w-full py-3.5 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white font-bold text-sm sm:text-base transition flex items-center justify-center space-x-2 active:scale-[0.98]"
                     >
                       <Zap className="w-4.5 h-4.5" />
-                      <span>{isSending ? 'Dispatching via STARTTLS 587...' : '⚡ Send Test Email Now'}</span>
+                      <span>{isSending ? 'Sending test email…' : ' Send test email'}</span>
                     </button>
                   </div>
 
@@ -4051,12 +2511,11 @@ print("Delivered status:", response["status"])`}
 
                 {/* Right Output Console with Spotlight Glow */}
                 <SpotlightCard
-                  spotlightColor="rgba(16, 185, 129, 0.16)"
-                  borderColor="rgba(16, 185, 129, 0.35)"
+                  
                   className="lg:col-span-5 p-6 flex flex-col"
                 >
                   <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
-                    <span className="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider flex items-center space-x-1.5 font-mono">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-white flex items-center space-x-1.5 font-mono">
                       <Terminal className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                       <span>Live Server Response</span>
                     </span>
@@ -4078,8 +2537,8 @@ print("Delivered status:", response["status"])`}
                     <div className="flex-1 flex flex-col justify-center items-center text-center p-8 text-slate-500">
                       <Inbox className="w-10 h-10 mb-2 opacity-40 text-slate-400" />
                       <div className="text-xs font-medium text-slate-600 dark:text-slate-400">No email dispatched yet</div>
-                      <div className="text-[11px] text-slate-500 max-w-xs mt-1">
-                        Fill out the recipient and click "Send Test Email Now" to see the live delivery response here.
+                      <div className="text-xs text-slate-500 max-w-xs mt-1">
+                        Fill out the recipient and click "Send test email" to see the live delivery response here.
                       </div>
                     </div>
                   ) : (
@@ -4092,26 +2551,26 @@ print("Delivered status:", response["status"])`}
                               : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                           }`}
                         >
-                          {lastResponse.success ? '🟢 DELIVERED' : '🔴 FAILED'}
+                          {lastResponse.success ? ' DELIVERED' : ' FAILED'}
                         </span>
                         <span className="text-xs font-mono text-amber-600 dark:text-amber-400 font-medium">
-                          ⏱️ {lastResponse.executionTimeMs || 710}ms
+                          ⏱ {Number.isFinite(lastResponse.executionTimeMs) ? `${lastResponse.executionTimeMs} ms` : 'Timing unavailable'}
                         </span>
                       </div>
 
-                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-white/5 font-mono text-xs">
-                        <div className="text-[10px] text-slate-500 uppercase">Tracking ID</div>
-                        <div className="text-indigo-600 dark:text-indigo-300 font-semibold break-all">{lastResponse.trackingId || 'N/A'}</div>
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/5 font-mono text-xs">
+                        <div className="text-xs text-slate-500">Tracking ID</div>
+                        <div className="text-brand-600 dark:text-brand-300 font-semibold break-all">{lastResponse.trackingId || 'N/A'}</div>
                       </div>
 
-                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-white/5 font-mono text-xs">
-                        <div className="text-[10px] text-slate-500 uppercase">Sender Account</div>
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/5 font-mono text-xs">
+                        <div className="text-xs text-slate-500">Sender Account</div>
                         <div className="text-slate-800 dark:text-slate-300">{lastResponse.sender || activeProject?.senderEmail}</div>
                       </div>
 
                       <div>
-                        <div className="text-[10px] text-slate-500 uppercase mb-1">Payload JSON</div>
-                        <pre className="p-3 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto max-h-48 leading-relaxed shadow-inner">
+                        <div className="text-xs text-slate-500 mb-1">Payload JSON</div>
+                        <pre tabIndex={0} className="p-3 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto max-h-48 leading-relaxed">
                           {JSON.stringify(lastResponse, null, 2)}
                         </pre>
                       </div>
@@ -4125,14 +2584,15 @@ print("Delivered status:", response["status"])`}
             {/* TAB 3: SENDERS & QUOTAS */}
             {activeTab === 'senders' && (
               <div className="space-y-6">
+                {renderSenderPool()}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/10">
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Your Workspace Projects</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Projects & senders</h2>
                     <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">Projects created in your account. Fully isolated from other users.</p>
                   </div>
                   <button
                     onClick={() => setShowNewProjModal(true)}
-                    className="inline-flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition shadow-md shadow-indigo-500/20 active:scale-[0.98] self-start sm:self-auto"
+                    className="inline-flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold transition active:scale-[0.98] self-start sm:self-auto"
                   >
                     <Plus className="w-4.5 h-4.5" />
                     <span>Create Project</span>
@@ -4143,9 +2603,8 @@ print("Delivered status:", response["status"])`}
                   {projects.map((p) => (
                     <SpotlightCard
                       key={p.id}
-                      spotlightColor="rgba(99, 102, 241, 0.16)"
-                      borderColor="rgba(99, 102, 241, 0.35)"
-                      className="p-6 sm:p-7 space-y-5 rounded-2xl"
+                      
+                      className="p-6 sm:p-7 space-y-5 rounded-lg"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-4">
@@ -4153,10 +2612,10 @@ print("Delivered status:", response["status"])`}
                             <img
                               src={p.brandLogo.data}
                               alt="Logo"
-                              className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover border-2 border-slate-200 dark:border-white/10 shadow-sm"
+                              className="w-16 h-16 sm:w-18 sm:h-18 rounded-lg object-cover border-2 border-slate-200 dark:border-white/10"
                             />
                           ) : (
-                            <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-xs sm:text-sm font-bold font-mono text-slate-500">
+                            <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-xs sm:text-sm font-bold font-mono text-slate-500">
                               1:1
                             </div>
                           )}
@@ -4164,7 +2623,7 @@ print("Delivered status:", response["status"])`}
                             <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
                               <span>{p.name}</span>
                               {p.brandLogo?.data && (
-                                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20">
+                                <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
                                   1:1 Logo
                                 </span>
                               )}
@@ -4174,10 +2633,10 @@ print("Delivered status:", response["status"])`}
                         </div>
 
                         <div className="flex flex-col items-end space-y-2">
-                          <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+                          <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-brand-500/10 text-brand-700 dark:text-brand-300 border border-brand-500/20">
                             {p.dailyQuota} Daily Limit
                           </span>
-                          <button
+                          <button aria-label="Remove selected logo"
                             type="button"
                             onClick={() => {
                               setActiveProject(p);
@@ -4185,7 +2644,7 @@ print("Delivered status:", response["status"])`}
                               setLogoModalError('');
                               setShowLogoModal(true);
                             }}
-                            className="text-xs text-pink-600 dark:text-pink-400 hover:underline flex items-center space-x-1 font-semibold"
+                            className="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center space-x-1 font-semibold"
                           >
                             <ImageIcon className="w-3.5 h-3.5" />
                             <span>{p.brandLogo?.data ? 'Update 1:1 Logo' : 'Set 1:1 Logo'}</span>
@@ -4193,11 +2652,11 @@ print("Delivered status:", response["status"])`}
                         </div>
                       </div>
 
-                      <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-white/5 space-y-1.5">
-                        <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">PROJECT API KEY</div>
-                        <div className="flex items-center justify-between font-mono text-sm text-indigo-600 dark:text-indigo-300 font-bold">
+                      <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/5 space-y-1.5">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold">PROJECT API KEY</div>
+                        <div className="flex items-center justify-between font-mono text-sm text-brand-600 dark:text-brand-300 font-bold">
                           <span className="truncate pr-2">{p.apiKey}</span>
-                          <button
+                          <button aria-label="Copy project API key"
                             onClick={() => {
                               navigator.clipboard.writeText(p.apiKey);
                               alert('API Key copied!');
@@ -4217,14 +2676,14 @@ print("Delivered status:", response["status"])`}
                               setActiveProject(p);
                               setShowAddSenderModal(true);
                             }}
-                            className="text-indigo-600 dark:text-indigo-400 hover:underline text-xs font-bold"
+                            className="text-brand-600 dark:text-brand-400 hover:underline text-xs font-bold"
                           >
                             + Add Backup
                           </button>
                         </div>
                         <div className="space-y-1.5 text-xs sm:text-sm font-mono">
                           {(p.senders || [{ email: p.senderEmail, dailyQuota: 500, emailsSentToday: 0 }]).map((s, idx) => (
-                            <div key={idx} className="p-3 rounded-xl bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-white/5 flex items-center justify-between">
+                            <div key={idx} className="p-3 rounded-lg bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/5 flex items-center justify-between">
                               <span className="text-slate-800 dark:text-slate-300 font-medium">{s.email}</span>
                               <div className="flex items-center space-x-2.5">
                                 <span className="text-xs text-slate-500 font-bold">
@@ -4253,15 +2712,17 @@ print("Delivered status:", response["status"])`}
             {/* TAB 4: AUDIT LOGS */}
             {activeTab === 'logs' && (
               <div className="space-y-4">
+                {logsError && <div className="notice notice-error" role="alert">{logsError}<button className="text-link" onClick={() => loadLogs(activeProject.apiKey, logsPagination.page, logSearch, logStatus)}>Try again</button></div>}
+                {isRefreshingLogs && <p role="status">Refreshing delivery logs…</p>}
+
                 
                 <SpotlightCard
-                  spotlightColor="rgba(99, 102, 241, 0.14)"
-                  borderColor="rgba(99, 102, 241, 0.3)"
-                  className="p-5 sm:p-6 rounded-2xl"
+                  
+                  className="p-5 sm:p-6 rounded-lg"
                 >
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5">
                     <div className="relative flex-1">
-                      <input
+                      <input aria-label={"Search delivery logs"}
                         type="text"
                         value={logSearch}
                         onChange={(e) => {
@@ -4269,18 +2730,18 @@ print("Delivered status:", response["status"])`}
                           loadLogs(activeProject?.apiKey, 1, e.target.value, logStatus);
                         }}
                         placeholder="Search by recipient email, subject, or tracking ID..."
-                        className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                        className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"
                       />
                     </div>
 
                     <div className="flex items-center space-x-2.5">
-                      <select
+                      <select aria-label={"Filter delivery status"}
                         value={logStatus}
                         onChange={(e) => {
                           setLogStatus(e.target.value);
                           loadLogs(activeProject?.apiKey, 1, logSearch, e.target.value);
                         }}
-                        className="bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-xs sm:text-sm font-semibold rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-indigo-500 shadow-xs cursor-pointer"
+                        className="bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white text-xs sm:text-sm font-semibold rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-brand-500 cursor-pointer"
                       >
                         <option value="">All Statuses</option>
                         <option value="DELIVERED">Delivered</option>
@@ -4289,20 +2750,20 @@ print("Delivered status:", response["status"])`}
                       </select>
                       <button
                         onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
-                        className={`inline-flex items-center space-x-2 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition ${
+                        className={`inline-flex items-center space-x-2 px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm font-semibold transition ${
                           autoRefreshLogs
                             ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                            : 'bg-slate-50 dark:bg-[#080a0f] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:text-slate-900 dark:hover:text-white'
+                            : 'bg-slate-50 dark:bg-[var(--surface)] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:text-slate-900 dark:hover:text-white'
                         }`}
                         title="Auto-refresh logs every 5 seconds to catch live calls from your project"
                       >
-                        <Radio className={`w-4 h-4 ${autoRefreshLogs ? 'animate-pulse text-emerald-500 dark:text-emerald-400' : 'text-slate-400'}`} />
+                        <Radio className={`w-4 h-4 ${autoRefreshLogs ? ' text-emerald-500 dark:text-emerald-400' : 'text-slate-400'}`} />
                         <span>{autoRefreshLogs ? 'Live Stream: ON' : 'Live Stream'}</span>
                       </button>
 
                       <button
                         onClick={() => loadLogs(activeProject?.apiKey, logsPagination.page, logSearch, logStatus)}
-                        className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#080a0f] hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 transition"
+                        className="p-2.5 rounded-lg bg-slate-50 dark:bg-[var(--surface)] hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 transition"
                         title="Manual Refresh"
                       >
                         <RefreshCw className={`w-4.5 h-4.5 ${isRefreshingLogs ? 'animate-spin' : ''}`} />
@@ -4311,10 +2772,10 @@ print("Delivered status:", response["status"])`}
                   </div>
                 </SpotlightCard>
 
-                <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden shadow-xs">
+                <div className="glass-card rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs sm:text-sm">
-                      <thead className="bg-slate-100/80 dark:bg-[#12151c]/80 border-b border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 uppercase tracking-wider font-mono text-xs font-bold">
+                      <thead className="bg-slate-100/80 dark:bg-[var(--surface)]/80 border-b border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 font-mono text-xs font-bold">
                         <tr>
                           <th className="py-3.5 px-4 sm:px-5">Status</th>
                           <th className="py-3.5 px-4 sm:px-5">Template</th>
@@ -4354,8 +2815,8 @@ print("Delivered status:", response["status"])`}
                               </td>
                               <td className="py-3.5 px-4 sm:px-5 font-mono text-xs">
                                 {l.template ? (
-                                  <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
-                                    🏷️ {l.template}
+                                  <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300 border border-brand-200/60 dark:border-brand-800/40">
+                                     {l.template}
                                   </span>
                                 ) : (
                                   <span className="text-slate-400 dark:text-slate-600 text-xs">custom</span>
@@ -4377,7 +2838,7 @@ print("Delivered status:", response["status"])`}
                                       {l.deviceType && (
                                         <span className="text-xs font-mono text-slate-500 flex items-center space-x-0.5">
                                           {l.deviceType === 'MOBILE' ? (
-                                            <Smartphone className="w-3 h-3 text-indigo-500" />
+                                            <Smartphone className="w-3 h-3 text-brand-500" />
                                           ) : (
                                             <Monitor className="w-3 h-3 text-sky-500" />
                                           )}
@@ -4393,10 +2854,10 @@ print("Delivered status:", response["status"])`}
                                   {l.clicksCount > 0 && (
                                     <div className="flex items-center space-x-1">
                                       <span
-                                        className="px-2 py-0.5 rounded text-xs font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-mono flex items-center space-x-1"
+                                        className="px-2 py-0.5 rounded text-xs font-semibold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 font-mono flex items-center space-x-1"
                                         title={`Last click at ${l.clickedAt ? new Date(l.clickedAt).toLocaleString() : ''}`}
                                       >
-                                        <MousePointerClick className="w-3 h-3 text-indigo-500" />
+                                        <MousePointerClick className="w-3 h-3 text-brand-500" />
                                         <span>{l.clicksCount} click{l.clicksCount > 1 ? 's' : ''}</span>
                                       </span>
                                     </div>
@@ -4407,7 +2868,7 @@ print("Delivered status:", response["status"])`}
                                 {l.isAlias && l.fromEmail ? (
                                   <div>
                                     <span className="text-slate-900 dark:text-slate-200 font-bold block">{l.fromEmail}</span>
-                                    <span className="text-[10px] text-indigo-500 font-mono block">via {l.senderEmail}</span>
+                                    <span className="text-xs text-brand-500 font-mono block">via {l.senderEmail}</span>
                                   </div>
                                 ) : (
                                   <span className="text-slate-500 dark:text-slate-400">{l.senderEmail || 'Primary'}</span>
@@ -4415,8 +2876,8 @@ print("Delivered status:", response["status"])`}
                               </td>
                               <td className="py-3.5 px-4 sm:px-5 text-xs sm:text-sm">
                                 {l.hasAttachments ? (
-                                  <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-mono font-semibold">
-                                    📎 {l.attachmentsCount || 1} file
+                                  <span className="px-2 py-0.5 rounded bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 font-mono font-semibold">
+                                     {l.attachmentsCount || 1} file
                                   </span>
                                 ) : (
                                   <span className="text-slate-400 dark:text-slate-600">-</span>
@@ -4435,13 +2896,13 @@ print("Delivered status:", response["status"])`}
                     </table>
                   </div>
 
-                  <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50/90 dark:bg-[#12151c]/40 flex items-center justify-between text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium">
+                  <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50/90 dark:bg-[var(--surface)]/40 flex items-center justify-between text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium">
                     <div>Total: <span className="font-bold text-slate-900 dark:text-white font-mono">{logsPagination.total}</span> dispatches</div>
                     <div className="flex items-center space-x-2.5">
                       <button
                         disabled={logsPagination.page <= 1}
                         onClick={() => loadLogs(activeProject?.apiKey, logsPagination.page - 1, logSearch, logStatus)}
-                        className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent disabled:opacity-40 shadow-xs font-semibold"
+                        className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent disabled:opacity-40 font-semibold"
                       >
                         Previous
                       </button>
@@ -4449,7 +2910,7 @@ print("Delivered status:", response["status"])`}
                       <button
                         disabled={logsPagination.page >= logsPagination.totalPages}
                         onClick={() => loadLogs(activeProject?.apiKey, logsPagination.page + 1, logSearch, logStatus)}
-                        className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent disabled:opacity-40 shadow-xs font-semibold"
+                        className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent disabled:opacity-40 font-semibold"
                       >
                         Next
                       </button>
@@ -4467,10 +2928,10 @@ print("Delivered status:", response["status"])`}
                 <div className="pb-4 border-b border-slate-200 dark:border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
-                        🔔 Real-Time Telemetry
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
+                         Real-Time Telemetry
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
                         HMAC-SHA256 Signed
                       </span>
                     </div>
@@ -4481,17 +2942,17 @@ print("Delivered status:", response["status"])`}
                   </div>
 
                   {/* Status Indicator Pill */}
-                  <div className="flex items-center space-x-2.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs">
-                    <span className={`w-2.5 h-2.5 rounded-full ${activeProject?.webhookUrl ? (activeProject?.webhookEnabled !== false ? 'bg-emerald-500 shadow-sm shadow-emerald-500 animate-pulse' : 'bg-amber-500') : 'bg-slate-400'}`}></span>
+                  <div className="flex items-center space-x-2.5 px-3.5 py-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs">
+                    <span className={`w-2.5 h-2.5 rounded-full ${activeProject?.webhookUrl ? (activeProject?.webhookEnabled !== false ? 'bg-emerald-500   ' : 'bg-amber-500') : 'bg-slate-400'}`}></span>
                     <div className="flex flex-col">
-                      <span className="font-semibold text-slate-800 dark:text-white text-[11px]">
+                      <span className="font-semibold text-slate-800 dark:text-white text-xs">
                         {activeProject?.webhookUrl
                           ? activeProject?.webhookEnabled !== false
                             ? 'Webhook Active & Listening'
                             : 'Webhooks Paused'
                           : 'No Webhook Configured'}
                       </span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[200px]">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate max-w-[200px]">
                         {activeProject?.webhookUrl || 'Enter your receiver URL below'}
                       </span>
                     </div>
@@ -4500,8 +2961,7 @@ print("Delivered status:", response["status"])`}
 
                 {/* Webhook Configuration Form */}
                 <SpotlightCard
-                  spotlightColor="rgba(99, 102, 241, 0.16)"
-                  borderColor="rgba(99, 102, 241, 0.35)"
+                  
                   className="p-6 space-y-6"
                 >
                   <form onSubmit={handleSaveWebhookSettings} className="space-y-5">
@@ -4512,22 +2972,20 @@ print("Delivered status:", response["status"])`}
                           Destination Webhook URL (HTTPS Required in Production) *
                         </label>
                         <div className="relative">
-                          <input
+                          <input aria-label={"Destination Webhook URL (HTTPS Required in Production)"}
                             type="url"
                             required
                             value={webhookUrlInput}
                             onChange={(e) => setWebhookUrlInput(e.target.value)}
                             placeholder="https://api.yourdomain.com/api/webhooks/dakly"
-                            className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-inner"
+                            className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500"
                           />
                           {webhookUrlInput && (
-                            <button
+                            <button aria-label="Clear webhook URL"
                               type="button"
                               onClick={() => setWebhookUrlInput('')}
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
-                            >
-                              ✕
-                            </button>
+                            >×</button>
                           )}
                         </div>
                       </div>
@@ -4539,7 +2997,7 @@ print("Delivered status:", response["status"])`}
                         <button
                           type="button"
                           onClick={() => setWebhookEnabledInput(!webhookEnabledInput)}
-                          className={`w-full py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center space-x-2 transition ${
+                          className={`w-full py-2.5 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center space-x-2 transition ${
                             webhookEnabledInput
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30'
                               : 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-white/5 dark:text-slate-400 dark:border-white/10'
@@ -4560,19 +3018,19 @@ print("Delivered status:", response["status"])`}
                         <button
                           type="button"
                           onClick={handleGenerateWebhookSecret}
-                          className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
+                          className="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center space-x-1 font-medium"
                         >
                           <KeyRound className="w-3.5 h-3.5" />
                           <span>Generate New Secret</span>
                         </button>
                       </div>
                       <div className="relative flex items-center">
-                        <input
+                        <input aria-label={"HMAC-SHA256 Signing Secret (Payload Authentication)"}
                           type={showWebhookSecret ? 'text' : 'password'}
                           value={webhookSecretInput}
                           onChange={(e) => setWebhookSecretInput(e.target.value)}
                           placeholder="e.g. daksec_9841ab7c... (Click Generate to auto-create)"
-                          className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 pr-20 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-inner"
+                          className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3.5 py-2.5 pr-20 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500"
                         />
                         <div className="absolute right-2 flex items-center space-x-1">
                           <button
@@ -4590,7 +3048,7 @@ print("Delivered status:", response["status"])`}
                                 navigator.clipboard.writeText(webhookSecretInput);
                                 alert('Webhook Secret copied to clipboard!');
                               }}
-                              className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                              className="p-1.5 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400"
                               title="Copy Secret"
                             >
                               <Copy className="w-3.5 h-3.5" />
@@ -4598,8 +3056,8 @@ print("Delivered status:", response["status"])`}
                           )}
                         </div>
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Dakly signs outgoing requests by adding header <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-white/10 font-mono text-[10px]">x-dakly-signature: sha256=&lt;hex&gt;</code>. Use this secret to verify authenticity.
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Dakly signs outgoing requests by adding header <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-white/10 font-mono text-xs">x-dakly-signature: sha256=&lt;hex&gt;</code>. Use this secret to verify authenticity.
                       </p>
                     </div>
 
@@ -4610,7 +3068,7 @@ print("Delivered status:", response["status"])`}
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                         {[
-                          { id: 'email.delivered', label: 'email.delivered', desc: 'Dispatched when Gmail confirms inbox delivery (250 OK)' },
+                          { id: 'email.delivered', label: 'email.delivered', desc: 'Dispatched when Gmail accepts the message (250 OK)' },
                           { id: 'email.failed', label: 'email.failed', desc: 'Dispatched when SMTP dispatch fails or times out' },
                           { id: 'email.suppressed', label: 'email.suppressed', desc: 'Dispatched when recipient is blocked by Bounce Guard' },
                           { id: 'email.opened', label: 'email.opened', desc: 'Dispatched when tracking pixel is loaded by recipient' },
@@ -4622,16 +3080,16 @@ print("Delivered status:", response["status"])`}
                               key={evt.id}
                               type="button"
                               onClick={() => handleToggleWebhookEvent(evt.id)}
-                              className={`p-3 rounded-xl border text-left transition flex items-start space-x-2.5 ${
+                              className={`p-3 rounded-lg border text-left transition flex items-start space-x-2.5 ${
                                 isChecked
-                                  ? 'bg-indigo-50/50 border-indigo-400 dark:bg-indigo-500/10 dark:border-indigo-500/50 shadow-xs'
+                                  ? 'bg-brand-50/50 border-brand-400 dark:bg-brand-500/10 dark:border-brand-500/50 '
                                   : 'bg-white/50 dark:bg-white/5 border-slate-200 dark:border-white/5 opacity-60 hover:opacity-100'
                               }`}
                             >
                               <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition shrink-0 ${
                                 isChecked
-                                  ? 'bg-indigo-600 border-indigo-600 text-white'
-                                  : 'border-slate-300 dark:border-white/20 bg-white dark:bg-[#12151c]'
+                                  ? 'bg-brand-600 border-brand-600 text-white'
+                                  : 'border-slate-300 dark:border-white/20 bg-white dark:bg-[var(--surface)]'
                               }`}>
                                 {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                               </div>
@@ -4639,7 +3097,7 @@ print("Delivered status:", response["status"])`}
                                 <span className="block text-xs font-mono font-bold text-slate-900 dark:text-white truncate">
                                   {evt.label}
                                 </span>
-                                <span className="block text-[10px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
+                                <span className="block text-xs text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
                                   {evt.desc}
                                 </span>
                               </div>
@@ -4655,7 +3113,7 @@ print("Delivered status:", response["status"])`}
                         <button
                           type="submit"
                           disabled={isSavingWebhook}
-                          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-sm shadow-indigo-500/20 disabled:opacity-50"
+                          className="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition flex items-center space-x-1.5 disabled:opacity-50"
                         >
                           {isSavingWebhook ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                           <span>{isSavingWebhook ? 'Saving...' : 'Save Webhook Configuration'}</span>
@@ -4665,7 +3123,7 @@ print("Delivered status:", response["status"])`}
                           type="button"
                           onClick={handleTriggerTestWebhook}
                           disabled={isTestingWebhook || !webhookUrlInput}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition flex items-center space-x-1.5 shadow-sm shadow-emerald-500/20 disabled:opacity-50"
+                          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition flex items-center space-x-1.5 disabled:opacity-50"
                         >
                           {isTestingWebhook ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
                           <span>{isTestingWebhook ? 'Sending Test...' : 'Send Test Webhook'}</span>
@@ -4692,14 +3150,14 @@ print("Delivered status:", response["status"])`}
                       <div className="flex items-center space-x-2">
                         <span className={`w-3 h-3 rounded-full ${webhookTestResult.success ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                         <span className="text-sm font-bold text-slate-900 dark:text-white">
-                          {webhookTestResult.success ? '🎉 Webhook Test Succeeded!' : '❌ Webhook Test Failed'}
+                          {webhookTestResult.success ? ' Webhook Test Succeeded!' : ' Webhook Test Failed'}
                         </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                        <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300">
                           HTTP {webhookTestResult.httpStatus || 0}
                         </span>
                         {webhookTestResult.latencyMs !== undefined && (
                           <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                            ⚡ {webhookTestResult.latencyMs}ms
+                             {webhookTestResult.latencyMs}ms
                           </span>
                         )}
                       </div>
@@ -4719,8 +3177,8 @@ print("Delivered status:", response["status"])`}
 
                     {webhookTestResult.responseText && (
                       <div>
-                        <span className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Receiver Server Response Body:</span>
-                        <pre className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 font-mono text-xs overflow-x-auto">
+                        <span className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Receiver Server Response Body:</span>
+                        <pre tabIndex={0} className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 font-mono text-xs overflow-x-auto">
                           <code>{webhookTestResult.responseText}</code>
                         </pre>
                       </div>
@@ -4730,8 +3188,8 @@ print("Delivered status:", response["status"])`}
 
                 {/* Telemetry & Last Dispatch Info */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-xl bg-white dark:bg-[#12151c] border border-slate-200 dark:border-white/5 space-y-1">
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Last Dispatched</span>
+                  <div className="p-4 rounded-lg bg-white dark:bg-[var(--surface)] border border-slate-200 dark:border-white/5 space-y-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Last Dispatched</span>
                     <span className="block text-sm font-bold text-slate-900 dark:text-white">
                       {activeProject?.lastWebhookDispatchedAt
                         ? new Date(activeProject.lastWebhookDispatchedAt).toLocaleTimeString()
@@ -4739,8 +3197,8 @@ print("Delivered status:", response["status"])`}
                     </span>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-white dark:bg-[#12151c] border border-slate-200 dark:border-white/5 space-y-1">
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Last Status</span>
+                  <div className="p-4 rounded-lg bg-white dark:bg-[var(--surface)] border border-slate-200 dark:border-white/5 space-y-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Last Status</span>
                     <span className={`block text-sm font-bold ${
                       activeProject?.lastWebhookStatus === 'SUCCESS' ? 'text-emerald-500' : activeProject?.lastWebhookStatus === 'FAILED' ? 'text-rose-500' : 'text-slate-500'
                     }`}>
@@ -4748,15 +3206,15 @@ print("Delivered status:", response["status"])`}
                     </span>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-white dark:bg-[#12151c] border border-slate-200 dark:border-white/5 space-y-1">
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Last Response Code</span>
+                  <div className="p-4 rounded-lg bg-white dark:bg-[var(--surface)] border border-slate-200 dark:border-white/5 space-y-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Last Response Code</span>
                     <span className="block text-sm font-mono font-bold text-slate-900 dark:text-white">
                       {activeProject?.lastWebhookResponseCode ? `HTTP ${activeProject.lastWebhookResponseCode}` : '—'}
                     </span>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-white dark:bg-[#12151c] border border-slate-200 dark:border-white/5 space-y-1">
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Last Latency</span>
+                  <div className="p-4 rounded-lg bg-white dark:bg-[var(--surface)] border border-slate-200 dark:border-white/5 space-y-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Last Latency</span>
                     <span className="block text-sm font-mono font-bold text-slate-900 dark:text-white">
                       {activeProject?.lastWebhookLatencyMs !== undefined && activeProject?.lastWebhookLatencyMs !== null
                         ? `${activeProject.lastWebhookLatencyMs} ms`
@@ -4767,14 +3225,13 @@ print("Delivered status:", response["status"])`}
 
                 {/* Receiver Server Verification Guide */}
                 <SpotlightCard
-                  spotlightColor="rgba(99, 102, 241, 0.16)"
-                  borderColor="rgba(99, 102, 241, 0.35)"
+                  
                   className="p-5 space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white">🛡️ How to Verify HMAC Signatures in Your Server</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">1-Line Verification</span>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white"> How to Verify HMAC Signatures in Your Server</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">1-Line Verification</span>
                     </div>
                     <div className="flex items-center space-x-1 bg-slate-100 dark:bg-white/5 p-0.5 rounded-lg">
                       {[
@@ -4786,9 +3243,9 @@ print("Delivered status:", response["status"])`}
                           key={lang.id}
                           type="button"
                           onClick={() => setWebhookVerifyLang(lang.id)}
-                          className={`px-2.5 py-1 text-[11px] rounded-md transition ${
+                          className={`px-2.5 py-1 text-xs rounded-md transition ${
                             webhookVerifyLang === lang.id
-                              ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+                              ? 'bg-brand-600 text-white font-semibold '
                               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                           }`}
                         >
@@ -4798,7 +3255,7 @@ print("Delivered status:", response["status"])`}
                     </div>
                   </div>
 
-                  <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
+                  <pre tabIndex={0} className="p-4 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed">
                     <code>
 {webhookVerifyLang === 'node' && `// Express.js Route Handler
 const express = require('express');
@@ -4891,14 +3348,14 @@ async def handle_dakly_webhook(request: Request):
                 <div className="pb-4 border-b border-slate-200 dark:border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-                        🛡️ Zero-Trust Security
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                         Project access
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
-                        👥 Multi-Seat Workspaces
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
+                         Multi-Seat Workspaces
                       </span>
                       {activeProject?.currentUserRole && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-300 border border-slate-200 dark:border-white/10">
+                        <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-300 border border-slate-200 dark:border-white/10">
                           Role: {activeProject.currentUserRole}
                         </span>
                       )}
@@ -4913,30 +3370,29 @@ async def handle_dakly_webhook(request: Request):
 
                   {/* Summary Status Badges */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs">
-                      <span className={`w-2.5 h-2.5 rounded-full ${ipWhitelistEnabledInput ? 'bg-emerald-500 shadow-sm shadow-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
-                      <span className="font-semibold text-slate-800 dark:text-white text-[11px]">
+                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs">
+                      <span className={`w-2.5 h-2.5 rounded-full ${ipWhitelistEnabledInput ? 'bg-emerald-500   ' : 'bg-slate-400'}`}></span>
+                      <span className="font-semibold text-slate-800 dark:text-white text-xs">
                         IP Guard: {ipWhitelistEnabledInput ? `Active (${ipWhitelistList.length} IPs)` : 'Open (Any IP)'}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs">
-                      <Users className="w-3.5 h-3.5 text-indigo-500" />
-                      <span className="font-semibold text-slate-800 dark:text-white text-[11px]">
-                        Team Seats: {teamMembers.length + 1}
+                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs">
+                      <Users className="w-3.5 h-3.5 text-brand-500" />
+                      <span className="font-semibold text-slate-800 dark:text-white text-xs">
+                        Team Seats: {isLoadingMembers ? '…' : teamMembers.length + 1}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Section 1: 🔐 API Key Management & 1-Click Key Rotation */}
+                {/* Section 1:  API Key Management & 1-Click Key Rotation */}
                 <SpotlightCard
-                  spotlightColor="rgba(245, 158, 11, 0.16)"
-                  borderColor="rgba(245, 158, 11, 0.35)"
+                  
                   className="p-6 space-y-4"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-white/5">
                     <div className="flex items-center space-x-3">
-                      <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                         <Key className="w-5 h-5" />
                       </div>
                       <div>
@@ -4953,7 +3409,7 @@ async def handle_dakly_webhook(request: Request):
                         setRotateKeyMsg('');
                         setShowRotateKeyModal(true);
                       }}
-                      className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition active:scale-[0.98]"
+                      className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition active:scale-[0.98]"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
                       <span>Regenerate API Key</span>
@@ -4961,24 +3417,24 @@ async def handle_dakly_webhook(request: Request):
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 space-y-1">
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Active API Key:</span>
+                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 space-y-1">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Active API Key:</span>
                       <div className="flex items-center justify-between pt-1">
-                        <code className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                        <code className="font-mono text-xs font-bold text-brand-600 dark:text-brand-400">
                           {isKeyVisible ? activeProject?.apiKey : `${activeProject?.apiKey?.slice(0, 12)}••••••••••••••••••••••••`}
                         </code>
                         <div className="flex items-center space-x-1.5">
-                          <button
+                          <button aria-label="Toggle API key visibility"
                             type="button"
                             onClick={() => setIsKeyVisible(!isKeyVisible)}
                             className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-white"
                           >
                             {isKeyVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                           </button>
-                          <button
+                          <button aria-label="Copy API key"
                             type="button"
                             onClick={handleCopyApiKey}
-                            className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                            className="p-1 rounded text-slate-400 hover:text-brand-600 dark:hover:text-brand-400"
                           >
                             {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
@@ -4986,13 +3442,13 @@ async def handle_dakly_webhook(request: Request):
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 space-y-1">
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Last Inbound Request:</span>
+                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 space-y-1">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Last Inbound Request:</span>
                       <div className="pt-1 flex items-center justify-between font-mono text-xs">
                         <span className="text-slate-800 dark:text-slate-200">
-                          IP: <b className="text-indigo-500">{activeProject?.lastClientIp || 'None yet'}</b>
+                          IP: <b className="text-brand-600 dark:text-brand-300">{activeProject?.lastClientIp || 'None yet'}</b>
                         </span>
-                        <span className="text-slate-500 text-[11px]">
+                        <span className="text-slate-500 text-xs">
                           {activeProject?.lastApiCallAt ? new Date(activeProject.lastApiCallAt).toLocaleTimeString() : 'Awaiting first call'}
                         </span>
                       </div>
@@ -5000,15 +3456,14 @@ async def handle_dakly_webhook(request: Request):
                   </div>
                 </SpotlightCard>
 
-                {/* Section 2: 🛡️ Server IP Whitelisting (Zero-Trust Guard) */}
+                {/* Section 2:  Server IP Whitelisting (Zero-Trust Guard) */}
                 <SpotlightCard
-                  spotlightColor="rgba(16, 185, 129, 0.16)"
-                  borderColor="rgba(16, 185, 129, 0.35)"
+                  
                   className="p-6 space-y-5"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-white/5">
                     <div className="flex items-center space-x-3">
-                      <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                         <ShieldCheck className="w-5 h-5" />
                       </div>
                       <div>
@@ -5023,7 +3478,7 @@ async def handle_dakly_webhook(request: Request):
                     <button
                       type="button"
                       onClick={() => setIpWhitelistEnabledInput(!ipWhitelistEnabledInput)}
-                      className={`px-4 py-2 rounded-xl border text-xs font-semibold flex items-center space-x-2 transition ${
+                      className={`px-4 py-2 rounded-lg border text-xs font-semibold flex items-center space-x-2 transition ${
                         ipWhitelistEnabledInput
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30'
                           : 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-white/5 dark:text-slate-400 dark:border-white/10'
@@ -5036,17 +3491,17 @@ async def handle_dakly_webhook(request: Request):
 
                   {/* Detected IP Helper Badge */}
                   {detectedClientIp && (
-                    <div className="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                      <div className="flex items-center space-x-2 text-indigo-900 dark:text-indigo-200">
-                        <Globe className="w-4 h-4 text-indigo-500" />
+                    <div className="p-3 rounded-lg bg-brand-50/70 dark:bg-brand-950/20 border border-brand-200 dark:border-brand-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center space-x-2 text-brand-900 dark:text-brand-200">
+                        <Globe className="w-4 h-4 text-brand-500" />
                         <span>
-                          Your current detected caller IP is <code className="font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-500/20">{detectedClientIp}</code>
+                          Your current detected caller IP is <code className="font-mono font-bold px-1.5 py-0.5 rounded bg-brand-100 dark:bg-brand-500/20">{detectedClientIp}</code>
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleAddIpToWhitelist(detectedClientIp)}
-                        className="inline-flex items-center space-x-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                        className="inline-flex items-center space-x-1 text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>+ Add My Current IP</span>
@@ -5060,7 +3515,7 @@ async def handle_dakly_webhook(request: Request):
                       Add Allowed IP or Subnet Range:
                     </label>
                     <div className="flex gap-2">
-                      <input
+                      <input aria-label={"Add Allowed IP or Subnet Range:"}
                         type="text"
                         value={newIpInput}
                         onChange={(e) => setNewIpInput(e.target.value)}
@@ -5071,18 +3526,18 @@ async def handle_dakly_webhook(request: Request):
                           }
                         }}
                         placeholder="e.g. 203.0.113.195, 10.0.0.0/24, or 192.168.1.*"
-                        className="flex-1 bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-inner"
+                        className="flex-1 bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500"
                       />
                       <button
                         type="button"
                         onClick={() => handleAddIpToWhitelist()}
-                        className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition flex items-center space-x-1.5 shadow-sm active:scale-[0.98]"
+                        className="px-4 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs transition flex items-center space-x-1.5 active:scale-[0.98]"
                       >
                         <Plus className="w-4 h-4" />
                         <span>Add</span>
                       </button>
                     </div>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
                       Supports exact IPv4/IPv6, CIDR blocks (e.g. <code className="font-mono">192.168.1.0/24</code>), and wildcards (e.g. <code className="font-mono">10.0.*.*</code>). Leave list empty to allow all IPs.
                     </span>
                   </div>
@@ -5095,7 +3550,7 @@ async def handle_dakly_webhook(request: Request):
                         <button
                           type="button"
                           onClick={() => setIpWhitelistList([])}
-                          className="text-[11px] text-rose-500 hover:underline"
+                          className="text-xs text-rose-500 hover:underline"
                         >
                           Clear All
                         </button>
@@ -5103,7 +3558,7 @@ async def handle_dakly_webhook(request: Request):
                     </div>
 
                     {ipWhitelistList.length === 0 ? (
-                      <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-white/10 text-center text-xs text-slate-500 dark:text-slate-400">
+                      <div className="p-4 rounded-lg border border-dashed border-slate-200 dark:border-white/10 text-center text-xs text-slate-500 dark:text-slate-400">
                         No IP restrictions configured. Requests from any IP address will be accepted.
                       </div>
                     ) : (
@@ -5115,10 +3570,10 @@ async def handle_dakly_webhook(request: Request):
                           return (
                             <div
                               key={ip}
-                              className="inline-flex items-center space-x-2 pl-3 pr-2 py-1.5 rounded-xl bg-white dark:bg-[#12151c] border border-slate-200 dark:border-white/10 shadow-xs font-mono text-xs text-slate-800 dark:text-slate-200"
+                              className="inline-flex items-center space-x-2 pl-3 pr-2 py-1.5 rounded-lg bg-white dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 font-mono text-xs text-slate-800 dark:text-slate-200"
                             >
                               <span>{ip}</span>
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400">
+                              <span className="px-1.5 py-0.2 rounded text-xs font-bold bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400">
                                 {isLocal ? 'Localhost' : isCidr ? 'CIDR' : isWildcard ? 'Wildcard' : 'Exact IP'}
                               </span>
                               <button
@@ -5143,7 +3598,7 @@ async def handle_dakly_webhook(request: Request):
                         {ipWhitelistSaveMsg}
                       </span>
                     ) : (
-                      <span className="text-[11px] text-slate-500 font-mono">
+                      <span className="text-xs text-slate-500 font-mono">
                         Changes apply immediately across all edge nodes.
                       </span>
                     )}
@@ -5152,7 +3607,7 @@ async def handle_dakly_webhook(request: Request):
                       type="button"
                       disabled={isSavingIpWhitelist}
                       onClick={handleSaveIpWhitelistSettings}
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold text-xs transition shadow-md shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center space-x-2"
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold text-xs transition active:scale-[0.98] flex items-center justify-center space-x-2"
                     >
                       <Check className="w-4 h-4" />
                       <span>{isSavingIpWhitelist ? 'Saving...' : 'Save IP Whitelist'}</span>
@@ -5160,15 +3615,14 @@ async def handle_dakly_webhook(request: Request):
                   </div>
                 </SpotlightCard>
 
-                {/* Section 3: 👥 Team Workspaces & Collaborator Seats (RBAC) */}
+                {/* Section 3:  Team Workspaces & Collaborator Seats (RBAC) */}
                 <SpotlightCard
-                  spotlightColor="rgba(99, 102, 241, 0.16)"
-                  borderColor="rgba(99, 102, 241, 0.35)"
+                  
                   className="p-6 space-y-6"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-white/5">
                     <div className="flex items-center space-x-3">
-                      <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                      <div className="p-2.5 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
                         <Users className="w-5 h-5" />
                       </div>
                       <div>
@@ -5179,35 +3633,35 @@ async def handle_dakly_webhook(request: Request):
                       </div>
                     </div>
 
-                    <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
-                      Total Seats: {teamMembers.length + 1}
+                    <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
+                      Total Seats: {isLoadingMembers ? '…' : teamMembers.length + 1}
                     </span>
                   </div>
 
                   {/* Invite Teammate Form */}
-                  <form onSubmit={handleInviteMember} className="p-4 rounded-xl bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 space-y-3">
+                  <form onSubmit={handleInviteMember} className="p-4 rounded-lg bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 space-y-3">
                     <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center space-x-1.5">
-                      <UserPlus className="w-4 h-4 text-indigo-500" />
+                      <UserPlus className="w-4 h-4 text-brand-500" />
                       <span>Invite a Teammate by Email</span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                       <div className="sm:col-span-2">
-                        <input
+                        <input aria-label={"Teammate email"}
                           type="email"
                           required
                           value={inviteMemberEmail}
                           onChange={(e) => setInviteMemberEmail(e.target.value)}
                           placeholder="teammate@company.com"
-                          className="w-full bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-inner"
+                          className="w-full bg-white dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500"
                         />
                       </div>
 
                       <div>
-                        <select
+                        <select aria-label={"Teammate role"}
                           value={inviteMemberRole}
                           onChange={(e) => setInviteMemberRole(e.target.value)}
-                          className="w-full bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-indigo-500"
+                          className="w-full bg-white dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-brand-500"
                         >
                           <option value="admin">Admin (Full Control)</option>
                           <option value="viewer">Viewer (Read-Only)</option>
@@ -5218,7 +3672,7 @@ async def handle_dakly_webhook(request: Request):
                         <button
                           type="submit"
                           disabled={isInvitingMember}
-                          className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center justify-center space-x-1.5 shadow-md shadow-indigo-500/20 active:scale-[0.98]"
+                          className="w-full py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center justify-center space-x-1.5 active:scale-[0.98]"
                         >
                           <UserPlus className="w-4 h-4" />
                           <span>{isInvitingMember ? 'Inviting...' : 'Send Invite'}</span>
@@ -5239,9 +3693,9 @@ async def handle_dakly_webhook(request: Request):
                       Active Collaborator Seats
                     </div>
 
-                    <div className="border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden divide-y divide-slate-200 dark:divide-white/10 bg-white dark:bg-[#080a0f]">
+                    <div className="border border-slate-200 dark:border-white/10 rounded-lg overflow-hidden divide-y divide-slate-200 dark:divide-white/10 bg-white dark:bg-[var(--surface)]">
                       {/* Project Owner Row */}
-                      <div className="p-3.5 flex items-center justify-between bg-indigo-50/30 dark:bg-indigo-950/10 text-xs">
+                      <div className="p-3.5 flex items-center justify-between bg-brand-50/30 dark:bg-brand-950/10 text-xs">
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold flex items-center justify-center border border-amber-500/20 text-xs">
                             ⭐
@@ -5249,17 +3703,17 @@ async def handle_dakly_webhook(request: Request):
                           <div>
                             <div className="font-semibold text-slate-900 dark:text-white flex items-center space-x-1.5">
                               <span>{projectOwner?.name || activeProject?.senderDisplayName || 'Project Owner'}</span>
-                              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 font-bold">
+                              <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 font-bold">
                                 OWNER
                               </span>
                             </div>
-                            <div className="text-[11px] text-slate-500 font-mono">
+                            <div className="text-xs text-slate-500 font-mono">
                               {projectOwner?.email || activeProject?.senderEmail}
                             </div>
                           </div>
                         </div>
 
-                        <span className="text-[11px] text-slate-500 font-mono">
+                        <span className="text-xs text-slate-500 font-mono">
                           Full Privileges
                         </span>
                       </div>
@@ -5268,13 +3722,13 @@ async def handle_dakly_webhook(request: Request):
                       {teamMembers.map((member) => (
                         <div key={member.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center border border-indigo-500/20 text-xs uppercase font-mono">
+                            <div className="w-8 h-8 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold flex items-center justify-center border border-brand-500/20 text-xs font-mono">
                               {member.email.slice(0, 2)}
                             </div>
                             <div>
                               <div className="font-semibold text-slate-900 dark:text-white flex items-center space-x-2">
                                 <span className="font-mono">{member.email}</span>
-                                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold uppercase ${
+                                <span className={`text-xs font-mono px-1.5 py-0.2 rounded font-bold uppercase ${
                                   member.status === 'active'
                                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
                                     : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
@@ -5282,7 +3736,7 @@ async def handle_dakly_webhook(request: Request):
                                   {member.status}
                                 </span>
                               </div>
-                              <div className="text-[10px] text-slate-500">
+                              <div className="text-xs text-slate-500">
                                 Invited by {member.invitedBy || 'Owner'} • {new Date(member.invitedAt || Date.now()).toLocaleDateString()}
                               </div>
                             </div>
@@ -5291,16 +3745,16 @@ async def handle_dakly_webhook(request: Request):
                           <div className="flex items-center space-x-3 self-end sm:self-auto">
                             {/* Role Switcher */}
                             {activeProject?.isOwner ? (
-                              <select
+                              <select aria-label={"Member role"}
                                 value={member.role}
                                 onChange={(e) => handleUpdateMemberRole(member.id, e.target.value)}
-                                className="bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 text-xs rounded-lg px-2.5 py-1 text-slate-800 dark:text-slate-200 font-medium"
+                                className="bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 text-xs rounded-lg px-2.5 py-1 text-slate-800 dark:text-slate-200 font-medium"
                               >
                                 <option value="admin">Admin</option>
                                 <option value="viewer">Viewer</option>
                               </select>
                             ) : (
-                              <span className="font-mono text-xs uppercase font-bold text-slate-600 dark:text-slate-400">
+                              <span className="font-mono text-xs font-bold text-slate-600 dark:text-slate-400">
                                 {member.role}
                               </span>
                             )}
@@ -5336,10 +3790,10 @@ async def handle_dakly_webhook(request: Request):
                 <div className="pb-4 border-b border-slate-200 dark:border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
-                        ⚡ Official Client Libraries
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
+                         Official Client Libraries
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
                         Zero Dependencies
                       </span>
                     </div>
@@ -5351,8 +3805,8 @@ async def handle_dakly_webhook(request: Request):
 
                   {/* Fast Install Cards */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 font-mono text-xs shadow-sm">
-                      <Terminal className="w-3.5 h-3.5 text-indigo-400" />
+                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 font-mono text-xs">
+                      <Terminal className="w-3.5 h-3.5 text-brand-400" />
                       <span>npm i dakly</span>
                       <button
                         onClick={() => handleCopySnippet('install_npm', 'npm i dakly')}
@@ -5367,7 +3821,7 @@ async def handle_dakly_webhook(request: Request):
                       </button>
                     </div>
 
-                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 font-mono text-xs shadow-sm">
+                    <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 font-mono text-xs">
                       <Terminal className="w-3.5 h-3.5 text-emerald-400" />
                       <span>pip install dakly</span>
                       <button
@@ -5394,20 +3848,20 @@ async def handle_dakly_webhook(request: Request):
                     { id: 'express', label: 'Express.js Backend' },
                     { id: 'fetch', label: 'Raw JavaScript fetch' },
                     { id: 'curl', label: 'cURL CLI' },
-                    { id: 'ai_prompt', label: '🤖 AI Prompt (Cursor / Claude)', badge: '1-Click Prompt ⚡' },
+                    { id: 'ai_prompt', label: ' AI Prompt (Cursor / Claude)', badge: '1-Click Prompt ' },
                   ].map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setSnippetLang(tab.id)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 shrink-0 ${
                         snippetLang === tab.id
-                          ? 'bg-indigo-600 text-white shadow-sm font-semibold'
+                          ? 'bg-brand-600 text-white  font-semibold'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5'
                       }`}
                     >
                       <span>{tab.label}</span>
                       {tab.badge && (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-400 text-slate-950">
+                        <span className="px-1.5 py-0.2 rounded text-xs font-bold bg-amber-400 text-slate-950">
                           {tab.badge}
                         </span>
                       )}
@@ -5418,9 +3872,8 @@ async def handle_dakly_webhook(request: Request):
                 {/* If AI Prompt Tab Selected: Full Interactive AI Studio */}
                 {snippetLang === 'ai_prompt' && (
                   <SpotlightCard
-                    spotlightColor="rgba(16, 185, 129, 0.2)"
-                    borderColor="rgba(16, 185, 129, 0.4)"
-                    className="p-6 border border-emerald-500/25 bg-gradient-to-br from-emerald-50/50 via-white to-indigo-50/50 dark:from-emerald-950/25 dark:via-[#0b0e14] dark:to-indigo-950/25 shadow-lg rounded-2xl space-y-5"
+                    
+                    className="p-6 border border-emerald-500/25 rounded-lg space-y-5"
                   >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/10">
                       <div>
@@ -5431,7 +3884,7 @@ async def handle_dakly_webhook(request: Request):
                           </h3>
                         </div>
                         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                          Paste this prompt into Cursor Composer (<kbd className="font-mono bg-slate-200 dark:bg-white/10 px-1.5 py-0.5 rounded text-[10px]">Ctrl+I</kbd> / <kbd className="font-mono bg-slate-200 dark:bg-white/10 px-1.5 py-0.5 rounded text-[10px]">Cmd+I</kbd>), Claude Code, Copilot, or ChatGPT to generate your email service in seconds.
+                          Paste this prompt into Cursor Composer (<kbd className="font-mono bg-slate-200 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs">Ctrl+I</kbd> / <kbd className="font-mono bg-slate-200 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs">Cmd+I</kbd>), Claude Code, Copilot, or ChatGPT to generate your email service in seconds.
                         </p>
                       </div>
 
@@ -5440,15 +3893,15 @@ async def handle_dakly_webhook(request: Request):
                           const prompt = generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL);
                           navigator.clipboard.writeText(prompt);
                           setCopiedSnippetKey('snippets_ai_prompt');
-                          confetti({ particleCount: 35, spread: 65 });
+                          
                           setTimeout(() => setCopiedSnippetKey(null), 2500);
                         }}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center space-x-2 shadow-md shadow-emerald-600/25 active:scale-[0.98] shrink-0"
+                        className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center space-x-2 active:scale-[0.98] shrink-0"
                       >
                         {copiedSnippetKey === 'snippets_ai_prompt' ? (
                           <>
                             <Check className="w-4 h-4 text-white" />
-                            <span>Copied to Clipboard! 🎉</span>
+                            <span>Copied to Clipboard! </span>
                           </>
                         ) : (
                           <>
@@ -5473,7 +3926,7 @@ async def handle_dakly_webhook(request: Request):
                           onClick={() => setAiPromptFramework(fw.id)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                             aiPromptFramework === fw.id
-                              ? 'bg-emerald-600 text-white shadow-xs font-semibold'
+                              ? 'bg-emerald-600 text-white  font-semibold'
                               : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10'
                           }`}
                         >
@@ -5482,17 +3935,17 @@ async def handle_dakly_webhook(request: Request):
                       ))}
                     </div>
 
-                    <div className="rounded-xl overflow-hidden border border-slate-800 bg-[#07090e] text-slate-100 font-mono text-xs">
-                      <div className="px-4 py-2 bg-slate-950/80 border-b border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+                    <div className="rounded-lg overflow-hidden border border-slate-800 bg-[var(--surface)] text-slate-100 font-mono text-xs">
+                      <div className="px-4 py-2 bg-slate-950/80 border-b border-white/5 flex items-center justify-between text-xs text-slate-400">
                         <span className="flex items-center space-x-1.5">
                           <Wand2 className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Ready-to-run prompt with live API key injected</span>
+                          <span>Ready-to-paste prompt with live API key injected</span>
                         </span>
-                        <span className="text-[10px] text-slate-500 font-mono">
+                        <span className="text-xs text-slate-500 font-mono">
                           {generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL).length} characters
                         </span>
                       </div>
-                      <pre className="p-4 max-h-[380px] overflow-y-auto whitespace-pre-wrap leading-relaxed text-[11px] text-slate-200">
+                      <pre tabIndex={0} className="p-4 max-h-[380px] overflow-y-auto whitespace-pre-wrap leading-relaxed text-xs text-slate-200">
                         {generateAiSetupPrompt(aiPromptFramework, activeProject?.apiKey, API_BASE_URL)}
                       </pre>
                     </div>
@@ -5501,27 +3954,26 @@ async def handle_dakly_webhook(request: Request):
 
                 {/* 1. Quick Setup & Ping */}
                 <SpotlightCard
-                  spotlightColor="rgba(99, 102, 241, 0.16)"
-                  borderColor="rgba(99, 102, 241, 0.35)"
+                  
                   className="p-5 space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white">🚀 1. Client Setup & Quota Diagnostics</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Ping & Authenticate</span>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white"> 1. Client Setup & Quota Diagnostics</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Ping & Authenticate</span>
                     </div>
-                    <button
+                    <button aria-label="Copy project API key"
                       onClick={() => {
                         const code = document.getElementById('snippetSetupCode').innerText;
                         handleCopySnippet('setup', code);
                       }}
-                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
+                      className="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center space-x-1 font-medium"
                     >
                       {copiedSnippetKey === 'setup' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedSnippetKey === 'setup' ? 'Copied!' : 'Copy Snippet'}</span>
                     </button>
                   </div>
-                  <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
+                  <pre tabIndex={0} className="p-4 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed">
                     <code id="snippetSetupCode">
 {snippetLang === 'node' && `// npm i dakly
 import { Dakly } from 'dakly';
@@ -5569,27 +4021,26 @@ console.log('Project:', ping.project, '| Remaining:', ping.capacity.remainingTod
 
                 {/* 2. One-Liner OTP Verification */}
                 <SpotlightCard
-                  spotlightColor="rgba(245, 158, 11, 0.16)"
-                  borderColor="rgba(245, 158, 11, 0.35)"
+                  
                   className="p-5 space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white">🔐 2. One-Liner OTP Verification Code</span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">Fast 1-Liner</span>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white"> 2. One-Liner OTP Verification Code</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">Fast 1-Liner</span>
                     </div>
-                    <button
+                    <button aria-label="Copy project API key"
                       onClick={() => {
                         const code = document.getElementById('snippetOtpCode').innerText;
                         handleCopySnippet('otp', code);
                       }}
-                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
+                      className="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center space-x-1 font-medium"
                     >
                       {copiedSnippetKey === 'otp' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedSnippetKey === 'otp' ? 'Copied!' : 'Copy Snippet'}</span>
                     </button>
                   </div>
-                  <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
+                  <pre tabIndex={0} className="p-4 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed">
                     <code id="snippetOtpCode">
 {snippetLang === 'node' && `// Sends pre-rendered security OTP email with zero HTML coding
 const result = await dakly.sendOtp({
@@ -5662,27 +4113,26 @@ console.log('Delivered in:', result.executionTimeMs, 'ms');`}
 
                 {/* 3. Pre-Built Email Templates */}
                 <SpotlightCard
-                  spotlightColor="rgba(16, 185, 129, 0.16)"
-                  borderColor="rgba(16, 185, 129, 0.35)"
+                  
                   className="p-5 space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white">📧 3. Pre-Built Responsive Templates (Welcome, Reset, Invoice)</span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">Zero HTML Required</span>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white"> 3. Pre-Built Responsive Templates (Welcome, Reset, Invoice)</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">Zero HTML Required</span>
                     </div>
-                    <button
+                    <button aria-label="Copy project API key"
                       onClick={() => {
                         const code = document.getElementById('snippetTemplatesCode').innerText;
                         handleCopySnippet('templates', code);
                       }}
-                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
+                      className="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center space-x-1 font-medium"
                     >
                       {copiedSnippetKey === 'templates' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedSnippetKey === 'templates' ? 'Copied!' : 'Copy Snippet'}</span>
                     </button>
                   </div>
-                  <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
+                  <pre tabIndex={0} className="p-4 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed">
                     <code id="snippetTemplatesCode">
 {snippetLang === 'node' && `// 1. Welcome / Onboarding Email
 await dakly.sendWelcome({
@@ -5780,27 +4230,26 @@ app.post('/api/welcome', async (req, res) => {
 
                 {/* 4. College Lecture Notes & PDF Attachments */}
                 <SpotlightCard
-                  spotlightColor="rgba(59, 130, 246, 0.16)"
-                  borderColor="rgba(59, 130, 246, 0.35)"
+                  
                   className="p-5 space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white">📎 4. College Notes & PDF Attachment Delivery</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">15MB Max Support</span>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white"> 4. College Notes & PDF Attachment Delivery</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">15MB Max Support</span>
                     </div>
-                    <button
+                    <button aria-label="Copy project API key"
                       onClick={() => {
                         const code = document.getElementById('snippetPdfCode').innerText;
                         handleCopySnippet('pdf', code);
                       }}
-                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
+                      className="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center space-x-1 font-medium"
                     >
                       {copiedSnippetKey === 'pdf' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedSnippetKey === 'pdf' ? 'Copied!' : 'Copy Snippet'}</span>
                     </button>
                   </div>
-                  <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
+                  <pre tabIndex={0} className="p-4 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed">
                     <code id="snippetPdfCode">
 {snippetLang === 'node' && `// College Notes Delivery with PDF attachment and dynamic variables
 const result = await dakly.sendNotes({
@@ -5896,27 +4345,26 @@ console.log('Result:', result.status, result.trackingId);`}
 
                 {/* 5. Bounce Protection & Error Handling */}
                 <SpotlightCard
-                  spotlightColor="rgba(239, 68, 68, 0.16)"
-                  borderColor="rgba(239, 68, 68, 0.35)"
+                  
                   className="p-5 space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white">🛡️ 5. Bounce Suppression & Exception Handling</span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300">Account Protection</span>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white"> 5. Bounce Suppression & Exception Handling</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300">Account Protection</span>
                     </div>
-                    <button
+                    <button aria-label="Copy project API key"
                       onClick={() => {
                         const code = document.getElementById('snippetErrorsCode').innerText;
                         handleCopySnippet('errors', code);
                       }}
-                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
+                      className="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center space-x-1 font-medium"
                     >
                       {copiedSnippetKey === 'errors' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedSnippetKey === 'errors' ? 'Copied!' : 'Copy Snippet'}</span>
                     </button>
                   </div>
-                  <pre className="p-4 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed shadow-inner">
+                  <pre tabIndex={0} className="p-4 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto leading-relaxed">
                     <code id="snippetErrorsCode">
 {snippetLang === 'node' && `import { 
   Dakly, 
@@ -6008,161 +4456,40 @@ curl -X POST "${API_BASE_URL}/api/send" \\
       </main>
 
       {/* Dashboard Monetized AdSense Banner (Display) */}
-      <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 my-4">
-        <AdBanner slot="5973953697" format="auto" />
-      </div>
+      
 
       {/* Multiplex / Matched Content AdSense Unit (Autorelaxed) */}
-      <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 mb-6">
-        <AdBanner slot="3867645044" format="autorelaxed" />
-      </div>
+      
 
-      {/* Main Website Footer */}
-      <footer className="mt-auto border-t border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-[#080a0f]/80 backdrop-blur-md py-8 text-xs text-slate-500 dark:text-slate-400">
-        <div className="w-full max-w-[1760px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 p-1 flex items-center justify-center">
-              <img src="/logo-square-animated.svg" alt="Dakly" className="w-full h-full object-contain" />
-            </div>
-            <div>
-              <span className="font-bold text-slate-900 dark:text-white">Dakly</span> • Zero-Setup Headless Transactional Email Engine
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-6 flex-wrap justify-center gap-y-2">
-            <button
-              type="button"
-              onClick={() => setShowPrivacyModal(true)}
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition"
-            >
-              Privacy Policy
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowTermsModal(true)}
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition"
-            >
-              Terms of Service
-            </button>
-            <a
-              href="https://github.com/parthpatil1234p-svg/Dakly"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-indigo-600 dark:hover:text-indigo-400 transition flex items-center space-x-1.5"
-            >
-              <GithubIcon className="w-4 h-4" />
-              <span>GitHub</span>
-            </a>
-            <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Port 587 STARTTLS Online</span>
-            </span>
-          </div>
-
-          <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
-            © {new Date().getFullYear()} Dakly. MIT License.
-          </div>
-        </div>
-      </footer>
-
+      <footer className="console-footer"><span>Dakly / Your email workspace</span><button onClick={() => setShowPrivacyModal(true)}>Privacy</button><button onClick={() => setShowTermsModal(true)}>Terms</button></footer>
       {/* Legal & Privacy Policy Modals for Dashboard View */}
       {renderLegalModals()}
 
       {/* MODAL: CREATE PROJECT */}
       {showNewProjModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10 max-w-md w-full space-y-4 shadow-2xl bg-white dark:bg-[#0d1017]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <span>➕</span>
-                <span>Register New Project</span>
-              </h3>
-              <button onClick={() => setShowNewProjModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleCreateProjectSubmit} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Project Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={newProjForm.name}
-                  onChange={(e) => setNewProjForm({ ...newProjForm, name: e.target.value })}
-                  placeholder="e.g. College Notes Portal"
-                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
-                />
-              </div>
-              <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Sender Gmail *</label>
-                <input
-                  type="email"
-                  required
-                  value={newProjForm.senderEmail}
-                  onChange={(e) => setNewProjForm({ ...newProjForm, senderEmail: e.target.value })}
-                  placeholder="e.g. student.notes@gmail.com"
-                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
-                />
-              </div>
-              <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Google App Password (16 chars) *</label>
-                <input
-                  type="password"
-                  required
-                  value={newProjForm.appPassword}
-                  onChange={(e) => setNewProjForm({ ...newProjForm, appPassword: e.target.value })}
-                  placeholder="abcd efgh ijkl mnop"
-                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
-                />
-              </div>
-              <div>
-                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Display Name (Optional)</label>
-                <input
-                  type="text"
-                  value={newProjForm.senderDisplayName}
-                  onChange={(e) => setNewProjForm({ ...newProjForm, senderDisplayName: e.target.value })}
-                  placeholder="e.g. College Notes Bot"
-                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
-                />
-              </div>
-              <div className="pt-2 flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setShowNewProjModal(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={modalLoading}
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
-                >
-                  {modalLoading ? 'Creating...' : 'Create Project'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <Dialog title="Connect a Gmail sender." busy={modalLoading} onClose={() => { setShowNewProjModal(false); setProjectError(''); }}>
+          <p className="dialog-intro">A project gives your app its own API key and delivery log.</p>
+          <form onSubmit={handleCreateProjectSubmit} className="project-form" aria-busy={modalLoading}>
+            {projectError && <div role="alert" className="notice notice-error">{projectError}</div>}
+            <label htmlFor="project-name">Project name<input id="project-name" required value={newProjForm.name} onChange={e => setNewProjForm({ ...newProjForm, name: e.target.value })} disabled={modalLoading} /></label>
+            <label htmlFor="sender-email">Sender Gmail address<input id="sender-email" type="email" autoComplete="email" required value={newProjForm.senderEmail} onChange={e => setNewProjForm({ ...newProjForm, senderEmail: e.target.value })} disabled={modalLoading} /></label>
+            <label htmlFor="app-password">Google App Password<input id="app-password" type="password" autoComplete="new-password" aria-describedby="app-password-help" required value={newProjForm.appPassword} onChange={e => setNewProjForm({ ...newProjForm, appPassword: e.target.value })} disabled={modalLoading} /></label>
+            <p id="app-password-help" className="field-help">Use a 16-character App Password, not your Google password. Requires 2-Step Verification. <a className="text-link" href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer">Get an App Password ↗</a></p>
+            <label htmlFor="sender-name">Sender display name <span className="field-help">(optional)</span><input id="sender-name" value={newProjForm.senderDisplayName} onChange={e => setNewProjForm({ ...newProjForm, senderDisplayName: e.target.value })} disabled={modalLoading} /></label>
+            <div className="form-actions"><button className="button button-outline" type="button" onClick={() => setShowNewProjModal(false)} disabled={modalLoading}>Cancel</button><button type="submit" className="button button-primary" disabled={modalLoading}>{modalLoading ? 'Connecting Gmail…' : 'Connect & create project'}</button></div>
+          </form>
+        </Dialog>
       )}
 
       {/* MODAL: ADD SENDER ALIAS */}
       {isAddAliasModalOpen && aliasTargetSender && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10 max-w-md w-full space-y-4 shadow-2xl bg-white dark:bg-[#0d1017]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <span>🏷️</span>
-                <span>Add Gmail Sender Alias</span>
-              </h3>
-              <button onClick={() => setIsAddAliasModalOpen(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/50 dark:border-indigo-800/30 text-xs text-indigo-800 dark:text-indigo-300 space-y-1">
+        <Dialog title="Add sender alias" onClose={() => setIsAddAliasModalOpen(false)} className="dialog-wide">
+          <div className="legacy-dialog-content">
+            
+            <div className="p-3 rounded-lg bg-brand-50/70 dark:bg-brand-950/30 border border-brand-200/50 dark:border-brand-800/30 text-xs text-brand-800 dark:text-brand-300 space-y-1">
               <div className="font-semibold">Associated Account: <span className="font-mono">{aliasTargetSender.email}</span></div>
-              <p className="text-[11px] leading-relaxed text-indigo-700 dark:text-indigo-400">
-                Ensure this alias (or custom domain address) is already verified in this Gmail account under <strong>Gmail Settings ➔ Accounts ➔ "Send mail as"</strong>.
+              <p className="text-xs leading-relaxed text-brand-700 dark:text-brand-400">
+                Ensure this alias (or custom domain address) is already verified in this Gmail account under <strong>Gmail Settings  Accounts  "Send mail as"</strong>.
               </p>
             </div>
             <form onSubmit={handleAddAliasSubmit} className="space-y-3.5 text-xs">
@@ -6170,25 +4497,25 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Alias Email Address *
                 </label>
-                <input
+                <input aria-label={"Alias Email Address"}
                   type="email"
                   required
                   value={newAliasEmail}
                   onChange={(e) => setNewAliasEmail(e.target.value)}
                   placeholder="e.g. support@yourdomain.com or team@brand.com"
-                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                  className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"
                 />
               </div>
               <div>
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Display Name (Optional)
                 </label>
-                <input
+                <input aria-label={"Display Name (Optional)"}
                   type="text"
                   value={newAliasDisplayName}
                   onChange={(e) => setNewAliasDisplayName(e.target.value)}
                   placeholder="e.g. Acme Support Team"
-                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
+                  className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500"
                 />
               </div>
               <div className="flex items-center space-x-2 pt-1">
@@ -6197,7 +4524,7 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                   id="aliasIsDefault"
                   checked={newAliasIsDefault}
                   onChange={(e) => setNewAliasIsDefault(e.target.checked)}
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                 />
                 <label htmlFor="aliasIsDefault" className="text-slate-700 dark:text-slate-300 select-none cursor-pointer">
                   Set as default 'From' address for dispatches
@@ -6214,29 +4541,21 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                 <button
                   type="submit"
                   disabled={isSavingAlias}
-                  className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition disabled:opacity-50 flex items-center space-x-1.5 shadow-md shadow-indigo-600/20"
+                  className="px-5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-bold transition disabled:opacity-50 flex items-center space-x-1.5"
                 >
                   <span>{isSavingAlias ? 'Saving...' : 'Add Alias'}</span>
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* MODAL: ADD BACKUP GMAIL */}
       {showAddSenderModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10 max-w-md w-full space-y-4 shadow-2xl bg-white dark:bg-[#0d1017]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <span>{stats?.capacity?.senders?.length > 0 ? '🛡️' : '📮'}</span>
-                <span>{stats?.capacity?.senders?.length > 0 ? 'Add Backup Gmail Account' : 'Connect Gmail Sender Account'}</span>
-              </h3>
-              <button onClick={() => setShowAddSenderModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <Dialog title="Connect another Gmail" onClose={() => setShowAddSenderModal(false)} className="dialog-wide">
+          <div className="legacy-dialog-content">
+            
             <p className="text-xs text-slate-600 dark:text-slate-400">
               {stats?.capacity?.senders?.length > 0
                 ? 'Adds a secondary Gmail account to automatically double daily capacity to 1,000+ emails/day.'
@@ -6247,34 +4566,34 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {stats?.capacity?.senders?.length > 0 ? 'Backup Gmail Address *' : 'Gmail Sender Address *'}
                 </label>
-                <input
+                <input aria-label={"Field"}
                   type="email"
                   required
                   value={addSenderForm.email}
                   onChange={(e) => setAddSenderForm({ ...addSenderForm, email: e.target.value })}
                   placeholder="e.g. backup.account@gmail.com"
-                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                  className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"
                 />
               </div>
               <div>
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Google App Password (16 chars) *</label>
-                <input
+                <input aria-label={"Google App Password (16 chars)"}
                   type="password"
                   required
                   value={addSenderForm.appPassword}
                   onChange={(e) => setAddSenderForm({ ...addSenderForm, appPassword: e.target.value })}
                   placeholder="abcd efgh ijkl mnop"
-                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs"
+                  className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"
                 />
               </div>
               <div>
                 <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Display Name (Optional)</label>
-                <input
+                <input aria-label={"Display Name (Optional)"}
                   type="text"
                   value={addSenderForm.displayName}
                   onChange={(e) => setAddSenderForm({ ...addSenderForm, displayName: e.target.value })}
                   placeholder="e.g. Backup Dispatcher"
-                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
+                  className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500"
                 />
               </div>
               <div className="pt-2 flex justify-end space-x-2">
@@ -6288,64 +4607,40 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                 <button
                   type="submit"
                   disabled={modalLoading}
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
+                  className="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-semibold"
                 >
                   {modalLoading ? 'Connecting...' : (stats?.capacity?.senders?.length > 0 ? 'Add Backup Account' : 'Connect Gmail Sender')}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* MODAL: BRAND LOGO (1:1 SQUARE ONLY, 1 IMAGE LIMIT, ANTI-PIRACY GUARD) */}
       {showLogoModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10 max-w-lg w-full space-y-4 shadow-2xl bg-white dark:bg-[#0d1017] my-auto">
+        <Dialog title="Project logo" onClose={() => setShowLogoModal(false)} className="dialog-wide">
+          <div className="legacy-dialog-content">
             
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
-              <div className="flex items-center space-x-2">
-                <div className="p-2 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20">
-                  <ImageIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Brand Logo for {activeProject?.name}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    1:1 Square Logo • 1 Image Limit • Anti-Piracy Protection
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowLogoModal(false);
-                  setLogoFile(null);
-                  setLogoModalError('');
-                }}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            
 
             {/* Anti-Piracy & 1:1 Rules Notice */}
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 space-y-2 text-xs">
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 space-y-2 text-xs">
               <div className="flex items-start space-x-2 text-amber-700 dark:text-amber-400 font-medium">
-                <span className="text-sm">⚠️</span>
+                <span className="text-sm"></span>
                 <span>
                   <b>Strict 1:1 Square Only:</b> Only square logos are accepted (e.g. 200×200, 512×512). Banners and horizontal graphics will be rejected.
                 </span>
               </div>
-              <div className="flex items-start space-x-2 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
-                <span>🛡️</span>
+              <div className="flex items-start space-x-2 text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+                <span></span>
                 <span>
                   <b>Anti-Piracy & Security Guard:</b> Binary magic-byte analysis rejects torrents, executables, scripts, or pirated media files. Max 1.5MB.
                 </span>
               </div>
-              <div className="flex items-start space-x-2 text-slate-600 dark:text-slate-400 text-[11px]">
-                <span>1️⃣</span>
+              <div className="flex items-start space-x-2 text-slate-600 dark:text-slate-400 text-xs">
+                <span>1⃣</span>
                 <span>
                   <b>1 Image Limit:</b> Uploading a new logo automatically replaces any existing logo.
                 </span>
@@ -6354,7 +4649,7 @@ curl -X POST "${API_BASE_URL}/api/send" \\
 
             {/* Error Banner */}
             {logoModalError && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-medium flex items-start space-x-2">
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-medium flex items-start space-x-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-500" />
                 <span>{logoModalError}</span>
               </div>
@@ -6362,18 +4657,18 @@ curl -X POST "${API_BASE_URL}/api/send" \\
 
             {/* Drop Zone / File Picker */}
             <div>
-              <label className="block border-2 border-dashed border-slate-300 dark:border-white/15 hover:border-indigo-500/60 rounded-xl p-5 text-center transition cursor-pointer bg-slate-50/60 dark:bg-[#12151c]/60">
-                <input
+              <label className="block border-2 border-dashed border-slate-300 dark:border-white/15 hover:border-brand-500/60 rounded-lg p-5 text-center transition cursor-pointer bg-slate-50/60 dark:bg-[var(--surface)]/60">
+                <input aria-label={"Click or drag to select your 1:1 Square Logo Supported: PNG, JPG, WebP, SVG • Max 1.5 MB • Exactly 1:1 Aspect Ratio"}
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/svg+xml"
                   onChange={handleLogoFileSelect}
-                  className="hidden"
+                  className="file-input"
                 />
-                <UploadCloud className="w-8 h-8 text-indigo-500 dark:text-indigo-400 mx-auto mb-2" />
+                <UploadCloud className="w-8 h-8 text-brand-500 dark:text-brand-400 mx-auto mb-2" />
                 <div className="text-xs text-slate-800 dark:text-slate-200 font-semibold">
                   Click or drag to select your 1:1 Square Logo
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1">
+                <div className="text-xs text-slate-500 mt-1">
                   Supported: PNG, JPG, WebP, SVG • Max 1.5 MB • Exactly 1:1 Aspect Ratio
                 </div>
               </label>
@@ -6381,21 +4676,21 @@ curl -X POST "${API_BASE_URL}/api/send" \\
 
             {/* Preview Section */}
             {(logoFile || activeProject?.brandLogo?.data) && (
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 space-y-3">
+              <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 space-y-3">
                 <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                   <span>Logo Preview & Dimension Check</span>
                   {logoFile ? (
                     <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                      className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
                         logoFile.isSquare
                           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
                           : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                       }`}
                     >
-                      {logoFile.isSquare ? `✅ 1:1 Square Verified (${logoFile.width}×${logoFile.height}px)` : `❌ Rejected (${logoFile.width}×${logoFile.height}px Banner)`}
+                      {logoFile.isSquare ? ` 1:1 Square Verified (${logoFile.width}×${logoFile.height}px)` : ` Rejected (${logoFile.width}×${logoFile.height}px Banner)`}
                     </span>
                   ) : (
-                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
+                    <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400">
                       Current Active Logo ({activeProject?.brandLogo?.width}×{activeProject?.brandLogo?.height}px)
                     </span>
                   )}
@@ -6403,17 +4698,17 @@ curl -X POST "${API_BASE_URL}/api/send" \\
 
                 <div className="flex items-center space-x-4">
                   {/* Square Box Preview */}
-                  <div className="w-20 h-20 rounded-2xl border-2 border-indigo-500/40 p-1 bg-white dark:bg-[#080a0f] flex items-center justify-center shadow-inner overflow-hidden flex-shrink-0">
+                  <div className="w-20 h-20 rounded-lg border-2 border-brand-500/40 p-1 bg-white dark:bg-[var(--surface)] flex items-center justify-center overflow-hidden flex-shrink-0">
                     <img
                       src={logoFile?.dataUri || activeProject?.brandLogo?.data}
                       alt="1:1 Preview"
-                      className="w-full h-full object-cover rounded-xl"
+                      className="w-full h-full object-cover rounded-lg"
                     />
                   </div>
 
                   {/* Simulated Outgoing Email Header */}
-                  <div className="flex-1 p-2.5 rounded-lg bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/5 text-xs space-y-1">
-                    <div className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">
+                  <div className="flex-1 p-2.5 rounded-lg bg-white dark:bg-[var(--surface)] border border-slate-200 dark:border-white/5 text-xs space-y-1">
+                    <div className="text-xs text-slate-400 font-mono">
                       Simulated Outgoing Email Header:
                     </div>
                     <div className="flex items-center space-x-2 pt-0.5">
@@ -6426,7 +4721,7 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                         {activeProject?.name}
                       </span>
                     </div>
-                    <div className="text-[10px] text-slate-500 font-mono">
+                    <div className="text-xs text-slate-500 font-mono">
                       Your Verification Code: <b>849201</b>
                     </div>
                   </div>
@@ -6466,7 +4761,7 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                   type="button"
                   disabled={!logoFile || !logoFile.isSquare || isUploadingLogo}
                   onClick={handleLogoUploadSubmit}
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-semibold text-xs shadow-md shadow-indigo-500/20 active:scale-[0.98] transition flex items-center space-x-1.5"
+                  className="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white font-semibold text-xs active:scale-[0.98] transition flex items-center space-x-1.5"
                 >
                   {isUploadingLogo ? (
                     <>
@@ -6484,62 +4779,36 @@ curl -X POST "${API_BASE_URL}/api/send" \\
             </div>
 
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* MODAL: BOUNCE PROTECTION & SUPPRESSION LIST */}
       {showSuppressionModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10 max-w-2xl w-full space-y-4 shadow-2xl bg-white dark:bg-[#0d1017] max-h-[90vh] flex flex-col">
+        <Dialog title="Blocked recipients" onClose={() => setShowSuppressionModal(false)} className="dialog-wide">
+          <div className="legacy-dialog-content">
             
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
-              <div className="flex items-start space-x-3">
-                <div className="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                    <span>Bounce Protection & Suppression Guard</span>
-                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20">
-                      {suppressionTotal} Blocked
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Protects your Gmail sender reputation by blocking dispatches to hard-bounced or invalid emails.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowSuppressionModal(false);
-                  setSuppressionActionMsg('');
-                }}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            
 
             {/* Quick Add Form */}
-            <form onSubmit={handleAddSuppressionSubmit} className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 space-y-2.5 text-xs">
-              <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider font-mono flex items-center space-x-1.5">
+            <form onSubmit={handleAddSuppressionSubmit} className="p-3.5 rounded-lg bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 space-y-2.5 text-xs">
+              <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 font-mono flex items-center space-x-1.5">
                 <Ban className="w-3.5 h-3.5 text-rose-500" />
                 <span>Manually Block An Email Address</span>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
-                <input
+                <input aria-label={"Email to block"}
                   type="email"
                   required
                   value={newSuppressionEmail}
                   onChange={(e) => setNewSuppressionEmail(e.target.value)}
                   placeholder="Enter email to suppress (e.g. invalid@test.com)..."
-                  className="flex-1 bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs text-xs"
+                  className="flex-1 bg-white dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono text-xs"
                 />
-                <select
+                <select aria-label={"Reason for blocking"}
                   value={newSuppressionReason}
                   onChange={(e) => setNewSuppressionReason(e.target.value)}
-                  className="bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500"
+                  className="bg-white dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-500"
                 >
                   <option value="MANUAL_BLOCK">Manual Block</option>
                   <option value="HARD_BOUNCE">Hard Bounce</option>
@@ -6549,14 +4818,14 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                 <button
                   type="submit"
                   disabled={isAddingSuppression || !newSuppressionEmail}
-                  className="px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold text-xs transition shadow-sm active:scale-[0.98] flex items-center justify-center space-x-1 flex-shrink-0"
+                  className="px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold text-xs transition active:scale-[0.98] flex items-center justify-center space-x-1 flex-shrink-0"
                 >
                   {isAddingSuppression ? <Activity className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
                   <span>Block Email</span>
                 </button>
               </div>
               {suppressionActionMsg && (
-                <div className="text-[11px] font-mono text-slate-600 dark:text-slate-300">
+                <div className="text-xs font-mono text-slate-600 dark:text-slate-300">
                   {suppressionActionMsg}
                 </div>
               )}
@@ -6565,7 +4834,7 @@ curl -X POST "${API_BASE_URL}/api/send" \\
             {/* Search & List */}
             <div className="flex-1 overflow-y-auto space-y-3 min-h-[220px]">
               <div className="flex items-center justify-between text-xs">
-                <input
+                <input aria-label={"Search blocked recipients"}
                   type="text"
                   value={suppressionSearch}
                   onChange={(e) => {
@@ -6573,45 +4842,45 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                     loadSuppressions(activeProject?.id || activeProject?._id, e.target.value);
                   }}
                   placeholder="Filter suppressed emails..."
-                  className="w-full bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono shadow-xs text-xs"
+                  className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono text-xs"
                 />
               </div>
 
               {isLoadingSuppression ? (
                 <div className="py-12 flex flex-col items-center justify-center text-slate-400 space-y-2">
-                  <Activity className="w-6 h-6 animate-spin text-indigo-500" />
+                  <Activity className="w-6 h-6 animate-spin text-brand-500" />
                   <span className="text-xs">Loading suppression records...</span>
                 </div>
               ) : suppressions.length === 0 ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
                   <ShieldCheck className="w-8 h-8 text-emerald-500/50" />
                   <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">Zero Suppressed Addresses</div>
-                  <div className="text-[11px] text-slate-500 max-w-sm">
+                  <div className="text-xs text-slate-500 max-w-sm">
                     Your suppression list is clean! Any recipient that triggers a hard bounce will automatically be safeguarded here.
                   </div>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100 dark:divide-white/5 border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden">
+                <div className="divide-y divide-slate-100 dark:divide-white/5 border border-slate-200 dark:border-white/10 rounded-lg overflow-hidden">
                   {suppressions.map((item) => (
                     <div
                       key={item._id}
-                      className="p-3 bg-white dark:bg-[#0d1017] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition"
+                      className="p-3 bg-white dark:bg-[var(--surface)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition"
                     >
                       <div className="space-y-0.5">
                         <div className="flex items-center space-x-2">
                           <span className="font-mono font-medium text-slate-900 dark:text-slate-200">{item.email}</span>
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                          <span className="px-1.5 py-0.5 rounded text-xs font-mono font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                             {item.reason}
                           </span>
                         </div>
-                        <div className="text-[10px] text-slate-500 font-mono">
+                        <div className="text-xs text-slate-500 font-mono">
                           {item.bounceCode ? `SMTP: ${item.bounceCode.slice(0, 60)}` : item.details || 'Blocked by system'} • Prevented {item.blockedDispatchesCount || 0} dispatches
                         </div>
                       </div>
 
                       <button
                         onClick={() => handleRemoveSuppression(item._id)}
-                        className="px-2.5 py-1 rounded bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 dark:bg-white/5 dark:hover:bg-rose-500/10 dark:text-slate-400 dark:hover:text-rose-400 text-[11px] font-mono transition flex items-center space-x-1"
+                        className="px-2.5 py-1 rounded bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 dark:bg-white/5 dark:hover:bg-rose-500/10 dark:text-slate-400 dark:hover:text-rose-400 text-xs font-mono transition flex items-center space-x-1"
                         title="Unblock this email address"
                       >
                         <UserX className="w-3 h-3" />
@@ -6625,8 +4894,8 @@ curl -X POST "${API_BASE_URL}/api/send" \\
 
             {/* Footer */}
             <div className="pt-2 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs">
-              <span className="text-[11px] text-slate-500">
-                💡 Tip: Never unblock addresses that don't exist, as Google penalizes repeated bounces.
+              <span className="text-xs text-slate-500">
+                 Tip: Never unblock addresses that don't exist, as Google penalizes repeated bounces.
               </span>
               <button
                 type="button"
@@ -6641,47 +4910,27 @@ curl -X POST "${API_BASE_URL}/api/send" \\
             </div>
 
           </div>
-        </div>
+        </Dialog>
       )}
 
       {/* MODAL: ROTATE API KEY CONFIRMATION */}
       {showRotateKeyModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10 max-w-md w-full space-y-4 shadow-2xl bg-white dark:bg-[#0d1017] my-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
-              <div className="flex items-center space-x-2">
-                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  <RefreshCw className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Rotate API Key
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Instant credential revocation & re-issue
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowRotateKeyModal(false)}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <Dialog title="Rotate API key" onClose={() => setShowRotateKeyModal(false)} className="dialog-wide">
+          <div className="legacy-dialog-content">
+            
 
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2 text-xs">
+            <div className="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/20 space-y-2 text-xs">
               <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center space-x-1.5">
                 <ShieldAlert className="w-4 h-4 flex-shrink-0" />
                 <span>Immediate Invalidation Warning:</span>
               </div>
-              <p className="text-amber-900/80 dark:text-amber-200/80 leading-relaxed text-[11px]">
+              <p className="text-amber-900/80 dark:text-amber-200/80 leading-relaxed text-xs">
                 Rotating your API key will <b>permanently and immediately invalidate</b> your current key. Any live applications, webhooks, or scheduled tasks using the previous key will instantly stop delivering emails until updated with the new key.
               </p>
             </div>
 
             {rotateKeyMsg && (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
                 {rotateKeyMsg}
               </div>
             )}
@@ -6698,14 +4947,14 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                 type="button"
                 disabled={isRotatingKey}
                 onClick={handleRotateApiKey}
-                className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold transition shadow-md shadow-amber-500/20 active:scale-[0.98] flex items-center space-x-1.5"
+                className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold transition active:scale-[0.98] flex items-center space-x-1.5"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isRotatingKey ? 'animate-spin' : ''}`} />
                 <span>{isRotatingKey ? 'Regenerating Key...' : 'Confirm & Rotate Key'}</span>
               </button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
     </div>

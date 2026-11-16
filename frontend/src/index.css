@@ -1,138 +1,25 @@
+@import "@fontsource/manrope/latin-400.css";
+@import "@fontsource/manrope/latin-500.css";
+@import "@fontsource/manrope/latin-600.css";
+@import "@fontsource/manrope/latin-700.css";
+@import "@fontsource/ibm-plex-mono/latin-400.css";
 @import "tailwindcss";
-
+@import "./design.css";
 @custom-variant dark (&:where(.dark, .dark *));
+@theme {
+ --font-sans: 'Manrope', sans-serif;
+ --font-mono: 'IBM Plex Mono', monospace;
+ --color-brand-50: #f0f4ed; --color-brand-100: #e1eade; --color-brand-200: #c5d8cb;
+ --color-brand-300: #9bc0a9; --color-brand-400: #80ad94; --color-brand-500: #346c55;
+ --color-brand-600: #163d35; --color-brand-700: #163d35; --color-brand-800: #163d35;
+ --color-brand-900: #112d26; --color-brand-950: #10271f;
+ --color-slate-50: #f4f1e9; --color-slate-100: #eae8df; --color-slate-200: #d1d3c9;
+ --color-slate-300: #b5c2b8; --color-slate-400: #5b665f; --color-slate-500: #5b665f;
+ --color-slate-600: #49594e; --color-slate-700: #354a3c; --color-slate-800: #293d32;
+ --color-slate-900: #222c28; --color-slate-950: #141e19;
+ --color-emerald-400: #9bc0a9; --color-emerald-500: #276449; --color-emerald-600: #276449;
+ --color-amber-400: #edc88b; --color-amber-500: #9c5e16; --color-amber-600: #855016;
+ --color-rose-400: #ffb4a5; --color-rose-500: #a62f26; --color-rose-600: #a62f26;
+}
+@layer base { body { background: var(--paper); color: var(--ink); font-family: var(--font-sans); } }
 
-@layer base {
-  body {
-    background-color: #f8fafc;
-    color: #0f172a;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-image: radial-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px);
-    background-size: 28px 28px;
-    background-position: -1px -1px;
-    min-height: 100vh;
-    transition: background-color 0.25s ease, color 0.25s ease;
-  }
-
-  html.dark body {
-    background-color: #07080c;
-    color: #f1f5f9;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  }
-
-  code, pre, kbd, samp, .font-mono {
-    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  }
-}
-
-/* Linear & Raycast Aesthetic Gradients */
-.hero-gradient-title {
-  background: linear-gradient(135deg, #0f172a 0%, #312e81 40%, #4338ca 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-html.dark .hero-gradient-title {
-  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 40%, #818cf8 80%, #34d399 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.hero-subtitle-gradient {
-  background: linear-gradient(135deg, #475569 0%, #1e293b 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-html.dark .hero-subtitle-gradient {
-  background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Glass Card & Surfaces */
-.glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.glass-card:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: 0 8px 30px -4px rgba(99, 102, 241, 0.08);
-}
-
-html.dark .glass-card {
-  background: linear-gradient(135deg, rgba(16, 19, 28, 0.85) 0%, rgba(10, 12, 18, 0.92) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
-}
-
-html.dark .glass-card:hover {
-  border-color: rgba(99, 102, 241, 0.35);
-  box-shadow: 0 8px 30px -4px rgba(99, 102, 241, 0.12);
-}
-
-/* Radar Beacon Ring Animation */
-@keyframes radar-pulse {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
-}
-
-.radar-beacon {
-  animation: radar-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
-}
-
-/* Subtle Shimmer Border Animation */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.shimmer-badge {
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.25) 50%, rgba(99, 102, 241, 0.1) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 4s infinite linear;
-}
-
-/* Custom Sleek Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-html.dark ::-webkit-scrollbar-track {
-  background: #090a0f;
-}
-html.dark ::-webkit-scrollbar-thumb {
-  background: #1e2230;
-}
-html.dark ::-webkit-scrollbar-thumb:hover {
-  background: #33394d;
-}
