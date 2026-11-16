@@ -391,11 +391,12 @@ export default function App() {
   const [templateSendResult, setTemplateSendResult] = useState(null);
   const [templateCodeLang, setTemplateCodeLang] = useState('node'); // 'node' | 'python' | 'fetch' | 'curl'
   const [copiedTemplateCode, setCopiedTemplateCode] = useState(false);
-  const [templateIframeHeight, setTemplateIframeHeight] = useState(720);
+  const [templateIframeHeight, setTemplateIframeHeight] = useState(940);
   const templateIframeRef = useRef(null);
 
   // Custom Templates & Pro Tier State
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [selectedPlanCycle, setSelectedPlanCycle] = useState('monthly'); // 'monthly' | 'yearly'
   const [isUpgradingPlan, setIsUpgradingPlan] = useState(false);
   const [upgradeError, setUpgradeError] = useState('');
   const [showCustomTemplateModal, setShowCustomTemplateModal] = useState(false);
@@ -821,40 +822,66 @@ export default function App() {
           doc.body.style.margin = '0';
           doc.body.style.padding = '0';
         }
-        const scrollH = Math.max(
+        let maxBottom = Math.max(
           doc.body?.scrollHeight || 0,
           doc.documentElement?.scrollHeight || 0,
           doc.body?.offsetHeight || 0,
           doc.documentElement?.offsetHeight || 0
         );
-        if (scrollH > 150) {
-          setTemplateIframeHeight(scrollH + 32);
+        const children = doc.body?.children;
+        if (children && children.length > 0) {
+          for (let i = 0; i < children.length; i++) {
+            const r = children[i].getBoundingClientRect();
+            if (r.bottom > maxBottom) {
+              maxBottom = r.bottom;
+            }
+          }
+        }
+        if (maxBottom > 150) {
+          setTemplateIframeHeight(Math.max(Math.ceil(maxBottom) + 40, 720));
         }
       }
     } catch (_) {}
   };
 
   useEffect(() => {
+    const handleFrameMsg = (e) => {
+      if (e.data && e.data.type === 'DAKLY_FRAME_HEIGHT' && typeof e.data.height === 'number') {
+        const measured = e.data.height;
+        if (measured > 150) {
+          setTemplateIframeHeight(Math.max(measured + 40, 720));
+        }
+      }
+    };
+    window.addEventListener('message', handleFrameMsg);
+    return () => window.removeEventListener('message', handleFrameMsg);
+  }, []);
+
+  useEffect(() => {
     syncIframeHeight();
     const t1 = setTimeout(syncIframeHeight, 80);
     const t2 = setTimeout(syncIframeHeight, 250);
     const t3 = setTimeout(syncIframeHeight, 600);
+    const t4 = setTimeout(syncIframeHeight, 1200);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
+      clearTimeout(t4);
     };
   }, [templatePreviewHtml, previewDevice, selectedTemplateId]);
 
   const preparedPreviewHtml = useMemo(() => {
     if (!templatePreviewHtml) return '';
-    const injectStyle = `
+    const injectStyleAndScript = `
       <style>
         html, body {
           overflow: hidden !important;
           margin: 0 !important;
           padding: 0 !important;
           background-color: #ffffff !important;
+          height: auto !important;
+          min-height: 100% !important;
         }
         ::-webkit-scrollbar {
           display: none !important;
@@ -866,11 +893,46 @@ export default function App() {
           -ms-overflow-style: none !important;
         }
       </style>
+      <script>
+        (function() {
+          function postDaklyHeight() {
+            if (!document.body) return;
+            var h = Math.max(
+              document.body.scrollHeight || 0,
+              document.documentElement ? document.documentElement.scrollHeight : 0,
+              document.body.offsetHeight || 0,
+              document.documentElement ? document.documentElement.offsetHeight : 0
+            );
+            var children = document.body.children;
+            if (children) {
+              for (var i = 0; i < children.length; i++) {
+                var rect = children[i].getBoundingClientRect();
+                if (rect.bottom > h) {
+                  h = rect.bottom;
+                }
+              }
+            }
+            if (h > 100) {
+              window.parent.postMessage({ type: 'DAKLY_FRAME_HEIGHT', height: Math.ceil(h) }, '*');
+            }
+          }
+          window.addEventListener('load', postDaklyHeight);
+          window.addEventListener('resize', postDaklyHeight);
+          if (typeof ResizeObserver !== 'undefined' && document.body) {
+            new ResizeObserver(postDaklyHeight).observe(document.body);
+          }
+          setTimeout(postDaklyHeight, 20);
+          setTimeout(postDaklyHeight, 100);
+          setTimeout(postDaklyHeight, 300);
+          setTimeout(postDaklyHeight, 600);
+          setTimeout(postDaklyHeight, 1200);
+        })();
+      </script>
     `;
     if (templatePreviewHtml.includes('</head>')) {
-      return templatePreviewHtml.replace('</head>', `${injectStyle}</head>`);
+      return templatePreviewHtml.replace('</head>', `${injectStyleAndScript}</head>`);
     }
-    return `${injectStyle}${templatePreviewHtml}`;
+    return `${injectStyleAndScript}${templatePreviewHtml}`;
   }, [templatePreviewHtml]);
 
   // Combined system and project-specific custom templates
@@ -901,16 +963,17 @@ export default function App() {
     try {
       setIsUpgradingPlan(true);
       setUpgradeError('');
-      const res = await upgradeProjectToPro(activeProject.id, 'pro', authToken);
+      const res = await upgradeProjectToPro(activeProject.id, 'pro', selectedPlanCycle, authToken);
       if (res.success) {
         setActiveProject((prev) => ({
           ...prev,
           plan: 'pro',
+          planCycle: selectedPlanCycle,
           isPro: true,
         }));
         setProjects((prev) =>
           prev.map((p) =>
-            p.id === activeProject.id ? { ...p, plan: 'pro', isPro: true } : p
+            p.id === activeProject.id ? { ...p, plan: 'pro', planCycle: selectedPlanCycle, isPro: true } : p
           )
         );
         setShowUpgradeModal(false);
@@ -2275,7 +2338,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                       {activeProject?.plan === 'pro' ? (
                         <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center space-x-1">
                           <Sparkles className="w-3.5 h-3.5" />
-                          <span>Pro Plan Active</span>
+                          <span>Pro Plan Active ({activeProject?.planCycle === 'yearly' ? '₹216/yr' : '₹20/mo'})</span>
                         </span>
                       ) : (
                         <button
@@ -2700,15 +2763,17 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                         title="Template Live Preview"
                         srcDoc={preparedPreviewHtml || '<div style="padding: 40px; text-align: center; color: #64748b; font-family: sans-serif;">Rendering preview...</div>'}
                         onLoad={syncIframeHeight}
+                        scrolling="no"
                         style={{
                           width: previewDevice === 'mobile' ? '375px' : '100%',
                           height: `${templateIframeHeight}px`,
-                          minHeight: '480px',
+                          minHeight: '680px',
                           border: 'none',
                           borderRadius: '8px',
                           background: '#ffffff',
                           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
-                          transition: 'width 0.2s ease, height 0.2s ease',
+                          overflow: 'hidden',
+                          transition: 'width 0.2s ease, height 0.15s ease',
                         }}
                       />
                     </div>
@@ -5443,20 +5508,110 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                 </div>
               </div>
 
-              {/* Pricing Offer Card */}
-              <div className="p-4 rounded-xl border border-brand-500/30 bg-brand-50/50 dark:bg-brand-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-bold text-slate-900 dark:text-white text-base">Dakly Pro Developer Pass</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-400 text-slate-900">1 YEAR</span>
-                  </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Active for project: <strong className="text-slate-700 dark:text-slate-300">{activeProject?.name}</strong>
-                  </div>
+              {/* Plan Selection Cards: Monthly (₹20/mo) vs Yearly (₹1,499/yr) */}
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Select Subscription Plan:
                 </div>
-                <div className="text-left sm:text-right">
-                  <div className="text-xl font-bold text-slate-900 dark:text-white">₹1,499<span className="text-xs font-normal text-slate-500">/year</span></div>
-                  <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Instant sandbox activation</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  
+                  {/* Option 1: Monthly Plan (₹20 / month) */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={selectedPlanCycle === 'monthly'}
+                    onClick={() => setSelectedPlanCycle('monthly')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedPlanCycle('monthly');
+                      }
+                    }}
+                    className={`cursor-pointer rounded-xl p-4 border transition relative flex flex-col justify-between ${
+                      selectedPlanCycle === 'monthly'
+                        ? 'border-brand-500 ring-2 ring-brand-500 bg-brand-50/70 dark:bg-brand-950/40'
+                        : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 bg-slate-50/40 dark:bg-white/[0.02]'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-slate-900 dark:text-white text-sm">
+                          Pro Monthly
+                        </span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-200 dark:bg-white/10 text-slate-800 dark:text-slate-200">
+                          MONTHLY
+                        </span>
+                      </div>
+                      <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                        ₹20
+                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                          /month
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                        Low commitment. Full access to Custom Templates, brand logos &amp; multi-account failover.
+                      </p>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs">
+                      <span className="text-slate-500">Billed monthly</span>
+                      <span className={`font-semibold ${selectedPlanCycle === 'monthly' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`}>
+                        {selectedPlanCycle === 'monthly' ? '● Selected' : 'Select'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Option 2: Yearly Plan (₹20 x 12 with 10% discount = ₹216 / year) */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={selectedPlanCycle === 'yearly'}
+                    onClick={() => setSelectedPlanCycle('yearly')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedPlanCycle('yearly');
+                      }
+                    }}
+                    className={`cursor-pointer rounded-xl p-4 border transition relative flex flex-col justify-between ${
+                      selectedPlanCycle === 'yearly'
+                        ? 'border-brand-500 ring-2 ring-brand-500 bg-brand-50/70 dark:bg-brand-950/40'
+                        : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 bg-slate-50/40 dark:bg-white/[0.02]'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-slate-900 dark:text-white text-sm">
+                          Pro Annual Pass
+                        </span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-400 text-slate-900">
+                          10% OFF
+                        </span>
+                      </div>
+                      <div className="flex items-baseline space-x-1.5">
+                        <span className="text-sm line-through text-slate-400 dark:text-slate-500">
+                          ₹240
+                        </span>
+                        <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                          ₹216
+                          <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                            /year
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                        Monthly plan × 12 with 10% discount applied (save ₹24). Full year uninterrupted access.
+                      </p>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs">
+                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">₹18/mo effective</span>
+                      <span className={`font-semibold ${selectedPlanCycle === 'yearly' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`}>
+                        {selectedPlanCycle === 'yearly' ? '● Selected' : 'Select'}
+                      </span>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
@@ -5484,7 +5639,11 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      <span>Activate Dakly Pro Pass</span>
+                      <span>
+                        {selectedPlanCycle === 'monthly'
+                          ? 'Activate Pro Monthly (₹20/mo)'
+                          : 'Activate Pro Annual (₹216/yr • 10% OFF)'}
+                      </span>
                     </>
                   )}
                 </button>
@@ -5698,12 +5857,14 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                   <iframe
                     title="Draft Live Preview"
                     srcDoc={customTemplateDraftHtml || '<div style="padding: 40px; text-align: center; color: #64748b; font-family: sans-serif;">Rendering draft preview...</div>'}
+                    scrolling="no"
                     style={{
                       width: '100%',
                       minHeight: '340px',
                       border: 'none',
                       borderRadius: '8px',
                       background: '#ffffff',
+                      overflow: 'hidden',
                     }}
                   />
                 </div>

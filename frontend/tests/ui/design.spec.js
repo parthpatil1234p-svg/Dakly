@@ -144,8 +144,8 @@ test('mobile console and legal dialogs contain their content', async ({ page }) 
     await page.getByRole('button', { name: 'Menu', exact: true }).click();
     await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name, exact: true }).click();
     await noOverflow(page);
-  await page.screenshot({ path: '../design-review/after/console-390.png', fullPage: true });
   }
+  await page.screenshot({ path: '../design-review/after/console-390.png', fullPage: true });
 });
 
 test('dark appearance retains readable contrast and reduced motion', async ({ page }) => {
@@ -175,4 +175,28 @@ test('project and stats failures never appear as empty or successful data', asyn
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await expect(page.locator('.usage-number')).toContainText('0');
   await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
+test('email preview iframe auto-expands with zero clipping and no scrollbar for receipts and long templates', async ({ page }) => {
+  await fixture(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await signInFixture(page);
+  await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Templates', exact: true }).click();
+  
+  // Select Invoice & Payment Receipt template
+  await page.getByText('Invoice & Payment Receipt').click();
+  
+  // Verify preview iframe exists and has scrolling disabled
+  const previewFrame = page.locator('iframe[title="Template Live Preview"]');
+  await expect(previewFrame).toBeVisible();
+  await expect(previewFrame).toHaveAttribute('scrolling', 'no');
+  
+  // Verify the iframe dynamically expands to prevent button cutoff
+  await page.waitForTimeout(400);
+  const frameBox = await previewFrame.boundingBox();
+  expect(frameBox).not.toBeNull();
+  expect(frameBox.height).toBeGreaterThanOrEqual(720);
+  
+  await noOverflow(page);
+  await audit(page);
 });

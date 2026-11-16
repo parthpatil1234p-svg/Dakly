@@ -390,6 +390,11 @@ const projectSchema = new mongoose.Schema(
       enum: ['free', 'pro'],
       default: 'free',
     },
+    planCycle: {
+      type: String,
+      enum: ['monthly', 'yearly'],
+      default: 'monthly',
+    },
     // Custom Transactional Templates (Paid / Pro Tier Exclusive)
     customTemplates: [customTemplateSchema],
   },

@@ -179,6 +179,7 @@ async function getProjects(req, res) {
           url: `/api/projects/${p._id}/logo`,
         } : null,
         plan: p.plan || 'free',
+        planCycle: p.planCycle || 'monthly',
         isPro: p.plan === 'pro',
         customTemplates: (p.customTemplates || []).map((ct) => ({
           id: ct._id,
@@ -284,6 +285,7 @@ async function updateProject(req, res) {
         lastWebhookLatencyMs: project.lastWebhookLatencyMs,
         lastWebhookError: project.lastWebhookError,
         plan: project.plan || 'free',
+        planCycle: project.planCycle || 'monthly',
         isPro: project.plan === 'pro',
         customTemplates: project.customTemplates || [],
       },
@@ -1418,7 +1420,7 @@ async function getProjectAliases(req, res) {
 async function upgradeProjectPlan(req, res) {
   try {
     const { id } = req.params;
-    const { plan = 'pro' } = req.body;
+    const { plan = 'pro', cycle = 'monthly' } = req.body;
 
     const project = await Project.findById(id);
     if (!project) {
@@ -1434,17 +1436,19 @@ async function upgradeProjectPlan(req, res) {
     }
 
     project.plan = plan === 'pro' ? 'pro' : 'free';
+    project.planCycle = cycle === 'yearly' ? 'yearly' : 'monthly';
     await project.save();
 
     res.json({
       success: true,
       message: project.plan === 'pro'
-        ? 'Congratulations! Project has been upgraded to Dakly Pro.'
+        ? `Congratulations! Project has been upgraded to Dakly Pro (${project.planCycle === 'yearly' ? 'Annual Pass ₹216/year (10% off)' : 'Monthly Pass ₹20/month'}).`
         : 'Project plan set to Free.',
       project: {
         id: project._id,
         name: project.name,
         plan: project.plan,
+        planCycle: project.planCycle,
         isPro: project.plan === 'pro',
       },
     });

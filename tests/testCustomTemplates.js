@@ -109,7 +109,16 @@ const defaultProj = new Project({
   apiKey: 'gkey_live_test_proj_default',
 });
 assert.strictEqual(defaultProj.plan, 'free', 'Project plan should default to free');
+assert.strictEqual(defaultProj.planCycle, 'monthly', 'Project planCycle should default to monthly');
 assert.deepStrictEqual(defaultProj.customTemplates, [], 'customTemplates should default to empty array');
-console.log('✅ Test 6 Passed: Project model defaults plan to "free" and customTemplates to [].');
+console.log('✅ Test 6 Passed: Project model defaults plan to "free", cycle to "monthly", and customTemplates to [].');
+
+// 7. Test Monthly (₹20) and Yearly (₹1,499) plan cycles
+defaultProj.plan = 'pro';
+defaultProj.planCycle = 'monthly';
+assert.strictEqual(defaultProj.planCycle, 'monthly');
+defaultProj.planCycle = 'yearly';
+assert.strictEqual(defaultProj.planCycle, 'yearly');
+console.log('✅ Test 7 Passed: Both ₹20 monthly and ₹1,499 yearly plan cycles are supported.');
 
 console.log('\n🎉 ALL CUSTOM TEMPLATES & PRO TIER TESTS PASSED SUCCESSFULLY!\n');

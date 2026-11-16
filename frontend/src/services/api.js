@@ -382,7 +382,7 @@ export async function removeProjectMember(projectId, memberId, token) {
 }
 
 // Subscription & Paid Pro Plan Endpoints
-export async function upgradeProjectToPro(projectId, plan = 'pro', token) {
+export async function upgradeProjectToPro(projectId, plan = 'pro', cycle = 'monthly', token) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -390,7 +390,7 @@ export async function upgradeProjectToPro(projectId, plan = 'pro', token) {
   const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/upgrade`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ plan }),
+    body: JSON.stringify({ plan, cycle }),
   });
   return res.json();
 }
