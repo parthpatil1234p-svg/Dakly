@@ -80,6 +80,10 @@ import {
   addProjectMember,
   updateProjectMember,
   removeProjectMember,
+  upgradeProjectToPro,
+  createCustomTemplate,
+  updateCustomTemplate,
+  deleteCustomTemplate,
 } from './services/api';
 
 const DEFAULT_TEMPLATES = [
@@ -389,6 +393,26 @@ export default function App() {
   const [copiedTemplateCode, setCopiedTemplateCode] = useState(false);
   const [templateIframeHeight, setTemplateIframeHeight] = useState(720);
   const templateIframeRef = useRef(null);
+
+  // Custom Templates & Pro Tier State
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isUpgradingPlan, setIsUpgradingPlan] = useState(false);
+  const [upgradeError, setUpgradeError] = useState('');
+  const [showCustomTemplateModal, setShowCustomTemplateModal] = useState(false);
+  const [isSavingCustomTemplate, setIsSavingCustomTemplate] = useState(false);
+  const [customTemplateError, setCustomTemplateError] = useState('');
+  const [customTemplateDraftTab, setCustomTemplateDraftTab] = useState('edit'); // 'edit' | 'preview'
+  const [customTemplateDraftHtml, setCustomTemplateDraftHtml] = useState('');
+  const [editingCustomTemplateId, setEditingCustomTemplateId] = useState(null);
+  const [customTemplateForm, setCustomTemplateForm] = useState({
+    templateId: '',
+    name: '',
+    badge: 'Custom',
+    description: '',
+    subject: 'Order #{{orderNumber}} has shipped, {{name}}!',
+    html: '',
+    sampleVarsJson: '{}',
+  });
 
   // Landing Page Interactive Simulator
 
@@ -848,6 +872,219 @@ export default function App() {
     }
     return `${injectStyle}${templatePreviewHtml}`;
   }, [templatePreviewHtml]);
+
+  // Combined system and project-specific custom templates
+  const allTemplates = useMemo(() => {
+    const customList = (activeProject?.customTemplates || []).map((ct) => ({
+      id: ct.templateId,
+      name: ct.name,
+      badge: ct.badge || 'Custom',
+      badgeColor: 'border-brand-500/30 text-brand-600 bg-brand-500/10 dark:text-brand-400',
+      description: ct.description || 'Custom brand template designed for your app.',
+      sampleVars: ct.sampleVars || {},
+      fields: ct.fields && ct.fields.length > 0 ? ct.fields : Object.keys(ct.sampleVars || {}).map((k) => ({
+        key: k,
+        label: k.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()),
+        placeholder: String(ct.sampleVars[k] || ''),
+        isTextarea: false,
+      })),
+      isCustom: true,
+      rawHtml: ct.html,
+      rawSubject: ct.subject,
+    }));
+    return [...DEFAULT_TEMPLATES, ...customList];
+  }, [activeProject?.customTemplates]);
+
+  // Pro Plan Upgrade Handler
+  const handleUpgradeToPro = async () => {
+    if (!activeProject) return;
+    try {
+      setIsUpgradingPlan(true);
+      setUpgradeError('');
+      const res = await upgradeProjectToPro(activeProject.id, 'pro', authToken);
+      if (res.success) {
+        setActiveProject((prev) => ({
+          ...prev,
+          plan: 'pro',
+          isPro: true,
+        }));
+        setProjects((prev) =>
+          prev.map((p) =>
+            p.id === activeProject.id ? { ...p, plan: 'pro', isPro: true } : p
+          )
+        );
+        setShowUpgradeModal(false);
+        openNewCustomTemplateModal();
+      } else {
+        setUpgradeError(res.error || 'Failed to activate Pro pass.');
+      }
+    } catch (err) {
+      setUpgradeError(err.message || 'Error activating Pro pass.');
+    } finally {
+      setIsUpgradingPlan(false);
+    }
+  };
+
+  const openNewCustomTemplateModal = () => {
+    setEditingCustomTemplateId(null);
+    setCustomTemplateError('');
+    setCustomTemplateDraftTab('edit');
+    setCustomTemplateForm({
+      templateId: '',
+      name: '',
+      badge: 'Custom',
+      description: '',
+      subject: 'Order #{{orderNumber}} has shipped, {{name}}!',
+      html: `<h1 style="margin: 0 0 12px; font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.3px;">\n  Hi {{name}}, your order has shipped!\n</h1>\n<p style="margin: 0 0 20px; font-size: 15px; color: #475569; line-height: 1.5;">\n  We are happy to let you know that package <strong>#{{orderNumber}}</strong> is on its way to you via {{courier}}.\n</p>\n\n<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;">\n  <div style="font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Tracking Number</div>\n  <div style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 4px; font-family: monospace;">{{trackingNumber}}</div>\n</div>\n\n<div style="text-align: center; margin: 24px 0;">\n  <a href="{{trackingUrl}}" style="display: inline-block; background: #163d35; color: #ffffff; font-size: 14px; font-weight: 600; padding: 12px 28px; border-radius: 8px; text-decoration: none;">\n    Track Your Shipment &rarr;\n  </a>\n</div>\n\n<p style="margin: 0; font-size: 13px; color: #94a3b8; text-align: center;">\n  Expected delivery date: <strong>{{estimatedDate}}</strong>\n</p>`,
+      sampleVarsJson: JSON.stringify(
+        {
+          name: 'Aarav',
+          orderNumber: 'ORD-78291',
+          courier: 'BlueDart',
+          trackingNumber: 'BD-94182049',
+          trackingUrl: 'https://carrier.com/track',
+          estimatedDate: 'Friday, 24 Oct',
+        },
+        null,
+        2
+      ),
+    });
+    setShowCustomTemplateModal(true);
+  };
+
+  const openEditCustomTemplateModal = (ct) => {
+    setEditingCustomTemplateId(ct.templateId || ct.id);
+    setCustomTemplateError('');
+    setCustomTemplateDraftTab('edit');
+    setCustomTemplateForm({
+      templateId: ct.templateId,
+      name: ct.name,
+      badge: ct.badge || 'Custom',
+      description: ct.description || '',
+      subject: ct.subject || '',
+      html: ct.html,
+      sampleVarsJson: JSON.stringify(ct.sampleVars || {}, null, 2),
+    });
+    setShowCustomTemplateModal(true);
+  };
+
+  const handleSaveCustomTemplate = async (e) => {
+    if (e) e.preventDefault();
+    if (!activeProject) return;
+
+    let parsedVars = {};
+    try {
+      if (customTemplateForm.sampleVarsJson.trim()) {
+        parsedVars = JSON.parse(customTemplateForm.sampleVarsJson);
+      }
+    } catch {
+      setCustomTemplateError('Invalid JSON format in Sample Variables.');
+      return;
+    }
+
+    try {
+      setIsSavingCustomTemplate(true);
+      setCustomTemplateError('');
+
+      const payload = {
+        templateId: customTemplateForm.templateId.trim().toLowerCase(),
+        name: customTemplateForm.name.trim(),
+        badge: customTemplateForm.badge.trim() || 'Custom',
+        description: customTemplateForm.description.trim(),
+        subject: customTemplateForm.subject.trim(),
+        html: customTemplateForm.html,
+        sampleVars: parsedVars,
+      };
+
+      let res;
+      if (editingCustomTemplateId) {
+        res = await updateCustomTemplate(activeProject.id, editingCustomTemplateId, payload, authToken);
+      } else {
+        res = await createCustomTemplate(activeProject.id, payload, authToken);
+      }
+
+      if (res.success) {
+        const updatedTemplates = editingCustomTemplateId
+          ? (activeProject.customTemplates || []).map((t) =>
+              t.templateId === editingCustomTemplateId ? res.template : t
+            )
+          : [...(activeProject.customTemplates || []), res.template];
+
+        setActiveProject((prev) => ({
+          ...prev,
+          customTemplates: updatedTemplates,
+        }));
+        setProjects((prev) =>
+          prev.map((p) =>
+            p.id === activeProject.id ? { ...p, customTemplates: updatedTemplates } : p
+          )
+        );
+
+        setShowCustomTemplateModal(false);
+        setSelectedTemplateId(res.template.templateId);
+        setTemplateVars({ ...res.template.sampleVars });
+      } else {
+        if (res.code === 'PRO_REQUIRED') {
+          setShowCustomTemplateModal(false);
+          setShowUpgradeModal(true);
+        } else {
+          setCustomTemplateError(res.error || 'Failed to save custom template.');
+        }
+      }
+    } catch (err) {
+      setCustomTemplateError(err.message || 'Error saving custom template.');
+    } finally {
+      setIsSavingCustomTemplate(false);
+    }
+  };
+
+  const handleDeleteCustomTemplate = async (templateId, e) => {
+    if (e) e.stopPropagation();
+    if (!activeProject) return;
+    if (!window.confirm(`Are you sure you want to delete custom template "${templateId}"?`)) return;
+
+    try {
+      const res = await deleteCustomTemplate(activeProject.id, templateId, authToken);
+      if (res.success) {
+        const remaining = (activeProject.customTemplates || []).filter((t) => t.templateId !== templateId);
+        setActiveProject((prev) => ({
+          ...prev,
+          customTemplates: remaining,
+        }));
+        setProjects((prev) =>
+          prev.map((p) =>
+            p.id === activeProject.id ? { ...p, customTemplates: remaining } : p
+          )
+        );
+        if (selectedTemplateId === templateId) {
+          setSelectedTemplateId('otp');
+          setTemplateVars({ ...DEFAULT_TEMPLATES[0].sampleVars });
+        }
+      } else {
+        alert(res.error || 'Failed to delete custom template.');
+      }
+    } catch (err) {
+      alert(err.message || 'Error deleting custom template.');
+    }
+  };
+
+  useEffect(() => {
+    if (showCustomTemplateModal && customTemplateDraftTab === 'preview') {
+      let vars = {};
+      try {
+        if (customTemplateForm.sampleVarsJson) {
+          vars = JSON.parse(customTemplateForm.sampleVarsJson);
+        }
+      } catch (_) {}
+      previewTemplate(null, vars, activeProject?.apiKey, customTemplateForm.html, customTemplateForm.subject)
+        .then((res) => {
+          if (res?.success && res.html) {
+            setCustomTemplateDraftHtml(res.html);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [showCustomTemplateModal, customTemplateDraftTab, customTemplateForm.html, customTemplateForm.subject, customTemplateForm.sampleVarsJson, activeProject?.apiKey]);
 
   const handleSendTemplate = async (e) => {
     if (e) e.preventDefault();
@@ -2027,24 +2264,59 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                 {/* Header Banner */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-white/10">
                   <div>
-                    <div className="flex items-center space-x-2.5">
+                    <div className="flex items-center space-x-2.5 flex-wrap gap-y-2">
                       <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center space-x-2.5">
                         <Mail className="w-6 h-6 text-brand-600 dark:text-brand-400" />
-                        <span>Pre-built Transactional Email Templates</span>
+                        <span>Email Templates &amp; Custom Template Studio</span>
                       </h2>
                       <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300 border border-brand-200/60">
-                        5 templates
+                        {allTemplates.length} templates
                       </span>
+                      {activeProject?.plan === 'pro' ? (
+                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center space-x-1">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Pro Plan Active</span>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowUpgradeModal(true)}
+                          className="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition flex items-center space-x-1"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Unlock Custom Templates (Pro)</span>
+                        </button>
+                      )}
                     </div>
                     <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
-                      Zero HTML coding needed. Pass <code className="text-brand-600 dark:text-brand-400 font-mono">template</code> &amp; <code className="text-brand-600 dark:text-brand-400 font-mono">vars</code> to the API. Dakly automatically interpolates dynamic variables and injects your project's 1:1 brand logo.
+                      Zero HTML coding needed. Select built-in system templates or author custom brand templates for paid Pro projects.
                     </p>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 flex-wrap gap-y-2">
                     <button
+                      type="button"
                       onClick={() => {
-                        const cur = DEFAULT_TEMPLATES.find((t) => t.id === selectedTemplateId);
+                        if (activeProject?.plan !== 'pro') {
+                          setShowUpgradeModal(true);
+                        } else {
+                          openNewCustomTemplateModal();
+                        }
+                      }}
+                      className="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>New Custom Template</span>
+                      {activeProject?.plan !== 'pro' && (
+                        <span className="text-[10px] uppercase font-mono px-1 py-0.5 bg-amber-400 text-slate-900 rounded font-bold">
+                          PRO
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cur = allTemplates.find((t) => t.id === selectedTemplateId);
                         if (cur) setTemplateVars({ ...cur.sampleVars });
                       }}
                       className="px-4 py-2 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[var(--surface)] text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition"
@@ -2054,39 +2326,107 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                   </div>
                 </div>
 
-                {/* 5 Template Selector Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                  {DEFAULT_TEMPLATES.map((t) => {
+                {/* Template Selector Cards & Custom Template Creator */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                  {allTemplates.map((t) => {
                     const isSelected = selectedTemplateId === t.id;
                     return (
-                      <button type="button" aria-pressed={isSelected}
+                      <div
                         key={t.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={isSelected}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedTemplateId(t.id);
+                            setTemplateVars({ ...t.sampleVars });
+                            setTemplateSendResult(null);
+                          }
+                        }}
                         onClick={() => {
                           setSelectedTemplateId(t.id);
                           setTemplateVars({ ...t.sampleVars });
                           setTemplateSendResult(null);
                         }}
-                        className={`cursor-pointer rounded-lg p-4 sm:p-5 border transition relative ${
+                        className={`cursor-pointer rounded-lg p-4 sm:p-5 border transition relative flex flex-col justify-between ${
                           isSelected
-                            ? 'bg-brand-50/70 dark:bg-brand-950/30 border-brand-500  ring-2 ring-brand-500'
+                            ? 'bg-brand-50/70 dark:bg-brand-950/30 border-brand-500 ring-2 ring-brand-500'
                             : 'bg-white dark:bg-[var(--surface)] border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-2.5">
-                          <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border ${t.badgeColor}`}>
-                            {t.badge}
-                          </span>
-                          {isSelected && <span className="text-xs text-brand-600 dark:text-brand-400 font-bold">● Active</span>}
+                        <div>
+                          <div className="flex items-center justify-between mb-2.5">
+                            <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border ${t.badgeColor}`}>
+                              {t.badge}
+                            </span>
+                            {isSelected && <span className="text-xs text-brand-600 dark:text-brand-400 font-bold">● Active</span>}
+                          </div>
+                          <div className="text-sm font-bold text-slate-900 dark:text-white leading-tight mb-1.5 flex items-center space-x-1.5">
+                            <span>{t.name}</span>
+                          </div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                            {t.description}
+                          </div>
                         </div>
-                        <div className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight mb-1.5">
-                          {t.name}
-                        </div>
-                        <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                          {t.description}
-                        </div>
-                      </button>
+
+                        {t.isCustom && (
+                          <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
+                            <span className="text-[10px] font-mono font-bold text-brand-600 dark:text-brand-400">
+                              PRO TEMPLATE
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                type="button"
+                                title="Edit template markup"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditCustomTemplateModal(t);
+                                }}
+                                className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white underline"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                title="Delete custom template"
+                                onClick={(e) => handleDeleteCustomTemplate(t.id, e)}
+                                className="text-xs text-rose-500 hover:text-rose-700"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
+
+                  {/* + Add Custom Template Card */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeProject?.plan !== 'pro') {
+                        setShowUpgradeModal(true);
+                      } else {
+                        openNewCustomTemplateModal();
+                      }
+                    }}
+                    className="rounded-lg p-5 border-2 border-dashed border-slate-200 dark:border-white/15 hover:border-brand-500 dark:hover:border-brand-400 bg-slate-50/50 dark:bg-white/[0.02] flex flex-col items-center justify-center text-center group transition min-h-[140px]"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                      <Plus className="w-5 h-5" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-1.5">
+                      <span>Add Custom Template</span>
+                      <span className="text-[10px] font-mono px-1 py-0.5 bg-amber-400 text-slate-900 rounded font-bold">
+                        PRO
+                      </span>
+                    </span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                      {activeProject?.plan === 'pro' ? 'Design HTML & dynamic vars' : 'Unlock on Dakly Pro'}
+                    </span>
+                  </button>
                 </div>
 
                 {/* Split Studio: Form / Controls (Left) & Real Device Preview (Right) */}
@@ -2158,7 +2498,16 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                           Template Variables (`vars`)
                         </div>
 
-                        {DEFAULT_TEMPLATES.find((t) => t.id === selectedTemplateId)?.fields.map((f) => (
+                        {(
+                          allTemplates.find((t) => t.id === selectedTemplateId)?.fields?.length
+                            ? allTemplates.find((t) => t.id === selectedTemplateId).fields
+                            : Object.keys(templateVars).map((k) => ({
+                                key: k,
+                                label: k.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()),
+                                placeholder: `Enter ${k}`,
+                                isTextarea: false,
+                              }))
+                        ).map((f) => (
                           <div key={f.key}>
                             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                               {f.label} <span className="text-slate-400 font-mono text-xs">(`vars.{f.key}`)</span>
@@ -5024,6 +5373,351 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                 <span>{isRotatingKey ? 'Regenerating Key...' : 'Confirm & Rotate Key'}</span>
               </button>
             </div>
+          </div>
+        </Dialog>
+      )}
+
+      {/* MODAL: PRO PLAN UPGRADE */}
+      {showUpgradeModal && (
+        <Dialog
+          title="Upgrade to Dakly Pro"
+          busy={isUpgradingPlan}
+          onClose={() => {
+            setShowUpgradeModal(false);
+            setUpgradeError('');
+          }}
+          className="dialog-wide"
+        >
+          <div className="legacy-dialog-content">
+            <p className="dialog-intro">
+              Custom Transactional Templates are an exclusive feature of the <strong>Dakly Pro Developer Pass</strong>.
+            </p>
+
+            {upgradeError && (
+              <div role="alert" className="notice notice-error mb-4">
+                {upgradeError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {/* Feature Highlights Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+                <div className="p-3.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] space-y-1">
+                  <div className="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                    <Sparkles className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                    <span>Custom HTML &amp; Dynamic Variables</span>
+                  </div>
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    Design bespoke transactional emails with unlimited <code>&#123;&#123;tags&#125;&#125;</code> and real-time live preview.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] space-y-1">
+                  <div className="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                    <Zap className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                    <span>Zero-Delay SDK &amp; API Execution</span>
+                  </div>
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    Call your custom templates directly via Node.js, Python, Fetch, or cURL using <code>template: "my_slug"</code>.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] space-y-1">
+                  <div className="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                    <CheckCircle className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                    <span>1:1 Verified Brand Logo Integration</span>
+                  </div>
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    Automatic header branding with anti-piracy verification across all outbound dispatches.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] space-y-1">
+                  <div className="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                    <ShieldCheck className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                    <span>Multi-Account Automatic Failover</span>
+                  </div>
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    Pool multiple backup Gmail inboxes to scale daily quota without hitting rate limits.
+                  </p>
+                </div>
+              </div>
+
+              {/* Pricing Offer Card */}
+              <div className="p-4 rounded-xl border border-brand-500/30 bg-brand-50/50 dark:bg-brand-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold text-slate-900 dark:text-white text-base">Dakly Pro Developer Pass</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-400 text-slate-900">1 YEAR</span>
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Active for project: <strong className="text-slate-700 dark:text-slate-300">{activeProject?.name}</strong>
+                  </div>
+                </div>
+                <div className="text-left sm:text-right">
+                  <div className="text-xl font-bold text-slate-900 dark:text-white">₹1,499<span className="text-xs font-normal text-slate-500">/year</span></div>
+                  <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Instant sandbox activation</div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  className="button button-outline"
+                  onClick={() => setShowUpgradeModal(false)}
+                  disabled={isUpgradingPlan}
+                >
+                  Maybe later
+                </button>
+                <button
+                  type="button"
+                  className="button button-primary"
+                  onClick={handleUpgradeToPro}
+                  disabled={isUpgradingPlan}
+                >
+                  {isUpgradingPlan ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Activating Pro Pass…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Activate Dakly Pro Pass</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {/* MODAL: CUSTOM TEMPLATE STUDIO */}
+      {showCustomTemplateModal && (
+        <Dialog
+          title={editingCustomTemplateId ? `Edit Custom Template: ${customTemplateForm.templateId}` : 'New Custom Template (Pro)'}
+          busy={isSavingCustomTemplate}
+          onClose={() => {
+            setShowCustomTemplateModal(false);
+            setCustomTemplateError('');
+          }}
+          className="dialog-wide"
+        >
+          <div className="legacy-dialog-content">
+            {customTemplateError && (
+              <div role="alert" className="notice notice-error mb-4">
+                {customTemplateError}
+              </div>
+            )}
+
+            {/* Tabs: Editor vs Live Draft Preview */}
+            <div className="flex items-center space-x-2 border-b border-slate-200 dark:border-white/10 pb-2">
+              <button
+                type="button"
+                onClick={() => setCustomTemplateDraftTab('edit')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+                  customTemplateDraftTab === 'edit'
+                    ? 'bg-brand-600 text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Template Markup &amp; Variables
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomTemplateDraftTab('preview')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition flex items-center space-x-1.5 ${
+                  customTemplateDraftTab === 'preview'
+                    ? 'bg-brand-600 text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Live Draft Preview</span>
+              </button>
+            </div>
+
+            {customTemplateDraftTab === 'edit' ? (
+              <form onSubmit={handleSaveCustomTemplate} className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Template Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      required
+                      value={customTemplateForm.name}
+                      onChange={(e) =>
+                        setCustomTemplateForm({ ...customTemplateForm, name: e.target.value })
+                      }
+                      placeholder="e.g. Order Shipment Alert"
+                      className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Template ID (Slug) <span className="text-rose-500">*</span> <span className="text-slate-400 font-mono text-xs">(Used in SDK `template: "..."`)</span>
+                    </label>
+                    <input
+                      required
+                      disabled={Boolean(editingCustomTemplateId)}
+                      value={customTemplateForm.templateId}
+                      onChange={(e) =>
+                        setCustomTemplateForm({
+                          ...customTemplateForm,
+                          templateId: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''),
+                        })
+                      }
+                      placeholder="e.g. order_shipped"
+                      className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:border-brand-500 disabled:opacity-60"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Subject Line <span className="text-slate-400 text-xs font-normal">(Supports dynamic &#123;&#123;tags&#125;&#125;)</span>
+                    </label>
+                    <input
+                      value={customTemplateForm.subject}
+                      onChange={(e) =>
+                        setCustomTemplateForm({ ...customTemplateForm, subject: e.target.value })
+                      }
+                      placeholder="e.g. Order #{{orderNumber}} has shipped, {{name}}!"
+                      className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Category Badge
+                    </label>
+                    <input
+                      value={customTemplateForm.badge}
+                      onChange={(e) =>
+                        setCustomTemplateForm({ ...customTemplateForm, badge: e.target.value })
+                      }
+                      placeholder="e.g. E-Commerce"
+                      className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      HTML Body Markup <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="flex items-center space-x-1.5 text-xs text-slate-500">
+                      <span>Quick Insert:</span>
+                      {['name', 'orderNumber', 'trackingUrl', 'amount'].map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => {
+                            setCustomTemplateForm((prev) => ({
+                              ...prev,
+                              html: prev.html + ` {{${tag}}}`,
+                            }));
+                          }}
+                          className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10 font-mono text-[11px] text-brand-600 dark:text-brand-400 hover:bg-brand-500/10"
+                        >
+                          +&#123;&#123;{tag}&#125;&#125;
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <textarea
+                    required
+                    rows={8}
+                    value={customTemplateForm.html}
+                    onChange={(e) =>
+                      setCustomTemplateForm({ ...customTemplateForm, html: e.target.value })
+                    }
+                    placeholder="<h2>Hello {{name}}</h2><p>Your message here</p>"
+                    className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg p-3 text-xs sm:text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:border-brand-500 leading-relaxed"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Dakly automatically wraps your custom template with your project's verified 1:1 brand logo, header, and clean footer shell.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Sample Variables JSON <span className="text-slate-400 text-xs font-normal">(Used for test previews &amp; default fields)</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={customTemplateForm.sampleVarsJson}
+                    onChange={(e) =>
+                      setCustomTemplateForm({
+                        ...customTemplateForm,
+                        sampleVarsJson: e.target.value,
+                      })
+                    }
+                    placeholder='{ "name": "Aarav", "orderNumber": "1049" }'
+                    className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg p-2.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-brand-500 leading-relaxed"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end space-x-3 pt-2">
+                  <button
+                    type="button"
+                    className="button button-outline"
+                    onClick={() => setShowCustomTemplateModal(false)}
+                    disabled={isSavingCustomTemplate}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="button button-primary"
+                    disabled={isSavingCustomTemplate}
+                  >
+                    {isSavingCustomTemplate ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Saving Template…</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        <span>{editingCustomTemplateId ? 'Save Changes' : 'Create &amp; Deploy Template'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-4 pt-2">
+                <div className="p-3 bg-slate-100 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/10 flex justify-center min-h-[360px]">
+                  <iframe
+                    title="Draft Live Preview"
+                    srcDoc={customTemplateDraftHtml || '<div style="padding: 40px; text-align: center; color: #64748b; font-family: sans-serif;">Rendering draft preview...</div>'}
+                    style={{
+                      width: '100%',
+                      minHeight: '340px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      background: '#ffffff',
+                    }}
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    className="button button-outline"
+                    onClick={() => setCustomTemplateDraftTab('edit')}
+                  >
+                    Back to Editor
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </Dialog>
       )}

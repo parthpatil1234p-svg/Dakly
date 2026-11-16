@@ -27,6 +27,11 @@ const {
   addSenderAlias,
   removeSenderAlias,
   getProjectAliases,
+  upgradeProjectPlan,
+  getProjectCustomTemplates,
+  createProjectCustomTemplate,
+  updateProjectCustomTemplate,
+  deleteProjectCustomTemplate,
 } = require('../controllers/projectController');
 const { optionalProtect } = require('../middleware/authJwt');
 const rateLimit = require('express-rate-limit');
@@ -83,5 +88,14 @@ router.patch('/:id/senders/:senderId/warmup', updateSenderWarmup);
 router.post('/:id/logo', uploadLogo);
 router.get('/:id/logo', getLogo);
 router.delete('/:id/logo', deleteLogo);
+
+// Subscription & Paid Pro Tier Endpoints
+router.post('/:id/upgrade', upgradeProjectPlan);
+
+// Custom Transactional Templates (Pro Tier Exclusive)
+router.get('/:id/templates', getProjectCustomTemplates);
+router.post('/:id/templates', createProjectCustomTemplate);
+router.patch('/:id/templates/:templateId', updateProjectCustomTemplate);
+router.delete('/:id/templates/:templateId', deleteProjectCustomTemplate);
 
 module.exports = router;

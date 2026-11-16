@@ -134,6 +134,69 @@ const memberSchema = new mongoose.Schema(
   }
 );
 
+const customTemplateSchema = new mongoose.Schema(
+  {
+    templateId: {
+      type: String,
+      required: [true, 'Please provide a template ID (slug)'],
+      trim: true,
+      lowercase: true,
+      match: [
+        /^[a-z0-9_-]{2,50}$/,
+        'Template ID must be 2-50 characters with letters, numbers, underscores or hyphens',
+      ],
+    },
+    name: {
+      type: String,
+      required: [true, 'Please provide a template name'],
+      trim: true,
+      maxlength: [100, 'Template name cannot exceed 100 characters'],
+    },
+    badge: {
+      type: String,
+      default: 'Custom',
+      trim: true,
+      maxlength: [30, 'Badge cannot exceed 30 characters'],
+    },
+    badgeColor: {
+      type: String,
+      default: 'border-brand-500/30 text-brand-600 bg-brand-500/10 dark:text-brand-400',
+    },
+    description: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: [300, 'Description cannot exceed 300 characters'],
+    },
+    subject: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: [200, 'Subject cannot exceed 200 characters'],
+    },
+    html: {
+      type: String,
+      required: [true, 'Please provide the HTML body content'],
+    },
+    sampleVars: {
+      type: mongoose.Schema.Types.Mixed,
+      default: () => ({}),
+    },
+    fields: [
+      {
+        key: { type: String, required: true },
+        label: { type: String, default: '' },
+        placeholder: { type: String, default: '' },
+        isTextarea: { type: Boolean, default: false },
+        type: { type: String, default: 'text' },
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  }
+);
+
 const projectSchema = new mongoose.Schema(
   {
     userId: {
@@ -321,6 +384,14 @@ const projectSchema = new mongoose.Schema(
     },
     // Team Workspaces & Multi-Seat Collaboration
     members: [memberSchema],
+    // Subscription & Feature Tiers ('free' vs 'pro')
+    plan: {
+      type: String,
+      enum: ['free', 'pro'],
+      default: 'free',
+    },
+    // Custom Transactional Templates (Paid / Pro Tier Exclusive)
+    customTemplates: [customTemplateSchema],
   },
   {
     timestamps: true,

@@ -26,8 +26,8 @@ const emailLimiter = rateLimit({
 
 router.use(emailLimiter);
 
-// Pre-built email templates catalog & preview
-router.get('/templates', getTemplates);
+// Pre-built & Custom email templates catalog & preview
+router.get('/templates', authenticateApiKey.optional, getTemplates);
 router.post('/templates/preview', authenticateApiKey.optional, previewTemplate);
 
 // Health Ping & API Key connection tester (Authenticated via x-api-key)

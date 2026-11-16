@@ -540,6 +540,55 @@ const TEMPLATE_CATALOG = [
 ];
 
 /**
+ * Renders a custom user-defined template with dynamic variable interpolation and shell wrapping
+ * @param {Object} customTpl
+ * @param {Object} [vars]
+ * @param {Object} [project]
+ * @returns {{ html: string, text: string, defaultSubject: string, templateId: string, isCustom: boolean }}
+ */
+function renderCustomTemplate(customTpl, vars = {}, project = {}) {
+  let renderedHtml = customTpl.html || '';
+  let renderedSubject = customTpl.subject || `${project?.name || 'Dakly'} Notification`;
+
+  // Interpolate variables {{varName}} and {{ varName }}
+  const safeVars = vars || {};
+  for (const [key, val] of Object.entries(safeVars)) {
+    // {{{rawHtml}}}
+    const rawRegex = new RegExp(`{{{\\s*${key}\\s*}}}`, 'g');
+    renderedHtml = renderedHtml.replace(rawRegex, val !== null && val !== undefined ? String(val) : '');
+
+    // {{escapedVar}}
+    const escapedVal = escapeHtml(val);
+    const escapedRegex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+    renderedHtml = renderedHtml.replace(escapedRegex, escapedVal);
+    renderedSubject = renderedSubject.replace(escapedRegex, String(val !== null && val !== undefined ? val : ''));
+  }
+
+  // Clear unprovided variable placeholders
+  renderedHtml = renderedHtml.replace(/{{\s*([a-zA-Z0-9_.-]+)\s*}}/g, '');
+  renderedSubject = renderedSubject.replace(/{{\s*([a-zA-Z0-9_.-]+)\s*}}/g, '').trim();
+
+  // If the user's custom template already contains a full HTML shell (e.g. <!DOCTYPE html or <html), use as-is;
+  // otherwise wrap in standard branded Dakly shell so it gets the 1:1 logo, header, and footer!
+  const isFullDoc = /<html[\s>]/i.test(renderedHtml) || /<!doctype html/i.test(renderedHtml);
+  const finalHtml = isFullDoc ? renderedHtml : wrapShell(renderedHtml, project);
+
+  const plainText = renderedHtml
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return {
+    html: finalHtml,
+    text: plainText,
+    defaultSubject: renderedSubject || `${project?.name || 'Dakly'} Notification`,
+    templateId: customTpl.templateId || 'custom',
+    isCustom: true,
+  };
+}
+
+/**
  * Resolves a template ID or alias to its definition
  */
 function resolveTemplate(identifier = '') {
@@ -553,12 +602,26 @@ function resolveTemplate(identifier = '') {
  * @param {string} options.template - Template ID or alias
  * @param {Object} [options.vars] - Dynamic variables
  * @param {Object} [options.project] - Project document
- * @returns {{ html: string, text: string, defaultSubject: string, templateId: string }}
+ * @returns {{ html: string, text: string, defaultSubject: string, templateId: string, isCustom?: boolean }}
  */
 function compileTemplate({ template, vars = {}, project = {} }) {
+  const cleanId = String(template || '').trim().toLowerCase();
+
+  // 1. Check custom templates on project if present
+  if (project && Array.isArray(project.customTemplates)) {
+    const customMatch = project.customTemplates.find(
+      (ct) => ct.templateId === cleanId || String(ct._id) === cleanId
+    );
+    if (customMatch) {
+      return renderCustomTemplate(customMatch, vars, project);
+    }
+  }
+
+  // 2. Check standard built-in template catalog
   const tpl = resolveTemplate(template);
   if (!tpl) {
-    const valid = TEMPLATE_CATALOG.map((t) => t.id).join(', ');
+    const customIds = project?.customTemplates?.map((t) => t.templateId) || [];
+    const valid = [...TEMPLATE_CATALOG.map((t) => t.id), ...customIds].join(', ');
     throw new Error(`Unknown template "${template}". Supported templates: ${valid}`);
   }
 
@@ -566,6 +629,7 @@ function compileTemplate({ template, vars = {}, project = {} }) {
   return {
     ...rendered,
     templateId: tpl.id,
+    isCustom: false,
   };
 }
 
@@ -584,5 +648,6 @@ module.exports = {
   TEMPLATE_CATALOG,
   getCatalogList,
   resolveTemplate,
+  renderCustomTemplate,
   compileTemplate,
 };

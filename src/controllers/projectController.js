@@ -178,6 +178,22 @@ async function getProjects(req, res) {
           updatedAt: p.brandLogo.updatedAt,
           url: `/api/projects/${p._id}/logo`,
         } : null,
+        plan: p.plan || 'free',
+        isPro: p.plan === 'pro',
+        customTemplates: (p.customTemplates || []).map((ct) => ({
+          id: ct._id,
+          templateId: ct.templateId,
+          name: ct.name,
+          badge: ct.badge || 'Custom',
+          badgeColor: ct.badgeColor || 'border-brand-500/30 text-brand-600 bg-brand-500/10 dark:text-brand-400',
+          description: ct.description || '',
+          subject: ct.subject || '',
+          html: ct.html,
+          sampleVars: ct.sampleVars || {},
+          fields: ct.fields || [],
+          createdAt: ct.createdAt,
+          updatedAt: ct.updatedAt,
+        })),
         createdAt: p.createdAt,
       };
     });
@@ -267,6 +283,9 @@ async function updateProject(req, res) {
         lastWebhookResponseCode: project.lastWebhookResponseCode,
         lastWebhookLatencyMs: project.lastWebhookLatencyMs,
         lastWebhookError: project.lastWebhookError,
+        plan: project.plan || 'free',
+        isPro: project.plan === 'pro',
+        customTemplates: project.customTemplates || [],
       },
     });
   } catch (error) {
@@ -1392,10 +1411,297 @@ async function getProjectAliases(req, res) {
   }
 }
 
+/**
+ * Upgrade project plan / subscription tier (Free -> Pro)
+ * POST /api/projects/:id/upgrade
+ */
+async function upgradeProjectPlan(req, res) {
+  try {
+    const { id } = req.params;
+    const { plan = 'pro' } = req.body;
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (!['owner', 'admin'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. Only Owner or Admin can manage project subscriptions.',
+      });
+    }
+
+    project.plan = plan === 'pro' ? 'pro' : 'free';
+    await project.save();
+
+    res.json({
+      success: true,
+      message: project.plan === 'pro'
+        ? 'Congratulations! Project has been upgraded to Dakly Pro.'
+        : 'Project plan set to Free.',
+      project: {
+        id: project._id,
+        name: project.name,
+        plan: project.plan,
+        isPro: project.plan === 'pro',
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * List all custom templates for a project
+ * GET /api/projects/:id/templates
+ */
+async function getProjectCustomTemplates(req, res) {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (!userRole) {
+      return res.status(403).json({ success: false, error: 'Access denied.' });
+    }
+
+    res.json({
+      success: true,
+      plan: project.plan || 'free',
+      isPro: project.plan === 'pro',
+      count: (project.customTemplates || []).length,
+      templates: project.customTemplates || [],
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Create a new custom transactional template (Pro Plan Exclusive)
+ * POST /api/projects/:id/templates
+ */
+async function createProjectCustomTemplate(req, res) {
+  try {
+    const { id } = req.params;
+    const {
+      templateId,
+      name,
+      badge,
+      badgeColor,
+      description,
+      subject,
+      html,
+      sampleVars,
+      fields,
+    } = req.body;
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (!['owner', 'admin'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. Only Owner or Admin can create custom templates.',
+      });
+    }
+
+    // Paid / Pro Tier Gate
+    if (project.plan !== 'pro') {
+      return res.status(403).json({
+        success: false,
+        code: 'PRO_REQUIRED',
+        error: 'Custom Templates are exclusively available on the Dakly Pro plan. Upgrade your project to unlock custom templates.',
+        upgradeUrl: '/pricing',
+      });
+    }
+
+    if (!templateId || !name || !html) {
+      return res.status(400).json({
+        success: false,
+        error: 'Fields "templateId", "name", and "html" are required.',
+      });
+    }
+
+    const cleanId = String(templateId).trim().toLowerCase();
+    if (!/^[a-z0-9_-]{2,50}$/.test(cleanId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'templateId must be 2-50 characters and contain only lowercase letters, numbers, hyphens, and underscores.',
+      });
+    }
+
+    // Prevent conflict with built-in templates
+    const reservedIds = ['otp', 'welcome', 'password_reset', 'notes_delivery', 'receipt', 'notes', 'invoice', 'reset_password'];
+    if (reservedIds.includes(cleanId)) {
+      return res.status(400).json({
+        success: false,
+        error: `templateId "${cleanId}" is reserved by system templates. Please pick a custom identifier.`,
+      });
+    }
+
+    // Prevent duplicate custom templates on the same project
+    if (!project.customTemplates) project.customTemplates = [];
+    const exists = project.customTemplates.some((t) => t.templateId === cleanId);
+    if (exists) {
+      return res.status(400).json({
+        success: false,
+        error: `A custom template with ID "${cleanId}" already exists on this project.`,
+      });
+    }
+
+    // Auto-extract dynamic fields from {{varName}} in html/subject if fields not specified
+    let resolvedFields = Array.isArray(fields) && fields.length > 0 ? fields : [];
+    if (resolvedFields.length === 0) {
+      const matched = (html + ' ' + (subject || '')).match(/{{\s*([a-zA-Z0-9_.-]+)\s*}}/g) || [];
+      const uniqueKeys = Array.from(new Set(matched.map((m) => m.replace(/[{}]/g, '').trim()))).filter(Boolean);
+      resolvedFields = uniqueKeys.map((k) => ({
+        key: k,
+        label: k.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()),
+        placeholder: (sampleVars && sampleVars[k]) ? String(sampleVars[k]) : `e.g. ${k}`,
+        isTextarea: false,
+        type: 'text',
+      }));
+    }
+
+    const newTemplate = {
+      templateId: cleanId,
+      name: name.trim(),
+      badge: badge ? badge.trim() : 'Custom',
+      badgeColor: badgeColor || 'border-brand-500/30 text-brand-600 bg-brand-500/10 dark:text-brand-400',
+      description: description ? description.trim() : '',
+      subject: subject ? subject.trim() : '',
+      html,
+      sampleVars: sampleVars || {},
+      fields: resolvedFields,
+    };
+
+    project.customTemplates.push(newTemplate);
+    await project.save();
+
+    const created = project.customTemplates[project.customTemplates.length - 1];
+
+    res.status(201).json({
+      success: true,
+      message: 'Custom template created successfully.',
+      template: created,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Update an existing custom template
+ * PATCH /api/projects/:id/templates/:templateId
+ */
+async function updateProjectCustomTemplate(req, res) {
+  try {
+    const { id, templateId } = req.params;
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (!['owner', 'admin'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. Only Owner or Admin can update custom templates.',
+      });
+    }
+
+    const cleanId = String(templateId).trim().toLowerCase();
+    const tIndex = (project.customTemplates || []).findIndex(
+      (t) => t.templateId === cleanId || String(t._id) === cleanId
+    );
+    if (tIndex === -1) {
+      return res.status(404).json({ success: false, error: 'Custom template not found.' });
+    }
+
+    const { name, badge, badgeColor, description, subject, html, sampleVars, fields } = req.body;
+    const t = project.customTemplates[tIndex];
+
+    if (name !== undefined) t.name = name.trim();
+    if (badge !== undefined) t.badge = badge.trim();
+    if (badgeColor !== undefined) t.badgeColor = badgeColor;
+    if (description !== undefined) t.description = description.trim();
+    if (subject !== undefined) t.subject = subject.trim();
+    if (html !== undefined) t.html = html;
+    if (sampleVars !== undefined) t.sampleVars = sampleVars;
+    if (fields !== undefined && Array.isArray(fields)) t.fields = fields;
+
+    await project.save();
+
+    res.json({
+      success: true,
+      message: 'Custom template updated successfully.',
+      template: project.customTemplates[tIndex],
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Delete a custom template
+ * DELETE /api/projects/:id/templates/:templateId
+ */
+async function deleteProjectCustomTemplate(req, res) {
+  try {
+    const { id, templateId } = req.params;
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    const userRole = project.getUserRole ? project.getUserRole(req.user) : 'owner';
+    if (!['owner', 'admin'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. Only Owner or Admin can delete custom templates.',
+      });
+    }
+
+    const cleanId = String(templateId).trim().toLowerCase();
+    const initialCount = project.customTemplates.length;
+    project.customTemplates = project.customTemplates.filter(
+      (t) => t.templateId !== cleanId && String(t._id) !== cleanId
+    );
+
+    if (project.customTemplates.length === initialCount) {
+      return res.status(404).json({ success: false, error: 'Custom template not found.' });
+    }
+
+    await project.save();
+
+    res.json({
+      success: true,
+      message: 'Custom template deleted successfully.',
+      remainingCount: project.customTemplates.length,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   createProject,
   getProjects,
   updateProject,
+  upgradeProjectPlan,
+  getProjectCustomTemplates,
+  createProjectCustomTemplate,
+  updateProjectCustomTemplate,
+  deleteProjectCustomTemplate,
   addSender,
   getSenders,
   removeSender,

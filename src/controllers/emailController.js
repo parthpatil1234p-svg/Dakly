@@ -1,6 +1,6 @@
 const { sendEmail } = require('../services/emailService');
 const EmailLog = require('../models/EmailLog');
-const { compileTemplate, getCatalogList } = require('../utils/templateEngine');
+const { compileTemplate, getCatalogList, renderCustomTemplate } = require('../utils/templateEngine');
 const { TRANSPARENT_GIF_BUFFER, detectDeviceType } = require('../utils/trackingHelper');
 
 /**
@@ -388,11 +388,26 @@ async function getReports(req, res) {
  */
 async function getTemplates(req, res) {
   try {
-    const templates = getCatalogList();
+    const defaultTemplates = getCatalogList();
+    const customTemplates = (req.project?.customTemplates || []).map((ct) => ({
+      id: ct.templateId,
+      name: ct.name,
+      badge: ct.badge || 'Custom',
+      badgeColor: ct.badgeColor || 'border-brand-500/30 text-brand-600 bg-brand-500/10 dark:text-brand-400',
+      description: ct.description || '',
+      sampleVars: ct.sampleVars || {},
+      fields: ct.fields || [],
+      isCustom: true,
+      isPro: true,
+    }));
+
+    const combined = [...defaultTemplates, ...customTemplates];
+
     res.json({
       success: true,
-      count: templates.length,
-      templates,
+      count: combined.length,
+      templates: combined,
+      customCount: customTemplates.length,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -403,20 +418,38 @@ async function getTemplates(req, res) {
  * Renders a preview of a template with given vars without sending an email
  * POST /api/templates/preview
  * Headers: optional { "x-api-key": "..." }
- * Body: { template, vars }
+ * Body: { template, vars, customHtml, subject }
  */
 async function previewTemplate(req, res) {
   try {
-    const { template, vars } = req.body;
+    const { template, vars, customHtml, subject } = req.body;
+    const project = req.project || { name: 'Preview App' };
+
+    // Real-time draft preview of custom template before saving
+    if (customHtml) {
+      const compiled = renderCustomTemplate(
+        { html: customHtml, subject: subject || '', templateId: template || 'custom_draft' },
+        vars || {},
+        project
+      );
+      return res.json({
+        success: true,
+        template: compiled.templateId,
+        defaultSubject: compiled.defaultSubject,
+        html: compiled.html,
+        text: compiled.text,
+        isCustom: true,
+      });
+    }
+
     if (!template) {
       return res.status(400).json({
         success: false,
-        error: 'Field "template" is required.',
+        error: 'Field "template" or "customHtml" is required.',
         supportedTemplates: getCatalogList().map((t) => t.id),
       });
     }
 
-    const project = req.project || { name: 'Preview App' };
     const compiled = compileTemplate({ template, vars: vars || {}, project });
 
     res.json({
@@ -425,6 +458,7 @@ async function previewTemplate(req, res) {
       defaultSubject: compiled.defaultSubject,
       html: compiled.html,
       text: compiled.text,
+      isCustom: Boolean(compiled.isCustom),
     });
   } catch (error) {
     res.status(400).json({

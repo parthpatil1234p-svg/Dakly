@@ -188,15 +188,20 @@ export async function fetchTemplates() {
   return res.json();
 }
 
-export async function previewTemplate(template, vars, apiKey) {
+export async function previewTemplate(template, vars, apiKey, customHtml = null, subject = '') {
   const headers = { 'Content-Type': 'application/json' };
   if (apiKey) {
     headers['x-api-key'] = apiKey;
   }
+  const body = { template, vars };
+  if (customHtml) {
+    body.customHtml = customHtml;
+    body.subject = subject;
+  }
   const res = await fetch(`${API_BASE_URL}/api/templates/preview`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ template, vars }),
+    body: JSON.stringify(body),
   });
   return res.json();
 }
@@ -375,6 +380,71 @@ export async function removeProjectMember(projectId, memberId, token) {
   });
   return res.json();
 }
+
+// Subscription & Paid Pro Plan Endpoints
+export async function upgradeProjectToPro(projectId, plan = 'pro', token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/upgrade`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ plan }),
+  });
+  return res.json();
+}
+
+// Custom Transactional Templates Endpoints (Pro Tier)
+export async function fetchCustomTemplates(projectId, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/templates`, {
+    headers,
+  });
+  return res.json();
+}
+
+export async function createCustomTemplate(projectId, templateData, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/templates`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(templateData),
+  });
+  return res.json();
+}
+
+export async function updateCustomTemplate(projectId, templateId, templateData, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/templates/${templateId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(templateData),
+  });
+  return res.json();
+}
+
+export async function deleteCustomTemplate(projectId, templateId, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/templates/${templateId}`, {
+    method: 'DELETE',
+    headers,
+  });
+  return res.json();
+}
+
 
 
 
