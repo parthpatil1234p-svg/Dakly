@@ -1,175 +1,123 @@
 # 📮 Dakly
 
-> **The Zero-Cost, Headless Transactional Email Engine for Developers.**  
-> Send OTPs, custom HTML emails, study notes, receipts, and PDF attachments across all your projects with a single API call — powered by your own Gmail SMTP accounts with zero monthly subscription fees.
+> **Zero-cost, headless transactional email engine for developers.**  
+> Send sub-second OTPs, custom HTML emails, study notes, receipts, and attachments across your projects with a single API call — using your own Gmail SMTP accounts with zero monthly subscription fees.
 
+[![Latest Release](https://img.shields.io/github/v/release/parthpatil1234p-svg/Dakly?color=10B981&label=Release)](https://github.com/parthpatil1234p-svg/Dakly/releases)
 [![CI Pipeline](https://github.com/parthpatil1234p-svg/Dakly/actions/workflows/ci.yml/badge.svg)](https://github.com/parthpatil1234p-svg/Dakly/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-Architecture%20%7C%20API%20%7C%20Webhooks%20%7C%20SDK-purple.svg)](docs/)
 [![Contributing](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Security Policy](https://img.shields.io/badge/Security-Policy-red.svg)](SECURITY.md)
 
----
-
-### 📚 Official Documentation
-- 🏛️ **[System Architecture](docs/ARCHITECTURE.md)**: Deep dive into pacing, queues, encryption & data models.
-- 📡 **[REST API Reference](docs/API_REFERENCE.md)**: Comprehensive endpoint catalog, schemas & status codes.
-- 🔔 **[Webhooks Guide](docs/WEBHOOKS.md)**: Event catalog, HMAC-SHA256 signature verification & multi-language examples.
-- ⚡ **[Developer SDK Guide](docs/SDK_GUIDE.md)**: Node.js (`npm i dakly`) & Python (`pip install dakly`) setup.
-- 🎨 **[Brand Voice Standards](docs/brand-guidelines.md)**: Tone, anti-AI guidelines, and copywriting principles.
-- 🤝 **[Contributing Guidelines](CONTRIBUTING.md)**: Dev setup, testing workflows, and PR submission rules.
-- 📜 **[Changelog](CHANGELOG.md)**: Semantic release history & feature updates.
+![Dakly Social Preview](public/dakly-social-preview.jpg)
 
 ---
 
-## 💡 The Problem vs. The Dakly Solution
+### Official Documentation
+- **[System Architecture](docs/ARCHITECTURE.md)**: Details on pacing queues, connection pooling, encryption, and data schemas.
+- **[REST API Reference](docs/API_REFERENCE.md)**: Full endpoint catalog, request/response schemas, and HTTP status codes.
+- **[Webhooks Guide](docs/WEBHOOKS.md)**: Event catalog, HMAC-SHA256 signature verification, and multi-language handlers.
+- **[Developer SDK Guide](docs/SDK_GUIDE.md)**: Official Node.js (`npm i dakly`) and Python (`pip install dakly`) packages.
+- **[Brand Voice Standards](docs/brand-guidelines.md)**: Tone, style guidelines, and copywriting standards.
+- **[Contributing Guidelines](CONTRIBUTING.md)**: Local setup, test suite execution, and pull request checklist.
+- **[Changelog](CHANGELOG.md)**: Semantic release history and feature updates.
 
-| Traditional Email (SendGrid / Resend / AWS SES) | Doing Nodemailer in Every Project | 📮 The Dakly Way |
+---
+
+## Traditional Email vs. Dakly
+
+| Traditional Providers (SendGrid / Resend / SES) | Custom Nodemailer per Project | Dakly |
 | :--- | :--- | :--- |
-| 💳 Requires credit cards & complex domain DNS (SPF, DKIM) verification | 🔄 Copy-pasting Nodemailer configs into 10 different repositories | ⚡ **Zero-Setup Delivery:** 1 HTTP `POST` request from any codebase |
-| 💸 Expensive recurring bills once low free tiers expire | ⚠️ Exposing Google App Passwords in multiple `.env` files | 🔐 **Military-Grade AES-256-GCM:** Passwords encrypted at rest |
-| ⏱️ Cold start timeouts (10-15s) on serverless lambdas | 🔴 Port 465 SSL handshake timeouts on cloud firewalls | 🚀 **Persistent STARTTLS (Port 587):** OTP delivery in < 1 second |
-| 📉 Hard daily limit of 500 emails/day on free Gmail | 🚫 Risk of temporary account ban on rapid bursts | 🛡️ **Failover & Pacing:** Dual-senders (1,000+/day) + 200ms anti-burst spacing |
+| Requires credit cards, domain DNS records (SPF, DKIM), and manual approval | Copy-pasting Nodemailer configurations across multiple repositories | **Zero-DNS Setup:** 1 HTTP `POST` request from any codebase |
+| Recurring subscription charges once low free tiers expire | Exposing Google App Passwords in multiple `.env` files | **Encrypted at Rest:** Passwords protected with AES-256-GCM |
+| Cold-start delays (10–15s) on serverless platforms | Port 465 SSL handshake timeouts on cloud firewalls | **Persistent STARTTLS (Port 587):** OTP delivery in under 1 second |
+| Strict 500 emails/day cap on a single Gmail account | Risk of temporary Google account rate-limit blocks | **Failover & Pacing:** Dual senders (1,000+/day) + 200ms anti-burst spacing |
 
 ---
 
-## 🌟 What Dakly Can Do For Your Project (Full Capabilities Matrix)
+## Features
 
-By plugging Dakly into your project, your application instantly gets an enterprise-grade transactional email infrastructure with **zero monthly subscription fees**:
+Dakly provides transactional email infrastructure using your existing Gmail credentials:
 
-| Feature | What It Does For Your Application | Why It Matters |
+| Feature | Description | Technical Implementation |
 | :--- | :--- | :--- |
-| ⚡ **Sub-Second OTP & Auth Delivery** | Sends 4–6 digit OTPs, magic sign-in links, and password resets in **under 1 second** | Eliminates user drop-off during onboarding and user verification |
-| 🎨 **100% Headless HTML Freedom** | Renders any HTML/CSS layout (welcome cards, receipts, status alerts, newsletters) | Complete design freedom without restrictive email templates |
-| 📎 **Multi-Format Attachment Engine** | Delivers PDFs, Images, Spreadsheets, Word docs, and ZIP files (up to **15MB**) via remote URL or base64 | Perfect for auto-delivering study notes, invoices, receipts, and reports |
-| 🔀 **Dual-Sender Failover Pool** | Automatically switches from Primary Gmail to Backup Gmail when 500 emails/day limit is reached | Doubles free capacity to **1,000+ emails/day** with zero downtime |
-| ⏱️ **Anti-Spam Burst Pacing Queue** | Automatically spaces rapid burst traffic with a 200ms safe spacing queue | Prevents Google rate-limit blocks (`421/454`) and keeps emails out of spam |
-| 🛡️ **Zero-Crash Cloud Reliability** | Uses persistent STARTTLS on Port 587 with connection pooling | Eliminates cloud timeout freezes (`ETIMEDOUT`) on Vercel, Render, AWS, and Heroku |
-| 🔐 **Military-Grade AES-256-GCM** | Encrypts Google App Passwords with unique IVs and authenticated tags | Prevents credential leaks; passwords are never stored in plaintext |
-| 📊 **Real-Time Audit & Tracking Logs** | Generates an immutable tracking ID (`msg_...`) with millisecond latency logging | Instant visibility into delivery success, bounces, and timestamps |
-| 🔔 **HMAC Delivery Webhooks** | Real-time HMAC-SHA256 authenticated webhooks for delivery, failure, suppression, opens, and clicks | Keeps your backend database updated with asynchronous two-way delivery telemetry |
-| 🛡️ **Server IP Whitelisting & Key Rotation** | Bind API keys to specific server IPs (exact, CIDR `/24`, or wildcard `*`) + 1-click zero-downtime key rotation | Prevents stolen API keys from quota misuse and hardens production infrastructure |
-| 👥 **Team Workspaces & Multi-Seat RBAC** | Multi-developer project collaboration with Owner, Admin, and Viewer permissions | Collaborate directly with team members without sharing developer passwords |
-| 🖼️ **1:1 Brand Logo & Anti-Piracy Guard** | Strict 1:1 square brand logo (1 per project) with magic-byte anti-malware/piracy inspection | Renders high-trust brand logo in outgoing emails while blocking fake media/torrents |
-| 📧 **Pre-built Templates & Variable Engine** | 5 built-in responsive templates (OTP, Welcome, Password Reset, College Notes, Receipts) with dynamic `vars` | Zero HTML design work needed; dynamic interpolation with project branding |
-| 📊 **Open & Click Tracking Analytics** | 1x1 zero-latency transparent pixel + phishing-safe link redirects + device breakdown (Mobile vs Desktop) | Real-time engagement telemetry & webhooks (`email.opened`, `email.clicked`) without 3rd-party dependencies |
-| 🛡️ **Smart Warm-up & Bounce Protection** | Progressive 6-day ramp ladder (25 -> 500) + automatic hard-bounce suppression list | Protects Gmail account health, sender reputation, and avoids Google SMTP rate bans |
-| ⚡ **Official Zero-Dependency SDKs** | Official Node.js/TypeScript (`npm i dakly`) and Python (`pip install dakly`) libraries + single-file drop-ins | Type-safe autocomplete, 1-liner OTPs, auto-retries, and instant error handling |
-| 💻 **Raw Fetch / Zero Overhead Option** | Full headless flexibility: send emails using raw `fetch()` or `curl` with 0 package dependencies | Keeps your client application lightweight, clean, and bug-free |
+| **Sub-Second OTP Delivery** | Sends 4–6 digit OTPs, magic login links, and password resets in under 1 second | Pre-warmed SMTP connection pool over Port 587 STARTTLS |
+| **Custom HTML Emails** | Renders custom HTML/CSS layouts for onboarding, notifications, and receipts | Full HTML parsing with automatic plaintext extraction |
+| **Attachment Engine** | Delivers PDFs, images, spreadsheets, and ZIP archives up to 15MB each | Supports public remote URLs and Base64 data URIs |
+| **Dual-Sender Failover** | Switches to a secondary Gmail account when the primary account reaches 500 emails/day | Extends capacity to 1,000+ free emails/day; resets daily at 00:00 UTC |
+| **Burst Pacing Queue** | Spaces out rapid bursts of dispatches | Serialized queue with 200ms spacing to prevent Google `421/454` rate limits |
+| **AES-256-GCM Encryption** | Encrypts Google App Passwords at rest | 32-byte master key with unique 16-byte IVs and authenticated tags |
+| **Sender Aliases** | Sends emails using configured Gmail aliases (`support@yourdomain.com`) | Case-insensitive alias matching with automatic failover to the owning sender |
+| **Custom Templates (Pro)** | Create and edit custom HTML templates with `{{variable}}` syntax | Dynamic interpolation, variable schema validation, and live preview sandbox |
+| **Built-in Templates** | 5 responsive templates: OTP, Welcome, Password Reset, College Notes, and Receipts | Built-in CSS, dark/light client support, and 1:1 project brand logo embed |
+| **Open & Click Tracking** | Tracks opens and click-through rates | 1x1 zero-cache GIF pixel, secure 302 link redirects, and device detection |
+| **Smart Warm-up** | Gradually ramps volume for new Gmail accounts across 6 days (25 → 500/day) | Protects account health and prevents algorithmic spam flags |
+| **Hard Bounce Suppression** | Automatically records permanent delivery failures (`550`, `551`, `553`) | Proactively blocks future sends to bad addresses (`BLOCKED_SUPPRESSED`) |
+| **HMAC Delivery Webhooks** | Emits real-time HTTP events (`delivered`, `failed`, `suppressed`, `opened`, `clicked`) | Signed with HMAC-SHA256 headers (`x-dakly-signature`) |
+| **IP Whitelisting & Key Rotation** | Restricts API access to specific server IPs (exact, CIDR `/24`, or wildcard `*`) | 1-click zero-downtime key rotation invalidates old keys instantly |
+| **Team Workspaces** | Multi-seat project management with Owner, Admin, and Viewer roles | Role-based access control with automatic invite linking on signup |
+| **Client SDKs** | Official Node.js/TypeScript and Python libraries | Typed methods, automatic retries, and error classification |
 
 ---
 
-## 🏗️ How It Works (Architecture)
+## Architecture Flow
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User / Student / Client
-    participant App as Your Client App (Next.js / Node / Python)
-    participant Dakly as Dakly Engine (Microservice)
-    participant DB as MongoDB Atlas (Encrypted Store)
+    actor User as Client Application / User
+    participant Dakly as Dakly Engine (API)
+    participant DB as MongoDB Atlas (Encrypted)
     participant Gmail as Google SMTP (Port 587 STARTTLS)
 
-    User->>App: Requests OTP / Downloads PDF Notes
-    App->>Dakly: POST /api/send { to, subject, html, attachments } (x-api-key: gkey_...)
-    Dakly->>DB: Verify API Key & Decrypt App Password (AES-256-GCM)
-    Dakly->>Dakly: Check Quota (500/day) ➔ Auto-Failover to Backup Sender if Needed
-    Dakly->>Dakly: Anti-Spam Burst Pacer (Queue with 200ms Safe Spacing)
-    Dakly->>Gmail: Dispatch via SMTP Connection Pool
-    Gmail-->>User: Delivered to Inbox 📬 (< 1 second)
-    Dakly->>DB: Store Immutable Audit Log with trackingId (msg_...)
-    Dakly-->>App: 200 OK { success: true, trackingId: "msg_...", latencyMs: 680 }
+    User->>Dakly: POST /api/send (x-api-key: gkey_...)
+    Dakly->>DB: Validate API Key, IP Whitelist & Decrypt App Password (AES-256-GCM)
+    Dakly->>Dakly: Check Daily Quota (500/day) -> Switch to Backup Sender if Needed
+    Dakly->>Dakly: Check Suppression List -> Fail Fast if Recipient Bounced Previously
+    Dakly->>Dakly: Enqueue into Anti-Spam Pacer (200ms Safe Spacing)
+    Dakly->>Gmail: Dispatch via Persistent Connection Pool
+    Gmail-->>User: Delivered to Recipient Inbox (< 1s)
+    Dakly->>DB: Write Immutable Audit Log with trackingId (msg_...)
+    Dakly-->>User: 200 OK { success: true, trackingId: "msg_...", latencyMs: 640 }
 ```
 
 ---
 
-## 🚀 Step 1: Get Your API Key
+## Quick Start: Getting an API Key
 
-### Option A: Via Modern Web Dashboard (Recommended)
-1. Open the **Dakly Dashboard** (locally at `http://localhost:5173` or on your hosted Vercel link).
-2. Click **Create an account** (Register with Name, Email, Password).
-3. Go to **Projects** ➔ Click **"+ Add Project"**:
-   - **Project Name:** e.g., `College Notes Hub` or `Disheera Portal`
-   - **Sender Gmail:** Your Gmail address (e.g. `yourname@gmail.com`)
-   - **Google App Password:** Your 16-character Google App Password ([Generate one here](https://myaccount.google.com/apppasswords))
-4. Click **Save Project** ➔ Copy your generated API Key (`gkey_live_...`).
+### Option A: Web Dashboard
+1. Open the **Dakly Dashboard** at [https://dakly.cc.cd](https://dakly.cc.cd) (or run locally at `http://localhost:5173`).
+2. Register an account with your name, email, and password.
+3. Click **Projects** ➔ **+ Add Project**:
+   - **Project Name:** e.g., `Acme Portal`
+   - **Sender Gmail:** Your Gmail address (`you@gmail.com`)
+   - **Google App Password:** 16-character App Password ([Google Account Security](https://myaccount.google.com/apppasswords))
+4. Copy your generated API key (`gkey_live_...`).
 
-### Option B: Via Developer API (Headless Registration)
+### Option B: HTTP API Registration
 ```bash
-# 1. Register Developer Account
-curl -X POST https://dakly-engin.vercel.app/api/auth/register \
+# 1. Register developer account
+curl -X POST https://dakly.cc.cd/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"name": "Dev User", "email": "dev@example.com", "password": "yourPassword123"}'
 
-# 2. Create Project & Obtain API Key
-curl -X POST https://dakly-engin.vercel.app/api/projects \
+# 2. Create project and generate API key
+curl -X POST https://dakly.cc.cd/api/projects \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <YOUR_JWT_TOKEN>" \
   -d '{
-    "name": "My App",
-    "senderEmail": "mybot@gmail.com",
+    "name": "Production Service",
+    "senderEmail": "service@gmail.com",
     "appPassword": "abcd efgh ijkl mnop"
   }'
 ```
 
 ---
 
-## 🤖 1-Click AI Integration Prompt (Drop-in for Any Project)
+## Official SDKs
 
-> [!TIP]
-> **Using an AI Coding Assistant (Cursor, GitHub Copilot, Antigravity, ChatGPT, Claude)?**  
-> You don't need to write or refactor code manually! Just copy the readymade prompt below, replace `<YOUR_DAKLY_API_KEY>` with your key, and paste it into your AI assistant inside your project.  
-> 
-> The AI will automatically inspect your project, detect if you have an existing (broken) email system, replace it without breaking your routes, or create a brand new OTP delivery flow tailored to your tech stack.
-
-```text
-You are a senior backend engineer. I need to integrate fast, reliable OTP email delivery into this project using the Dakly Email Engine microservice.
-
-Here are my Dakly Microservice details:
-- API Endpoint: https://dakly-engin.vercel.app/api/send
-- API Key: <REPLACE_WITH_YOUR_DAKLY_API_KEY>
-- Required Header: "x-api-key: <YOUR_API_KEY>"
-- HTTP Method: POST
-- Payload Schema:
-  {
-    "to": "recipient@email.com",
-    "subject": "Your Verification Code: 123456",
-    "html": "<styled html template>",
-    "text": "Your OTP code is 123456"
-  }
-
-Please execute this integration in my project by following these steps:
-
-1. CODEBASE RECON:
-   - Scan my repository to see if an email sending mechanism already exists (e.g. Nodemailer, SendGrid, custom SMTP) or if auth/OTP routes (signup, login, forgot-password) are defined.
-   - Identify the framework (Express, Next.js, NestJS, FastAPI, Django, Laravel, etc.) and environment setup (.env).
-
-2. ADAPTIVE IMPLEMENTATION:
-   - [SCENARIO A - Existing Email System]: If my codebase already has an email sending function or file (e.g. mailer.js, nodemailer.ts, sendMail.js) that is throwing errors or timeouts, perform a "Drop-in Replacement". Keep the existing function name and parameters so NONE of my existing controllers or routes break, but swap out the broken transport with the Dakly API fetch call.
-   - [SCENARIO B - New Setup]: If no email helper exists, create a clean, modular emailService (or otpService) helper and export a sendOtp(to, otp, name) function.
-
-3. RESPONSIVE OTP HTML TEMPLATE:
-   - Design a modern, clean HTML card with my project's theme containing:
-     - Clear OTP display with styled background, large bold typography, and letter spacing.
-     - 10-minute expiration notice.
-     - Security disclaimer ("Never share this code with anyone").
-
-4. SECRETS & ENVIRONMENT HYGIENE:
-   - Add DAKLY_API_KEY="<YOUR_API_KEY>" and DAKLY_API_URL="https://dakly-engin.vercel.app/api/send" to my .env file (and mirror placeholders in .env.example).
-   - Never hardcode the API key in source code.
-
-5. INTERACTIVE CLARIFICATIONS:
-   - If you are unsure where OTP generation is triggered or which routes handle verification, ask me clarifying questions one by one before modifying any sensitive routes.
-   - Once confirmed, implement the solution and provide a quick test command.
-```
-
----
-
-## ⚡ Official Dakly SDK (Node.js, TypeScript & Python)
-
-Dakly provides zero-dependency official client libraries with TypeScript autocomplete, automatic retry, and built-in bounce suppression error handling.
-
-### 📦 Node.js / TypeScript (`npm i dakly`)
+### Node.js / TypeScript (`npm i dakly`)
 ```bash
 npm install dakly
 ```
@@ -179,162 +127,106 @@ import { Dakly, DaklySuppressedError } from 'dakly';
 
 const dakly = new Dakly(process.env.DAKLY_API_KEY || 'gkey_live_...');
 
-// 1. Send OTP Verification Code (1-Liner)
+// 1. One-line OTP delivery
 const otpRes = await dakly.sendOtp({
   to: 'user@example.com',
   code: '849201',
   appName: 'CampusPortal',
-  expiresInMinutes: 10
+  expiresInMinutes: 10,
 });
 console.log('Delivered! Tracking ID:', otpRes.trackingId);
 
-// 2. Pre-Built Responsive Email Templates (Welcome, Reset, Invoice, Notes)
+// 2. Pre-built Welcome Template
 await dakly.sendWelcome({
-  to: 'founder@startup.com',
-  name: 'Rahul Sharma',
-  appName: 'Dakly Cloud',
-  loginUrl: 'https://dakly.cc.cd/login'
+  to: 'user@example.com',
+  name: 'Alex Rivera',
+  appName: 'CampusPortal',
+  loginUrl: 'https://campus.example.edu/login',
 });
 
-// 3. College Notes & PDF Attachment Delivery
+// 3. Notes & PDF Attachment Delivery
 await dakly.sendNotes({
   to: 'student@college.edu',
   studentName: 'Amit',
   subjectName: 'Computer Networks',
   notesTitle: 'Unit 3: TCP Congestion Control',
   downloadUrl: 'https://college.edu/notes/cn-unit3.pdf',
-  attachments: [{ filename: 'CN_Notes.pdf', path: 'https://college.edu/notes/cn-unit3.pdf' }]
+  attachments: [{ filename: 'CN_Notes.pdf', path: 'https://college.edu/notes/cn-unit3.pdf' }],
 });
 
-// 4. Ping Connection & Live Quota
+// 4. Ping Server & Check Remaining Daily Capacity
 const ping = await dakly.ping();
-console.log('Remaining emails today:', ping.capacity.remainingToday, '/', ping.capacity.totalDailyQuota);
+console.log(`Remaining quota: ${ping.capacity.remainingToday} / ${ping.capacity.totalDailyQuota}`);
 ```
 
-### 🐍 Python 3.8+ (`pip install dakly`)
+### Python 3.8+ (`pip install dakly`)
 ```bash
 pip install dakly
 ```
 
 ```python
-from dakly import Dakly, DaklySuppressedError
+from dakly import Dakly
 
 dakly = Dakly("gkey_live_...")
 
-# 1-Liner OTP
-res = dakly.send_otp(to="student@example.com", code="849201", app_name="StudyHub")
-print("Delivered! Tracking ID:", res["trackingId"])
+# Send OTP
+res = dakly.send_otp(to="user@example.com", code="849201", app_name="StudyHub")
+print("Tracking ID:", res["trackingId"])
 
-# Welcome Onboarding
-dakly.send_welcome(to="newuser@example.com", name="Rahul", app_name="StudyHub")
+# Send Onboarding Welcome
+dakly.send_welcome(to="user@example.com", name="Alex", app_name="StudyHub")
 
-# Health Ping
+# Health Check & Quota
 ping = dakly.ping()
 print("Remaining quota today:", ping["capacity"]["remainingToday"])
 ```
 
 ---
 
-## 📦 Step 2: Raw Fetch / HTTP Implementation (Zero Dependencies)
+## Raw HTTP Implementation (Zero Dependencies)
 
-If you prefer calling the raw REST API without installing an SDK, you don't need `nodemailer` or SMTP. Just make a standard `fetch` or HTTP call in your language of choice.
+If you prefer standard HTTP requests without installing packages, call `POST /api/send` directly:
 
-### 1. Node.js / Express / Next.js (JavaScript / TypeScript)
-
-Create a helper file `emailHelper.js` in your project:
-
+### 1. Node.js `fetch` (ESM / Next.js / Express)
 ```javascript
-// emailHelper.js
-const DAKLY_API_KEY = process.env.DAKLY_API_KEY || "gkey_live_YOUR_API_KEY";
-const DAKLY_ENDPOINT = "https://dakly-engin.vercel.app/api/send";
+const DAKLY_API_KEY = process.env.DAKLY_API_KEY;
+const DAKLY_ENDPOINT = 'https://dakly.cc.cd/api/send';
 
-/**
- * Send OTP Verification Email
- */
-export async function sendOtpEmail(to, otpCode, userName = "User") {
+export async function sendOtpEmail(to, otpCode, userName = 'User') {
   const response = await fetch(DAKLY_ENDPOINT, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
-      "x-api-key": DAKLY_API_KEY
+      'Content-Type': 'application/json',
+      'x-api-key': DAKLY_API_KEY,
     },
     body: JSON.stringify({
       to,
       subject: `Your Verification Code: ${otpCode}`,
       html: `
-        <div style="font-family: Arial, sans-serif; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; max-width: 480px;">
-          <h2 style="color: #1e293b; margin-top: 0;">Welcome, ${userName}! 👋</h2>
-          <p style="color: #475569; font-size: 15px;">Use the following 6-digit code to complete your verification:</p>
-          <div style="background: #f1f5f9; padding: 14px; text-align: center; border-radius: 8px; font-size: 30px; font-weight: bold; letter-spacing: 6px; color: #4f46e5; margin: 20px 0;">
+        <div style="font-family: sans-serif; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px; max-width: 480px;">
+          <h2 style="color: #0f172a; margin-top: 0;">Verification Code</h2>
+          <p style="color: #475569;">Hello ${userName}, use this code to sign in:</p>
+          <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 16px; text-align: center; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #1e40af;">
             ${otpCode}
           </div>
-          <p style="color: #94a3b8; font-size: 13px; margin-bottom: 0;">This code expires in 10 minutes. If you did not request this, please ignore this email.</p>
-        </div>
-      `
-    })
-  });
-
-  return await response.json();
-}
-
-/**
- * Send Notes / Invoices / PDF Documents
- */
-export async function sendPdfDocument(to, title, pdfUrl) {
-  const response = await fetch(DAKLY_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": DAKLY_API_KEY
-    },
-    body: JSON.stringify({
-      to,
-      subject: `Your Document: ${title}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>Here is your document: ${title} 📄</h2>
-          <p>Please find the requested PDF attached to this email.</p>
+          <p style="color: #94a3b8; font-size: 12px; margin-top: 16px;">Expires in 10 minutes. If you did not request this, you can ignore this email.</p>
         </div>
       `,
-      attachments: [
-        {
-          filename: `${title}.pdf`,
-          path: pdfUrl // Remote URL (Cloudinary / S3 / Firebase) or base64 data URI
-        }
-      ]
-    })
+    }),
   });
 
   return await response.json();
 }
 ```
 
-**Usage in your controllers/routes:**
-```javascript
-import { sendOtpEmail } from './emailHelper.js';
-
-// Inside your Signup/Login route:
-const otp = Math.floor(100000 + Math.random() * 900000);
-const result = await sendOtpEmail(req.body.email, otp, req.body.name);
-console.log("Email Delivery Result:", result);
-// Result: { success: true, trackingId: "msg_1792408990_...", status: "DELIVERED" }
-```
-
----
-
-### 2. Python (Requests / FastAPI / Django)
-
+### 2. Python `requests`
 ```python
 import requests
 
-DAKLY_API_KEY = "gkey_live_YOUR_API_KEY"
-DAKLY_URL = "https://dakly-engin.vercel.app/api/send"
+DAKLY_API_KEY = "gkey_live_..."
+DAKLY_ENDPOINT = "https://dakly.cc.cd/api/send"
 
 def send_email(to_email, subject, html_content, attachments=None):
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": DAKLY_API_KEY
-    }
     payload = {
         "to": to_email,
         "subject": subject,
@@ -343,205 +235,121 @@ def send_email(to_email, subject, html_content, attachments=None):
     if attachments:
         payload["attachments"] = attachments
 
-    response = requests.post(DAKLY_URL, json=payload, headers=headers)
-    return response.json()
-
-# Example:
-result = send_email("student@example.com", "Your Notes are Ready", "<p>Download your semester notes!</p>")
-print(result)
+    res = requests.post(
+        DAKLY_ENDPOINT,
+        headers={"Content-Type": "application/json", "x-api-key": DAKLY_API_KEY},
+        json=payload
+    )
+    return res.json()
 ```
 
----
-
-### 3. cURL (Instant Terminal Test)
-
+### 3. cURL
 ```bash
-curl -X POST https://dakly-engin.vercel.app/api/send \
+curl -X POST https://dakly.cc.cd/api/send \
   -H "Content-Type: application/json" \
   -H "x-api-key: gkey_live_YOUR_API_KEY" \
   -d '{
-    "to": "your-email@gmail.com",
-    "subject": "Dakly Test Email",
-    "html": "<h1>It works! 🚀</h1><p>Delivered in under 1 second via Dakly.</p>"
+    "to": "recipient@example.com",
+    "subject": "Dakly Verification Test",
+    "html": "<h2>Verification Test</h2><p>Delivered via Dakly in under 1 second.</p>"
   }'
 ```
 
 ---
 
-## 📖 API Reference
+## API Reference
 
 ### `POST /api/send`
-Dispatches a transactional email synchronously.
+Dispatches an email synchronously through the sender pool.
 
-#### Request Headers:
-| Header | Required | Value / Format |
+#### Headers
+| Header | Required | Format |
 | :--- | :--- | :--- |
-| `Content-Type` | **Yes** | `application/json` |
-| `x-api-key` | **Yes** | `gkey_live_<64-hex-characters>` |
+| `Content-Type` | Yes | `application/json` |
+| `x-api-key` | Yes | `gkey_live_<64-hex-chars>` |
 
-#### Request Body Parameters:
+#### Body Parameters
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `to` | `string` | **Yes** | Recipient email address (e.g. `user@example.com`) |
-| `subject` | `string` | **Yes** | Subject line of the email (auto-generated if using pre-built templates) |
-| `html` | `string` | Optional* | Rich HTML body (*either `html`, `text`, or `template` is required) |
-| `text` | `string` | Optional* | Plain text fallback |
-| `template` | `string` | Optional | Name of pre-built template (`otp`, `welcome`, `password_reset`, `notes_delivery`, `receipt`) |
-| `vars` | `object` | Optional | Key-value pairs of dynamic variables interpolated into the template |
-| `attachments` | `array` | Optional | Array of attachments: `[{ filename: "file.pdf", path: "https://..." }]` |
+| `to` | `string` | Yes | Recipient email address |
+| `subject` | `string` | Optional* | Email subject line (auto-generated when using pre-built templates) |
+| `html` | `string` | Optional* | HTML email body (*either `html`, `text`, or `template` is required) |
+| `text` | `string` | Optional* | Plain text body fallback |
+| `template` | `string` | Optional | Template identifier (`otp`, `welcome`, `password_reset`, `notes_delivery`, `receipt`, or custom template ID) |
+| `vars` | `object` | Optional | Dynamic key-value pairs interpolated into template placeholders |
+| `alias` | `string` | Optional | Specific sender alias address (`support@yourdomain.com`) |
+| `attachments` | `array` | Optional | List of files: `[{ "filename": "report.pdf", "path": "https://..." }]` |
 | `replyTo` | `string` | Optional | Custom reply-to address |
 
----
+#### Attachments
+- **Remote URLs**: Public HTTPS links (S3, Cloudinary, Firebase Storage).
+- **Base64 URIs**: Formatted as `data:application/pdf;base64,...`.
+- **Limits**: Up to 15 MB per file; 20 MB total payload per dispatch.
 
-### 📧 Pre-built Email Templates & Dynamic Variable Engine
+#### Responses
 
-Instead of hand-crafting HTML/CSS for every email, Dakly provides **5 built-in, mobile-responsive email templates**. Simply pass the `template` identifier and dynamic `vars`. Dakly automatically handles layout, typography, dark/light email clients, and embeds your project's **1:1 verified brand logo** in the header.
-
-| Template ID | Use Case | Key Variables (`vars`) | Auto-Generated Subject |
-| :--- | :--- | :--- | :--- |
-| `otp` | 4–6 digit verification code, 2FA, passwordless login | `code`, `name`, `validMinutes`, `actionName` | `{{code}} is your {{projectName}} verification code` |
-| `welcome` | New user onboarding, signup greeting with CTA button | `name`, `actionUrl`, `actionText`, `introMessage`, `features` | `Welcome to {{projectName}}! 🎉` |
-| `password_reset` | Account recovery, credentials reset link with raw link fallback | `name`, `resetUrl`, `validMinutes`, `ipAddress`, `deviceInfo` | `Reset your {{projectName}} password` |
-| `notes_delivery` | College notes, PDF study guides, lecture summaries | `studentName`, `subject`, `notesTitle`, `semester`, `downloadUrl` | `📚 {{notesTitle}} - {{projectName}}` |
-| `receipt` | Payment confirmations, invoices, subscription renewals | `customerName`, `invoiceNumber`, `amount`, `date`, `planName`, `items` | `Receipt #{{invoiceNumber}} from {{projectName}}` |
-
-#### Dispatching a Pre-built Template via API:
-```javascript
-// Native JavaScript / TypeScript (Node.js, Next.js, Cloudflare Workers, Express)
-const response = await fetch("https://dakly-engin.vercel.app/api/send", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "x-api-key": "gkey_live_YOUR_KEY"
-  },
-  body: JSON.stringify({
-    to: "student@example.com",
-    template: "welcome",
-    vars: {
-      name: "Rahul",
-      actionUrl: "https://myapp.com/dashboard",
-      actionText: "Launch Console"
-    }
-  })
-});
-
-const result = await response.json();
-console.log("Delivered in < 1s:", result.trackingId);
-```
-
----
-
-### 📊 Open & Click Tracking Telemetry (Zero-Setup Analytics)
-
-Every outgoing HTML email is automatically instrumented with zero-friction engagement telemetry:
-
-1. **Email Open Tracking:**
-   - Injects an invisible 1x1 transparent tracking pixel before `</body>`.
-   - Returns a 42-byte GIF with aggressive zero-cache headers (`Cache-Control: no-store, no-cache, max-age=0`).
-   - Automatically detects recipient device type (`MOBILE` vs `DESKTOP` vs `OTHER`).
-   - Dispatches a real-time `email.opened` webhook on the first open.
-
-2. **Link Click Tracking:**
-   - Automatically detects and rewrites outgoing `<a href="...">` links through Dakly's secure redirect engine (`/api/track/click/:trackingId?url=...`).
-   - Validates destination URLs against open-redirect exploits (enforces `http://` / `https://`).
-   - Increments click counters, records target URLs and timestamps, and safely issues a `302 Found` redirect.
-   - Dispatches an `email.clicked` webhook on the first click.
-
-3. **Dashboard & API Analytics:**
-   - Call `GET /api/stats` (with `x-api-key`) to receive live open rates, click-through rates, and device breakdown:
-   ```json
-   "tracking": {
-     "totalOpened": 142,
-     "totalClicked": 38,
-     "openRate": "48.6%",
-     "clickRate": "13.0%",
-     "devices": {
-       "mobile": 92,
-       "desktop": 45,
-       "other": 5,
-       "mobilePercent": 65,
-       "desktopPercent": 32,
-       "otherPercent": 3
-     }
-   }
-   ```
-
-
-#### Attachments Support:
-- **Remote URLs:** Links to public files on Firebase Storage, AWS S3, Cloudinary, etc.
-- **Base64 Data URIs:** `data:application/pdf;base64,...`
-- **File Limits:** Up to **15 MB** per individual attachment, **20 MB** total payload per email.
-
-#### Success Response (`200 OK`):
+**Success (`200 OK`)**:
 ```json
 {
   "success": true,
   "trackingId": "msg_1792408990_3df8a4bc12",
   "status": "DELIVERED",
-  "sender": "yourcollege@gmail.com",
-  "latencyMs": 710,
-  "timestamp": "2026-10-19T11:00:00.000Z"
+  "sender": "service@gmail.com",
+  "latencyMs": 680,
+  "timestamp": "2026-11-16T10:00:00.000Z"
 }
 ```
 
-#### Error Responses:
-| Status Code | Meaning | Common Cause |
+**Common Error Codes**:
+| Code | Reason | Resolution |
 | :--- | :--- | :--- |
-| `400 Bad Request` | Missing `to`, `subject`, or message body | Body validation error |
-| `401 Unauthorized` | Invalid or revoked `x-api-key` | Check if API Key matches active project |
-| `429 Too Many Requests` | Daily quota exceeded (500/day on single sender) | Add a backup sender in dashboard for failover |
-| `502 Bad Gateway` | Google SMTP authentication failed | Invalid 16-character App Password |
+| `400 Bad Request` | Missing `to` or message body | Include `to` and one of `html`, `text`, or `template` |
+| `401 Unauthorized` | Invalid or revoked API key | Verify key matches active project in dashboard |
+| `403 Forbidden` | IP address blocked by whitelist | Add client IP in **Security & Team** whitelist |
+| `404 Not Found` | Unknown template ID | Use a valid template ID (`otp`, `welcome`, `receipt`, etc.) |
+| `429 Too Many Requests` | Daily sending quota reached | Add a backup Gmail account in project settings |
+| `502 Bad Gateway` | Google SMTP authentication rejected | Re-generate 16-character Google App Password |
 
 ---
 
-## 🛡️ Built-in Engine Guardrails
+## Pre-Built & Custom Templates
 
-### 1. Dual-Sender Failover (1,000+ Free Emails / Day)
-Free Gmail accounts have a 500 emails/day quota limit. Dakly allows you to attach **multiple sender accounts** (Primary + Backup) to a single project.
-When the Primary account hits 500 emails, Dakly automatically fails over to the Backup account with **zero downtime**. Quotas automatically reset daily at 00:00 UTC.
+### 1. Built-in Templates
 
-### 2. Anti-Spam Smart Pacing
-If your client application triggers a burst of requests (e.g. 50 OTP requests within 2 seconds during a college exam registration), Google SMTP would normally trigger a temporary `421` or `454` rate limit block. Dakly automatically serializes dispatches per sender with a **200ms safe spacing queue**, guaranteeing deliverability without dropouts.
+| Template ID | Purpose | Variables (`vars`) |
+| :--- | :--- | :--- |
+| `otp` | Verification codes, 2FA, passwordless login | `code`, `name`, `validMinutes`, `actionName` |
+| `welcome` | User onboarding greetings with primary CTA button | `name`, `actionUrl`, `actionText`, `introMessage` |
+| `password_reset` | Password recovery links with IP/device notices | `name`, `resetUrl`, `validMinutes`, `ipAddress`, `deviceInfo` |
+| `notes_delivery` | Academic notes, study material, and PDF attachments | `studentName`, `subject`, `notesTitle`, `semester`, `downloadUrl` |
+| `receipt` | Payment confirmations, invoices, and itemized billing | `customerName`, `invoiceNumber`, `amount`, `date`, `paymentMethod`, `planName`, `receiptUrl` |
 
-### 3. Delivery Webhooks (HMAC-SHA256)
-Configure a webhook URL in your project settings (`https://yourapp.com/api/dakly-webhook`). Whenever an email is delivered or bounces, Dakly posts an event signed with an HMAC-SHA256 signature (`x-dakly-signature`).
+### 2. Custom Templates & Paid Pro Tier
 
-### 4. Smart Gmail Account Warm-up
-Sending 500 emails on Day 1 from a brand-new Gmail account can raise spam flags with Google algorithms. Dakly automatically activates **Smart Warm-up** for every new sender, progressively ramping up capacity over 6 days:
-- **Day 1:** 25 emails/day
-- **Day 2:** 50 emails/day
-- **Day 3:** 100 emails/day
-- **Day 4:** 200 emails/day
-- **Day 5:** 350 emails/day
-- **Day 6+:** 500 emails/day (Fully warmed up)
-
-*Operators can toggle warm-up mode on/off or skip straight to full 500/day speed anytime with 1 click in the dashboard.*
-
-### 5. Automated Hard Bounce Suppression Guard
-Google penalizes sender accounts that repeatedly send to non-existent or invalid addresses.
-- Whenever an SMTP hard bounce occurs (`550 User unknown`, `551`, `553 Invalid mailbox`, `does not exist`), Dakly automatically flags and saves the recipient to the project's **Suppression List**.
-- Any future dispatches to that recipient are **blocked proactively (`status: "BLOCKED_SUPPRESSED"`)** before reaching Google SMTP, preserving your sender reputation.
-- Operators can view, filter, manually add, or unblock recipients directly from the **Bounce Guard & Suppression** dashboard modal.
+Paid Pro projects support custom transactional templates:
+- Write custom HTML with variable placeholders: `{{userName}}`, `{{{unescapedHtml}}}`.
+- Dynamic preview studio with variable schema inspector.
+- Automatically wrapped in your verified 1:1 brand logo, header, and clean footer shell (or bypass wrapping by supplying a full `<!DOCTYPE html>` document).
+- **Pro Monthly**: ₹20 / month
+- **Pro Annual Pass**: ₹216 / year *(monthly × 12 with 10% discount applied, saving ₹24)*
 
 ---
 
-## 🔔 Webhooks & Instant Delivery Alerts
+## Delivery Webhooks (HMAC-SHA256)
 
-Stream real-time HTTP events directly to your backend server as emails are delivered, opened, clicked, or bounced.
+Receive real-time HTTP event notifications on delivery status, opens, clicks, and bounces.
 
-### Supported Webhook Events
-- `email.delivered`: Gmail SMTP returned `250 OK` confirmation.
-- `email.failed`: Dispatch failed due to authentication or connection issues.
-- `email.suppressed`: Dispatch was proactively blocked by the Bounce Guard.
-- `email.opened`: Recipient opened the email (1x1 transparent tracking pixel loaded).
+### Events
+- `email.delivered`: SMTP returned `250 OK`.
+- `email.failed`: Dispatch rejected by SMTP.
+- `email.suppressed`: Blocked before dispatch due to previous hard bounce.
+- `email.opened`: Tracking pixel loaded by recipient client.
 - `email.clicked`: Recipient clicked a tracked hyperlink.
-- `webhook.test`: Live diagnostic ping sent from the Webhook console.
+- `webhook.test`: Test event triggered from the dashboard.
 
-### Cryptographic Signature Verification (`x-dakly-signature`)
-Dakly calculates an HMAC-SHA256 signature using your project's Webhook Secret (`daksec_...`) and sends it in the `x-dakly-signature` header:
-`x-dakly-signature: sha256=<hex_digest>`
+### Verification (`x-dakly-signature`)
+Dakly computes a cryptographic HMAC-SHA256 digest using your Webhook Secret (`daksec_...`):
 
-#### Node.js / Express Verification:
 ```javascript
 import express from 'express';
 import { Dakly } from 'dakly';
@@ -554,7 +362,7 @@ app.post('/api/webhooks/dakly', (req, res) => {
   const isValid = Dakly.verifyWebhookSignature({
     payload: req.body,
     signature,
-    secret: process.env.DAKLY_WEBHOOK_SECRET, // 'daksec_...'
+    secret: process.env.DAKLY_WEBHOOK_SECRET,
   });
 
   if (!isValid) {
@@ -562,114 +370,77 @@ app.post('/api/webhooks/dakly', (req, res) => {
   }
 
   const { event, trackingId, recipient } = req.body;
-  console.log(`Received event ${event} for ${recipient} (Tracking: ${trackingId})`);
+  console.log(`Event ${event} for ${recipient} (Tracking: ${trackingId})`);
   res.status(200).json({ received: true });
 });
 ```
 
-#### Python / FastAPI Verification:
-```python
-from fastapi import FastAPI, Request, HTTPException
-from dakly import Dakly
-import os
+---
 
-app = FastAPI()
+## Security & Team Workspaces
 
-@app.post("/api/webhooks/dakly")
-async def handle_dakly_webhook(request: Request):
-    payload = await request.json()
-    signature = request.headers.get("x-dakly-signature", "")
-    secret = os.environ.get("DAKLY_WEBHOOK_SECRET", "daksec_...")
-
-    is_valid = Dakly.verify_webhook_signature(payload=payload, signature=signature, secret=secret)
-    if not is_valid:
-        raise HTTPException(status_code=401, detail="Invalid HMAC signature")
-
-    print(f"Event: {payload.get('event')} -> {payload.get('recipient')}")
-    return {"status": "ok"}
-```
+- **AES-256-GCM Encryption**: Google App Passwords are encrypted before database storage using 32-byte keys, 16-byte random IVs, and authenticated tags. Plaintext passwords are never stored or logged.
+- **Server IP Whitelisting**: Lock API access to explicit IP addresses (`203.0.113.195`), CIDR subnets (`192.168.1.0/24`), or wildcard patterns (`192.168.1.*`). Unauthorized IPs receive `403 IP_NOT_WHITELISTED`.
+- **1-Click Key Rotation**: Regenerate API keys instantly without restarting services.
+- **Team Roles (RBAC)**: Assign Owner, Admin, or Viewer permissions to teammates without sharing Gmail credentials.
 
 ---
 
-## 👥 Team Workspaces & Server IP Whitelisting
-
-### 1. Server IP Whitelisting (Zero-Trust Security)
-Bind your API key strictly to your application server IP addresses so that even if an API key is accidentally leaked or committed to a public Git repository, unauthorized machines cannot use your daily email quota.
-- **Exact IPs:** `203.0.113.195`
-- **CIDR Subnet Ranges:** `192.168.1.0/24`, `10.0.0.0/8`
-- **Wildcard Patterns:** `192.168.1.*`
-- **Localhost Aliases:** `127.0.0.1`, `::1`, `localhost`
-- Unauthorized requests are instantly rejected with **HTTP 403 Forbidden** (`code: "IP_NOT_WHITELISTED"`).
-
-### 2. 1-Click API Key Rotation
-If a key is ever compromised, regenerate it in **1 click** directly from the dashboard or via `POST /api/projects/:id/api-key/rotate`. The old key is immediately and permanently invalidated with zero server restart required.
-
-### 3. Team Workspaces & Multi-Seat RBAC
-Collaborate with teammates without sharing account passwords:
-- **Owner:** Full privileges (delete project, rotate API keys, manage team members, configure senders).
-- **Admin:** Can send emails, edit project settings, manage webhooks, configure IP rules, and view logs.
-- **Viewer:** Read-only access to analytics, audit logs, template previews, and quota status.
-- **Pending Invite Auto-Linking:** If you invite a teammate before they register on Dakly, their access is activated automatically the moment they create their account with that email address.
-
----
-
-## 💻 Running Locally
+## Local Development & Testing
 
 ### Prerequisites
 - Node.js `20.x` or `22.x`
-- MongoDB Atlas or local MongoDB instance
+- MongoDB instance (Atlas or local)
 
-### 1. Clone & Setup Backend
+### 1. Setup Backend
 ```bash
 git clone https://github.com/parthpatil1234p-svg/Dakly.git
 cd Dakly
 
-# Install backend dependencies
+# Install dependencies
 npm install
 
 # Configure environment
 cp .env.example .env
-# Fill in your MONGODB_URI, ENCRYPTION_MASTER_KEY, and JWT_SECRET in .env
+# Set MONGODB_URI, ENCRYPTION_MASTER_KEY (64 hex characters), and JWT_SECRET
 
-# Run backend
+# Run unit tests
+npm test
+
+# Start backend server
 npm start
-# -> Backend active on http://localhost:5000
+# -> Backend listening on http://localhost:5000
 ```
 
-### 2. Run React Web Dashboard
+### 2. Setup Frontend Dashboard
 ```bash
 cd frontend
 
-# Install frontend dependencies
+# Install dependencies
 npm install
 
-# Run Vite dev server
+# Run Playwright UI & WCAG AA accessibility tests
+npm run test:ui
+
+# Start Vite development server
 npm run dev
 # -> Dashboard active on http://localhost:5173
 ```
 
 ---
 
-## 🔐 Environment Variables Reference
+## Environment Variables Reference
 
-Create a `.env` file in the root directory:
-
-```env
-# Server
-PORT=5000
-NODE_ENV=development
-
-# Database
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/dakly?retryWrites=true&w=majority
-
-# Security (AES-256-GCM) - Exactly 64 hex characters (32 bytes)
-ENCRYPTION_MASTER_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-
-# JWT Secret for developer authentication
-JWT_SECRET=super_secret_jwt_microservice_dev_key_2026
-```
+| Variable | Required | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `PORT` | No | Server port (defaults to 5000) | `5000` |
+| `NODE_ENV` | No | Environment mode | `production` / `development` |
+| `MONGODB_URI` | Yes | MongoDB connection string | `mongodb+srv://...` |
+| `ENCRYPTION_MASTER_KEY` | Yes | 64-character hex string (32 bytes) for AES-256-GCM | `0123456789abcdef...` |
+| `JWT_SECRET` | Yes | Secret key used to sign developer JWT sessions | `super_secret_jwt_key...` |
 
 ---
 
-## 📄 License
+## License
+
 Distributed under the **MIT License**. Created by [Parth Patil](https://github.com/parthpatil1234p-svg).
