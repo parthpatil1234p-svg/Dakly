@@ -540,6 +540,47 @@ const TEMPLATE_CATALOG = [
 ];
 
 /**
+ * Converts HTML body content to plain text without regular expression tag filtering.
+ * Uses a deterministic state-machine scanner to safely extract text content.
+ * 
+ * @param {string} html
+ * @returns {string} Clean plain text
+ */
+function htmlToPlainText(html) {
+  if (!html || typeof html !== 'string') return '';
+  let inTag = false;
+  let inScript = false;
+  let inStyle = false;
+  let text = '';
+  let tagBuffer = '';
+
+  for (let i = 0; i < html.length; i++) {
+    const char = html[i];
+    if (char === '<') {
+      inTag = true;
+      tagBuffer = '';
+    } else if (char === '>') {
+      inTag = false;
+      const lower = tagBuffer.toLowerCase().trim();
+      if (lower.startsWith('script')) inScript = true;
+      else if (lower.startsWith('/script')) inScript = false;
+      else if (lower.startsWith('style')) inStyle = true;
+      else if (lower.startsWith('/style')) inStyle = false;
+      else if (lower === 'br' || lower === 'p' || lower === '/p' || lower === 'div' || lower === '/div' || lower === 'tr' || lower === 'td') {
+        if (!inScript && !inStyle) text += ' ';
+      }
+      tagBuffer = '';
+    } else if (inTag) {
+      tagBuffer += char;
+    } else if (!inScript && !inStyle) {
+      text += char;
+    }
+  }
+
+  return text.split(/\s+/).filter(Boolean).join(' ');
+}
+
+/**
  * Renders a custom user-defined template with dynamic variable interpolation and shell wrapping
  * @param {Object} customTpl
  * @param {Object} [vars]
@@ -573,16 +614,7 @@ function renderCustomTemplate(customTpl, vars = {}, project = {}) {
   const isFullDoc = /<html[\s>]/i.test(renderedHtml) || /<!doctype html/i.test(renderedHtml);
   const finalHtml = isFullDoc ? renderedHtml : wrapShell(renderedHtml, project);
 
-  let stripped = renderedHtml
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-  let prev;
-  do {
-    prev = stripped;
-    stripped = stripped.replace(/<[^>]*>/g, ' ');
-  } while (stripped !== prev);
-  stripped = stripped.replace(/[<>]/g, '');
-  const plainText = stripped.replace(/\s+/g, ' ').trim();
+  const plainText = htmlToPlainText(renderedHtml);
 
   return {
     html: finalHtml,

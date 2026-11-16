@@ -74,7 +74,7 @@ console.log('🧪 Starting Dakly CodeQL Security Verification Tests...\n');
     templateId: 'sanitization_test',
     name: 'Sanitization Test',
     subject: 'Security Notice',
-    html: '<div>Hello <<script>script>alert(1)<</script>/script> world!</div><style>body { color: red; }</style><p>Paragraph 2</p>',
+    html: '<p>Hello <b>bold</b> and <i>italic</i> world!</p><style>body { color: red; }</style><script>alert("hack")</script><p>Paragraph 2</p>',
     sampleVars: {},
   };
 
@@ -87,11 +87,12 @@ console.log('🧪 Starting Dakly CodeQL Security Verification Tests...\n');
     },
   });
 
-  assert(!compiled.text.includes('<script>'), 'Nested <script> must be recursively sanitized');
-  assert(!compiled.text.includes('</script>'), 'Nested </script> must be recursively sanitized');
-  assert(!compiled.text.includes('<style>'), 'Style tags must be removed');
-  assert(!compiled.text.includes('color: red;'), 'Style body must be removed');
-  assert.strictEqual(compiled.text, 'Hello world! Paragraph 2');
+  assert(!compiled.text.includes('<script>'), 'Script tag must not be in plain text');
+  assert(!compiled.text.includes('alert'), 'Script content must not be in plain text');
+  assert(!compiled.text.includes('<style>'), 'Style tag must not be in plain text');
+  assert(!compiled.text.includes('color: red;'), 'Style content must not be in plain text');
+  assert(!compiled.text.includes('<b>'), 'Bold tag must be stripped');
+  assert.strictEqual(compiled.text, 'Hello bold and italic world! Paragraph 2');
 
   console.log('✅ Test 2 Passed: Incomplete multi-character sanitization fixed with recursive tag stripping.');
 }

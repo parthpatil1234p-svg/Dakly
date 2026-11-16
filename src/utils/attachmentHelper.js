@@ -6,6 +6,9 @@
 
 const { isSafeRemoteUrl, isPrivateIp, assertSafeRemoteUrl } = require('./ssrfHelper');
 
+// CodeQL-sanitized FQDN URL pattern for SSRF prevention
+const SAFE_ATTACHMENT_URL_PATTERN = /^https?:\/\/(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/;
+
 const MAX_SINGLE_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
 const MAX_TOTAL_ATTACHMENT_SIZE = 20 * 1024 * 1024; // 20 MB
 const FETCH_TIMEOUT_MS = 12000; // 12 seconds
@@ -53,11 +56,11 @@ async function processAttachments(attachments = []) {
     const remoteUrl = url || (typeof path === 'string' && /^https?:\/\//i.test(path) ? path : null);
 
     if (remoteUrl) {
-      if (!isSafeRemoteUrl(remoteUrl)) {
+      const safeFetchUrl = new URL(remoteUrl.trim()).href;
+      if (!SAFE_ATTACHMENT_URL_PATTERN.test(safeFetchUrl) || !isSafeRemoteUrl(safeFetchUrl)) {
         throw new Error(`Attachment "${filename || i}": URL points to a blocked, private, or invalid host.`);
       }
 
-      const safeFetchUrl = new URL(remoteUrl.trim()).href;
       filename = filename || extractFilenameFromUrl(safeFetchUrl, `attachment_${i + 1}.pdf`);
 
       let response;

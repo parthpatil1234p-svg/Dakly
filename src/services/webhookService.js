@@ -12,6 +12,9 @@ const EmailLog = require('../models/EmailLog');
 const Project = require('../models/Project');
 const { isSafeRemoteUrl, isPrivateIp, assertSafeRemoteUrl } = require('../utils/ssrfHelper');
 
+// CodeQL-sanitized FQDN URL pattern for SSRF prevention
+const SAFE_WEBHOOK_URL_PATTERN = /^https?:\/\/(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/;
+
 /**
  * Verifies an incoming webhook HMAC signature
  * @param {string|object} payload - Raw request body string or JSON object
@@ -64,11 +67,10 @@ async function dispatchWebhook(project, payload) {
     return { dispatched: false, status: 'EVENT_NOT_SUBSCRIBED' };
   }
 
-  if (!isSafeRemoteUrl(project.webhookUrl)) {
+  const safeWebhookUrl = new URL(project.webhookUrl.trim()).href;
+  if (!SAFE_WEBHOOK_URL_PATTERN.test(safeWebhookUrl) || !isSafeRemoteUrl(safeWebhookUrl)) {
     return { dispatched: false, status: 'UNSAFE_OR_INVALID_URL', reason: 'Disallowed private, loopback, or invalid destination URL.' };
   }
-
-  const safeWebhookUrl = new URL(project.webhookUrl.trim()).href;
   const timestamp = new Date().toISOString();
   const enhancedPayload = {
     ...payload,
@@ -182,14 +184,13 @@ async function sendTestWebhook(project) {
     };
   }
 
-  if (!isSafeRemoteUrl(project.webhookUrl)) {
+  const safeWebhookUrl = new URL(project.webhookUrl.trim()).href;
+  if (!SAFE_WEBHOOK_URL_PATTERN.test(safeWebhookUrl) || !isSafeRemoteUrl(safeWebhookUrl)) {
     return {
       success: false,
       error: 'Disallowed Webhook Destination: localhost and private network addresses are blocked for security.',
     };
   }
-
-  const safeWebhookUrl = new URL(project.webhookUrl.trim()).href;
 
   const testPayload = {
     event: 'webhook.test',

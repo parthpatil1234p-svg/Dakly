@@ -891,7 +891,13 @@ async function testWebhookEndpoint(req, res) {
 
     // Allow testing a new URL before saving
     if (req.body.webhookUrl && req.body.webhookUrl.trim()) {
-      project.webhookUrl = req.body.webhookUrl.trim();
+      const candidateUrl = req.body.webhookUrl.trim();
+      const SAFE_URL_PATTERN = /^https?:\/\/(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/;
+      const { isSafeRemoteUrl } = require('../utils/ssrfHelper');
+      if (!SAFE_URL_PATTERN.test(candidateUrl) || !isSafeRemoteUrl(candidateUrl)) {
+        return res.status(400).json({ success: false, error: 'Disallowed Webhook Destination: URL must be a public HTTP(S) address.' });
+      }
+      project.webhookUrl = candidateUrl;
     }
     if (req.body.webhookSecret !== undefined) {
       project.webhookSecret = req.body.webhookSecret ? req.body.webhookSecret.trim() : null;
