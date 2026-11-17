@@ -127,8 +127,15 @@ export default function PricingModal({
   const filteredPlans = PLANS_CATALOG.filter((p) => p.category === activeCategory);
   const selectedPlan = PLANS_CATALOG.find((p) => p.id === selectedPlanId) || filteredPlans[0];
 
+  const isPlanAlreadyActive = (p) => {
+    if (!p || project?.plan !== 'pro' || p.category !== 'plans') return false;
+    const currentCycle = project.planCycle || 'monthly';
+    const planCycle = p.cycle || (p.id === 'pro-yearly' ? 'yearly' : 'monthly');
+    return currentCycle === planCycle;
+  };
+
   const handleCheckout = async () => {
-    if (!selectedPlan) return;
+    if (!selectedPlan || isPlanAlreadyActive(selectedPlan)) return;
     setIsProcessing(true);
     setPaymentNotice(null);
 
@@ -183,6 +190,8 @@ export default function PricingModal({
         });
       }
 
+      let hasHandledDismiss = false;
+
       // Step 3: Open Razorpay Checkout modal
       const options = {
         key: data.keyId,
@@ -202,8 +211,11 @@ export default function PricingModal({
         modal: {
           ondismiss: function () {
             setIsProcessing(false);
-            if (onCancelReopen) {
-              onCancelReopen();
+            if (!hasHandledDismiss) {
+              hasHandledDismiss = true;
+              if (onCancelReopen) {
+                onCancelReopen();
+              }
             }
           },
         },
@@ -266,10 +278,12 @@ export default function PricingModal({
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (failResp) {
-        alert(`Payment failed: ${failResp.error?.description || 'Transaction could not be completed.'}`);
         setIsProcessing(false);
-        if (onCancelReopen) {
-          onCancelReopen();
+        if (!hasHandledDismiss) {
+          hasHandledDismiss = true;
+          if (onCancelReopen) {
+            onCancelReopen();
+          }
         }
       });
 
@@ -432,9 +446,11 @@ export default function PricingModal({
                 </div>
 
                 <div className="mt-4 pt-2.5 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Instant activation</span>
-                  <span className={`font-semibold ${isSelected ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`}>
-                    {isSelected ? '● Selected' : 'Select'}
+                  <span className="text-slate-500 whitespace-nowrap">
+                    {isPlanAlreadyActive(plan) ? 'Current Subscription' : 'Instant activation'}
+                  </span>
+                  <span className={`font-semibold whitespace-nowrap ${isPlanAlreadyActive(plan) ? 'text-emerald-600 dark:text-emerald-400' : isSelected ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`}>
+                    {isPlanAlreadyActive(plan) ? '✓ Active' : isSelected ? '● Selected' : 'Select'}
                   </span>
                 </div>
               </div>
@@ -472,9 +488,11 @@ export default function PricingModal({
                 className="button button-primary flex items-center space-x-2 px-5 py-2.5 text-xs font-bold whitespace-nowrap shadow-sm hover:shadow shrink-0"
                 style={{ whiteSpace: 'nowrap' }}
                 onClick={handleCheckout}
-                disabled={isProcessing || !selectedPlan}
+                disabled={isProcessing || !selectedPlan || isPlanAlreadyActive(selectedPlan)}
               >
-                {isProcessing ? (
+                {isPlanAlreadyActive(selectedPlan) ? (
+                  <span className="whitespace-nowrap">✓ Current Plan Active</span>
+                ) : isProcessing ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
                     <span className="whitespace-nowrap">Opening Razorpay…</span>

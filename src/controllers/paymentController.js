@@ -35,6 +35,31 @@ async function createRazorpayOrder(req, res) {
       return res.status(400).json({ success: false, error: 'planId and priceRupees are required.' });
     }
 
+    // Guard against duplicate subscription purchases
+    if (projectId && mongoose.isValidObjectId(projectId) && (category === 'plans' || planId.startsWith('pro-'))) {
+      const Project = require('../models/Project');
+      const targetProject = await Project.findById(projectId).select('plan planCycle name');
+      if (targetProject && targetProject.plan === 'pro') {
+        const requestedCycle = cycle || (planId === 'pro-yearly' ? 'yearly' : 'monthly');
+        const currentCycle = targetProject.planCycle || 'monthly';
+        if (requestedCycle === currentCycle) {
+          return res.status(400).json({
+            success: false,
+            error: `Your project "${targetProject.name}" is already active on the Pro ${requestedCycle} plan. Duplicate charges are blocked.`,
+            alreadySubscribed: true,
+          });
+        }
+      }
+    }
+
+    // Cancel older PENDING orders for the same project and plan to avoid orphaned duplicates
+    if (projectId && mongoose.isValidObjectId(projectId)) {
+      await PaymentOrder.updateMany(
+        { projectId, planId, status: 'PENDING' },
+        { status: 'CANCELLED', updatedAt: new Date() }
+      ).catch(() => {});
+    }
+
     const orderId = `DAKLY-${planId}-${Date.now()}`;
     const user = req.user;
 
