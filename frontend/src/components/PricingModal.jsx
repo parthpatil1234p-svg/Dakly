@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import Dialog from './Dialog';
+import { API_BASE_URL } from '../services/api';
 
 export const PLANS_CATALOG = [
   // Developer Pro Subscription Passes
@@ -141,9 +142,15 @@ export default function PricingModal({
     let isSubscribed = true;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/payments/orders/${encodeURIComponent(activeOrder.orderId)}`);
+        const res = await fetch(`${API_BASE_URL}/api/payments/orders/${encodeURIComponent(activeOrder.orderId)}`);
         if (!res.ok) return;
-        const data = await res.json();
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          return;
+        }
         if (!isSubscribed) return;
 
         if (data.success && (data.order?.status === 'COMPLETED' || data.order?.status === 'PAID')) {
@@ -200,7 +207,7 @@ export default function PricingModal({
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch('/api/payments/create-session', {
+      const res = await fetch(`${API_BASE_URL}/api/payments/create-session`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -213,7 +220,14 @@ export default function PricingModal({
         }),
       });
 
-      const data = await res.json();
+      const responseText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        throw new Error(`Server returned unexpected response (HTTP ${res.status}): ${responseText.substring(0, 80) || 'Empty response'}`);
+      }
+
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Failed to initialize payment session.');
       }
