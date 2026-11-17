@@ -102,11 +102,60 @@ export const PLANS_CATALOG = [
 /**
  * Triggers Sovereign UPI Checkout via YouPI PG
  */
-export function initiateCreditPurchase(user, plan, project, onSuccess, onFailed, onClosed) {
+export async function initiateCreditPurchase(
+  user,
+  plan,
+  project,
+  onSuccess,
+  onFailed,
+  onClosed,
+  onReadyToOpen
+) {
   const YoupiObj = window.Youpi || window.YoupiCheckout;
-  const orderId = `DAKLY-${plan.id}-${Date.now()}`;
   const checkoutHost = 'https://dakly-pay.fly.dev';
-  const checkoutUrl = `${checkoutHost}/checkout/demo?customAmount=${encodeURIComponent(plan.priceRupees)}&customName=${encodeURIComponent(plan.name)}`;
+
+  // 1. Create trusted checkout session on backend
+  let sessionData = null;
+  try {
+    const token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('dakly_token') ||
+      sessionStorage.getItem('token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch('/api/payments/create-session', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        planId: plan.id,
+        priceRupees: plan.priceRupees,
+        credits: plan.credits || 0,
+        plan: plan.plan || (plan.id.startsWith('pro') ? 'pro' : 'free'),
+        cycle: plan.cycle || (plan.id === 'pro-yearly' ? 'yearly' : 'monthly'),
+        projectId: project?.id || project?._id || '',
+      }),
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success && (data.checkoutUrl || data.paymentId)) {
+      sessionData = data;
+    } else {
+      console.warn('⚠️ [YouPI] Backend session response not OK:', data);
+    }
+  } catch (createErr) {
+    console.warn('⚠️ [YouPI] Session creation warning, falling back to direct mode:', createErr.message);
+  }
+
+  const orderId = sessionData?.orderId || `DAKLY-${plan.id}-${Date.now()}`;
+  const checkoutUrl =
+    sessionData?.checkoutUrl ||
+    (sessionData?.paymentId
+      ? `${checkoutHost}/checkout/${sessionData.paymentId}`
+      : `${checkoutHost}/stand/qr.svg?amount=${plan.priceRupees}`);
+  const paymentId = sessionData?.paymentId || '';
 
   const checkoutOptions = {
     order_id: orderId,
@@ -116,6 +165,7 @@ export function initiateCreditPurchase(user, plan, project, onSuccess, onFailed,
     name: plan.name,
     description: `${plan.name} (₹${plan.priceRupees}) - Instant Sovereign UPI Activation`,
     checkoutUrl,
+    paymentId,
     portalUrl: checkoutHost,
     customer: {
       name: user?.name || 'Dakly Developer',
@@ -160,6 +210,11 @@ export function initiateCreditPurchase(user, plan, project, onSuccess, onFailed,
       }
     },
   };
+
+  // Signal caller to unmount native <dialog> right before iframe mounts
+  if (onReadyToOpen) {
+    onReadyToOpen();
+  }
 
   if (!YoupiObj) {
     console.warn('⚠️ YouPI SDK not detected on window, opening hosted checkout fallback.');
@@ -210,17 +265,12 @@ export default function PricingModal({
   const filteredPlans = PLANS_CATALOG.filter((p) => p.category === activeCategory);
   const selectedPlan = PLANS_CATALOG.find((p) => p.id === selectedPlanId) || filteredPlans[0];
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!selectedPlan) return;
     setIsProcessing(true);
     setPaymentNotice(null);
 
-    // Dismiss the pricing modal so native <dialog showModal()> doesn't sit in the top-layer over the checkout iframe
-    if (onClose) {
-      onClose();
-    }
-
-    initiateCreditPurchase(
+    await initiateCreditPurchase(
       user,
       selectedPlan,
       project,
@@ -242,6 +292,13 @@ export default function PricingModal({
         console.log('ℹ️ [YouPI] Checkout closed.');
         if (onCancelReopen) {
           onCancelReopen();
+        }
+      },
+      () => {
+        // Dismiss the pricing modal right before YouPI mounts so native <dialog showModal()>
+        // doesn't sit in the top-layer over the checkout iframe
+        if (onClose) {
+          onClose();
         }
       }
     );

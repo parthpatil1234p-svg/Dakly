@@ -235,8 +235,58 @@ async function fulfillPaymentOrder({
   };
 }
 
+/**
+ * Creates a server-side Sovereign UPI checkout session via YouPI PG
+ * 
+ * @param {Object} options
+ * @param {string} options.orderId - Unique order ID
+ * @param {number} options.amount - Amount in INR
+ * @param {Object} options.customer - Customer details (name, email, phone)
+ * @param {Object} options.metadata - Order metadata
+ * @returns {Promise<{ paymentId: string, checkoutUrl: string, orderId: string, amount: string }>}
+ */
+async function createCheckoutSession({ orderId, amount, customer = {}, metadata = {} }) {
+  const host = process.env.YOUPI_CHECKOUT_HOST || 'https://dakly-pay.fly.dev';
+  const merchantId = process.env.YOUPI_MERCHANT_KEY || '00000000-0000-0000-0000-000000000001';
+  const merchantKey = process.env.YOUPI_MERCHANT_API_KEY || 'mk_live_25a249554b4028c390b2f1f5b9728472ade498445dabc630';
+
+  const res = await fetch(`${host}/api/v1/payments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Merchant-Id': merchantId,
+      'X-Merchant-Key': merchantKey,
+    },
+    body: JSON.stringify({
+      orderId,
+      amount: Number(amount).toFixed(2),
+      currency: 'INR',
+      method: 'MANUAL_UPI',
+      customer: {
+        name: customer.name || 'Dakly Developer',
+        email: customer.email || 'developer@example.com',
+        phone: customer.phone || '',
+      },
+      metadata,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.paymentId) {
+    throw new Error(data.error || 'Failed to create payment session on YouPI PG');
+  }
+
+  return {
+    paymentId: data.paymentId,
+    checkoutUrl: data.checkoutUrl,
+    orderId: data.orderId,
+    amount: data.amount,
+  };
+}
+
 module.exports = {
   AVAILABLE_PLANS,
   verifyWebhookSignature,
   fulfillPaymentOrder,
+  createCheckoutSession,
 };

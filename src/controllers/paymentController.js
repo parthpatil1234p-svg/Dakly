@@ -137,9 +137,72 @@ async function getOrderStatus(req, res) {
   }
 }
 
+/**
+ * Create a new sovereign UPI payment session on YouPI PG
+ * POST /api/payments/create-session
+ */
+async function createCheckoutSession(req, res) {
+  try {
+    const { planId, priceRupees, credits, plan, cycle, projectId } = req.body;
+    if (!planId || !priceRupees) {
+      return res.status(400).json({ success: false, error: 'planId and priceRupees are required.' });
+    }
+
+    const orderId = `DAKLY-${planId}-${Date.now()}`;
+    const user = req.user;
+
+    const session = await paymentService.createCheckoutSession({
+      orderId,
+      amount: priceRupees,
+      customer: {
+        name: user?.name || 'Dakly Developer',
+        email: user?.email || 'developer@example.com',
+        phone: user?.phone || '',
+      },
+      metadata: {
+        userId: user?._id?.toString() || '',
+        projectId: projectId || '',
+        planId,
+        creditsToAdd: credits || 0,
+        plan: plan || (planId.startsWith('pro') ? 'pro' : 'free'),
+        cycle: cycle || (planId === 'pro-yearly' ? 'yearly' : 'monthly'),
+      },
+    });
+
+    const mongoose = require('mongoose');
+    await PaymentOrder.create({
+      orderId,
+      userId: user?._id || null,
+      projectId: projectId && mongoose.isValidObjectId(projectId) ? projectId : null,
+      amount: priceRupees,
+      currency: 'INR',
+      status: 'PENDING',
+      method: 'UPI',
+      planId,
+      metadata: {
+        paymentId: session.paymentId,
+        checkoutUrl: session.checkoutUrl,
+        creditsToAdd: credits || 0,
+      },
+    }).catch((err) => console.warn('Could not save pending order record:', err.message));
+
+    return res.json({
+      success: true,
+      orderId,
+      paymentId: session.paymentId,
+      checkoutUrl: session.checkoutUrl,
+      amount: session.amount,
+    });
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   handleYoupiWebhook,
   getPlans,
   getPaymentHistory,
   getOrderStatus,
+  createCheckoutSession,
 };
