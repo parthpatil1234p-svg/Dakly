@@ -3,7 +3,7 @@
  * Talks to the backend microservice engine (default: https://dakly-engin.vercel.app)
  */
 
-export const API_BASE_URL = import.meta.env.VITE_DAKLY_API_URL || 'https://dakly-engin.vercel.app';
+export const API_BASE_URL = import.meta.env.VITE_DAKLY_API_URL || (import.meta.env.DEV ? '' : 'https://dakly-engin.vercel.app');
 
 // Auth Endpoints
 export async function loginUser({ email, password }) {

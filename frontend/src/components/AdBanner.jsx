@@ -3,8 +3,10 @@ import { useEffect } from 'react';
 /** One quiet footer placement. Never competes with account or sender setup. */
 export default function AdBanner() {
   useEffect(() => {
-    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); }
-    catch { /* Ad blockers must not interrupt the product. */ }
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); }
+      catch { /* Ad blockers must not interrupt the product. */ }
+    }
   }, []);
   return <aside className="ad-placement" aria-label="Advertisement">
     <p>Advertisement</p>

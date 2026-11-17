@@ -1,0 +1,193 @@
+{
+  "mode": "before",
+  "timestamp": "2026-11-17T11:27:53.583Z",
+  "breakpointsTested": [
+    320,
+    375,
+    768,
+    1024,
+    1440,
+    1920
+  ],
+  "layoutIssues": [],
+  "smallTapTargets": [
+    {
+      "tag": "A",
+      "text": "Support",
+      "width": 45,
+      "height": 18
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Privacy",
+      "width": 40,
+      "height": 18
+    },
+    {
+      "tag": "BUTTON",
+      "text": "Terms",
+      "width": 34,
+      "height": 18
+    }
+  ],
+  "consoleLogs": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()"
+    }
+  ],
+  "networkErrors": [],
+  "interactions": [
+    {
+      "element": "Sign in button",
+      "page": "Landing",
+      "expected": "Opens Auth Dialog Modal",
+      "actual": "Dialog opened with sign-in form",
+      "status": "works",
+      "rootCause": "None"
+    },
+    {
+      "element": "Escape key on Auth Modal",
+      "page": "Landing",
+      "expected": "Closes dialog modal",
+      "actual": "Modal closed smoothly",
+      "status": "works",
+      "rootCause": "None"
+    },
+    {
+      "element": "Privacy button in footer",
+      "page": "Landing",
+      "expected": "Opens Privacy Policy Dialog Modal",
+      "actual": "Privacy policy modal displayed with Section 4 contact mailto",
+      "status": "works",
+      "rootCause": "None"
+    },
+    {
+      "element": "Terms button in footer",
+      "page": "Landing",
+      "expected": "Opens Terms of Service Dialog Modal",
+      "actual": "Terms modal displayed with Section 4 billing info",
+      "status": "works",
+      "rootCause": "None"
+    },
+    {
+      "element": "Templates Navigation Tab",
+      "page": "Console",
+      "expected": "Switches view to Template Studio with cards, editor, and live preview",
+      "actual": "Template Studio displayed with cards, variables editor, and device iframe preview",
+      "status": "works",
+      "rootCause": "None"
+    },
+    {
+      "element": "Welcome & Onboarding Template Card",
+      "page": "Template Studio",
+      "expected": "Activates template and populates sample variables in editor",
+      "actual": "Selected card marked Active, editor loaded welcome variables",
+      "status": "works",
+      "rootCause": "None"
+    },
+    {
+      "element": "Mobile Preview Toggle",
+      "page": "Template Studio",
+      "expected": "Switches iframe preview to mobile device frame",
+      "actual": "Preview switched to mobile frame dimensions cleanly",
+      "status": "works",
+      "rootCause": "None"
+    },
+    {
+      "element": "Logs Navigation Tab",
+      "page": "Console",
+      "expected": "Switches view to Email Delivery Logs table",
+      "actual": "Delivery Logs table loaded with status filters and search bar",
+      "status": "works",
+      "rootCause": "None"
+    },
+    {
+      "element": "Upgrade / Pro Plan Button",
+      "page": "Console",
+      "expected": "Opens Pricing & Sending Upgrades Modal",
+      "actual": "Pricing modal opened with Pro Passes and Email Credits categories",
+      "status": "works",
+      "rootCause": "None"
+    }
+  ],
+  "axeViolationsCount": 1,
+  "axeViolations": [
+    {
+      "id": "label-content-name-mismatch",
+      "impact": "serious",
+      "description": "Ensure that elements labelled through their content must have their visible text as part of their accessible name",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/label-content-name-mismatch?application=playwright",
+      "nodesCount": 1,
+      "snippet": "<button aria-label=\"Copy API key\" class=\"text-link\">Copy key</button>"
+    }
+  ]
+}

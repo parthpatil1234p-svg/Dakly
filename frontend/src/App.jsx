@@ -2336,7 +2336,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
               <span className="mono">Project API key</span>
               <code>{isKeyVisible ? activeProject?.apiKey : 'gkey_••••••••••••'}</code>
               <button type="button" className="icon-button" aria-label={isKeyVisible ? 'Hide API key' : 'Show API key'} onClick={() => setIsKeyVisible(!isKeyVisible)}>{isKeyVisible ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-              <button aria-label="Copy API key" className="text-link" onClick={handleCopyApiKey}>{copiedKey ? 'Copied' : 'Copy key'}</button>
+              <button aria-label="Copy key" className="text-link" onClick={handleCopyApiKey}>{copiedKey ? 'Copied' : 'Copy key'}</button>
               <button className="text-link" onClick={handlePingKey} disabled={isPinging}>{isPinging ? 'Checking…' : 'Check connection'}</button>
               <button className="text-link" onClick={() => setActiveTab('security')}>Key settings</button>
             </div>
@@ -2709,7 +2709,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                             </button>
                           ))}
                         </div>
-                        <button aria-label="Copy project API key"
+                        <button aria-label="Copy Code"
                           type="button"
                           onClick={() => {
                             navigator.clipboard.writeText(getTemplateSnippet());
@@ -3174,7 +3174,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                         <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold">PROJECT API KEY</div>
                         <div className="flex items-center justify-between font-mono text-sm text-brand-600 dark:text-brand-300 font-bold">
                           <span className="truncate pr-2">{p.apiKey}</span>
-                          <button aria-label="Copy project API key"
+                          <button aria-label="Copy Code"
                             onClick={() => {
                               navigator.clipboard.writeText(p.apiKey);
                               alert('API Key copied!');
@@ -4480,7 +4480,7 @@ async def handle_dakly_webhook(request: Request):
                       <span className="text-sm font-semibold text-slate-900 dark:text-white"> 1. Client Setup & Quota Diagnostics</span>
                       <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Ping & Authenticate</span>
                     </div>
-                    <button aria-label="Copy project API key"
+                    <button aria-label="Copy Snippet"
                       onClick={() => {
                         const code = document.getElementById('snippetSetupCode').innerText;
                         handleCopySnippet('setup', code);
@@ -4547,7 +4547,7 @@ console.log('Project:', ping.project, '| Remaining:', ping.capacity.remainingTod
                       <span className="text-sm font-semibold text-slate-900 dark:text-white"> 2. One-Liner OTP Verification Code</span>
                       <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">Fast 1-Liner</span>
                     </div>
-                    <button aria-label="Copy project API key"
+                    <button aria-label="Copy Snippet"
                       onClick={() => {
                         const code = document.getElementById('snippetOtpCode').innerText;
                         handleCopySnippet('otp', code);
@@ -4639,7 +4639,7 @@ console.log('Delivered in:', result.executionTimeMs, 'ms');`}
                       <span className="text-sm font-semibold text-slate-900 dark:text-white"> 3. Pre-Built Responsive Templates (Welcome, Reset, Invoice)</span>
                       <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">Zero HTML Required</span>
                     </div>
-                    <button aria-label="Copy project API key"
+                    <button aria-label="Copy Snippet"
                       onClick={() => {
                         const code = document.getElementById('snippetTemplatesCode').innerText;
                         handleCopySnippet('templates', code);
@@ -4756,7 +4756,7 @@ app.post('/api/welcome', async (req, res) => {
                       <span className="text-sm font-semibold text-slate-900 dark:text-white"> 4. College Notes & PDF Attachment Delivery</span>
                       <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">15MB Max Support</span>
                     </div>
-                    <button aria-label="Copy project API key"
+                    <button aria-label="Copy Snippet"
                       onClick={() => {
                         const code = document.getElementById('snippetPdfCode').innerText;
                         handleCopySnippet('pdf', code);
@@ -4871,7 +4871,7 @@ console.log('Result:', result.status, result.trackingId);`}
                       <span className="text-sm font-semibold text-slate-900 dark:text-white"> 5. Bounce Suppression & Exception Handling</span>
                       <span className="px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300">Account Protection</span>
                     </div>
-                    <button aria-label="Copy project API key"
+                    <button aria-label="Copy Snippet"
                       onClick={() => {
                         const code = document.getElementById('snippetErrorsCode').innerText;
                         handleCopySnippet('errors', code);
