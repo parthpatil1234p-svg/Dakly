@@ -183,8 +183,10 @@ button svg, a svg { flex-shrink: 0; }
 .project-form .form-actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-6); }
 .legacy-panel, .glass-card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
 .legacy-panel { min-width: 0; }
-.console-footer { border-top: 1px solid var(--line); padding: var(--space-6) var(--space-8); display: flex; flex-wrap: wrap; gap: var(--space-4); color: var(--muted); font-size: 12px; }
-.console-footer button { background: none; border: 0; min-height: 44px; }
+.console-footer { border-top: 1px solid var(--line); padding: var(--space-4) var(--space-8); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-4); color: var(--muted); font-size: 12px; }
+.console-footer nav { display: flex; align-items: center; gap: var(--space-6); }
+.console-footer :is(a, button) { background: none; border: 0; padding: 0; color: inherit; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; min-height: auto !important; line-height: 1.5; transition: color 140ms ease-out; }
+.console-footer :is(a, button):hover { color: var(--accent); }
 .project-key-strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); border-bottom: 1px solid var(--line); padding-bottom: var(--space-4); margin-bottom: var(--space-6); font-size: 12px; color: var(--muted); }
 .project-key-strip code { overflow-wrap: anywhere; font-size: 12px; color: var(--ink); }
 .project-key-strip .text-link { font-size: 12px; }

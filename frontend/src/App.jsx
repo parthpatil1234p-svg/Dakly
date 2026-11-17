@@ -4979,7 +4979,14 @@ curl -X POST "${API_BASE_URL}/api/send" \\
       {/* Multiplex / Matched Content AdSense Unit (Autorelaxed) */}
       
 
-      <footer className="console-footer"><span>Dakly / Your email workspace</span><a href="mailto:daklysupport@disheera.site" className="hover:underline">Support</a><button onClick={() => setShowPrivacyModal(true)}>Privacy</button><button onClick={() => setShowTermsModal(true)}>Terms</button></footer>
+      <footer className="console-footer">
+        <span>Dakly / Your email workspace</span>
+        <nav aria-label="Legal and support links">
+          <a href="mailto:daklysupport@disheera.site">Support</a>
+          <button type="button" onClick={() => setShowPrivacyModal(true)}>Privacy</button>
+          <button type="button" onClick={() => setShowTermsModal(true)}>Terms</button>
+        </nav>
+      </footer>
       {/* Legal & Privacy Policy Modals for Dashboard View */}
       {renderLegalModals()}
 
