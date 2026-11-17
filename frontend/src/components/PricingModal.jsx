@@ -89,22 +89,22 @@ export const PLANS_CATALOG = [
     ],
   },
   {
-    id: 'pro-unlimited',
-    name: 'Pro Unlimited & Scale Pack',
+    id: 'scale-pack',
+    name: 'Scale Credits Pack',
     category: 'credits',
     badge: 'BEST VALUE',
     badgeColor: 'bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/30 font-bold',
     priceRupees: 499,
-    interval: 'bundle',
-    plan: 'pro',
-    cycle: 'monthly',
+    interval: 'one-time',
+    plan: null,
+    cycle: null,
     credits: 50000,
-    tagline: '50,000 email credits bundled with Full Pro features.',
+    tagline: '50,000 permanent email credits for high-volume apps.',
     features: [
-      '50,000 bonus email credits',
-      'Full Pro Custom Templates unlocked',
-      'Multi-account dual-sender pooling',
-      'Priority developer support & webhook SLAs',
+      '50,000 extra email credits (₹0.009 / email)',
+      'Permanent validity with zero expiry',
+      'Stacks directly on top of daily Gmail quota',
+      'Priority delivery queue & burst protection',
     ],
   },
 ];
@@ -134,6 +134,7 @@ export default function PricingModal({
 
     try {
       const token =
+        localStorage.getItem('dakly_auth_token') ||
         localStorage.getItem('token') ||
         localStorage.getItem('dakly_token') ||
         sessionStorage.getItem('token');
@@ -150,7 +151,8 @@ export default function PricingModal({
           planId: selectedPlan.id,
           priceRupees: selectedPlan.priceRupees,
           credits: selectedPlan.credits || 0,
-          plan: selectedPlan.plan || (selectedPlan.id.startsWith('pro') ? 'pro' : 'free'),
+          category: selectedPlan.category,
+          plan: selectedPlan.category === 'plans' ? 'pro' : null,
           cycle: selectedPlan.cycle || (selectedPlan.id === 'pro-yearly' ? 'yearly' : 'monthly'),
           projectId: project?.id || project?._id || '',
         }),
@@ -216,6 +218,12 @@ export default function PricingModal({
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
+                projectId: project?.id || project?._id || '',
+                planId: selectedPlan.id,
+                category: selectedPlan.category,
+                plan: selectedPlan.category === 'plans' ? 'pro' : null,
+                cycle: selectedPlan.cycle || (selectedPlan.id === 'pro-yearly' ? 'yearly' : 'monthly'),
+                creditsToAdd: selectedPlan.credits || 0,
               }),
             });
 

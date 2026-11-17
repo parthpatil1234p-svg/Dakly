@@ -195,6 +195,7 @@ async function getProjects(req, res) {
         plan: p.plan || 'free',
         planCycle: p.planCycle || 'monthly',
         isPro: p.plan === 'pro',
+        purchasedCredits: capacity.purchasedCredits || p.purchasedCredits || 0,
         customTemplates: (p.customTemplates || []).map((ct) => ({
           id: ct._id,
           templateId: ct.templateId,
@@ -316,6 +317,7 @@ async function updateProject(req, res) {
         plan: project.plan || 'free',
         planCycle: project.planCycle || 'monthly',
         isPro: project.plan === 'pro',
+        purchasedCredits: capacity.purchasedCredits || project.purchasedCredits || 0,
         customTemplates: project.customTemplates || [],
       },
     });

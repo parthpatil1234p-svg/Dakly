@@ -30,7 +30,7 @@ function getPlans(req, res) {
  */
 async function createRazorpayOrder(req, res) {
   try {
-    const { planId, priceRupees, credits, plan, cycle, projectId } = req.body;
+    const { planId, priceRupees, credits, plan, cycle, projectId, category } = req.body;
     if (!planId || !priceRupees) {
       return res.status(400).json({ success: false, error: 'planId and priceRupees are required.' });
     }
@@ -47,19 +47,20 @@ async function createRazorpayOrder(req, res) {
         email: user?.email || 'developer@example.com',
       },
       metadata: {
-        userId: user?._id?.toString() || '',
+        userId: user?._id?.toString() || user?.id?.toString() || '',
         projectId: projectId || '',
         planId,
-        creditsToAdd: credits || 0,
-        plan: plan || (planId.startsWith('pro') ? 'pro' : 'free'),
+        category: category || (planId.startsWith('pro-') ? 'plans' : 'credits'),
+        creditsToAdd: Number(credits) || 0,
+        plan: plan || (category === 'plans' ? 'pro' : null),
         cycle: cycle || (planId === 'pro-yearly' ? 'yearly' : 'monthly'),
       },
     });
 
-    // Save initial PENDING order record in database
+    // Save initial PENDING order record in database (fail-safe)
     await PaymentOrder.create({
       orderId,
-      userId: user?._id || null,
+      userId: user?._id || user?.id || null,
       projectId: projectId && mongoose.isValidObjectId(projectId) ? projectId : null,
       amount: priceRupees,
       currency: 'INR',
@@ -67,12 +68,15 @@ async function createRazorpayOrder(req, res) {
       method: 'RAZORPAY',
       razorpayOrderId: rzpData.razorpayOrderId,
       planId,
-      creditsAdded: credits || 0,
+      creditsAdded: Number(credits) || 0,
       metadata: {
         planId,
-        creditsToAdd: credits || 0,
+        category,
+        creditsToAdd: Number(credits) || 0,
         plan,
         cycle,
+        projectId,
+        userId: user?._id?.toString() || user?.id?.toString() || null,
       },
     }).catch((err) => console.warn('Could not save initial pending order record:', err.message));
 
@@ -96,7 +100,18 @@ async function createRazorpayOrder(req, res) {
  */
 async function verifyRazorpayPayment(req, res) {
   try {
-    const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+    const {
+      orderId,
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+      projectId,
+      planId,
+      plan,
+      cycle,
+      creditsToAdd,
+      category,
+    } = req.body;
 
     if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
       return res.status(400).json({
@@ -116,6 +131,9 @@ async function verifyRazorpayPayment(req, res) {
       return res.status(400).json({ success: false, error: 'Invalid payment signature' });
     }
 
+    // Resolve user ID
+    const userId = req.user?._id?.toString() || req.user?.id?.toString() || null;
+
     // Signature is cryptographically verified - fulfill order
     const fulfillment = await paymentService.fulfillPaymentOrder({
       orderId,
@@ -124,15 +142,28 @@ async function verifyRazorpayPayment(req, res) {
       razorpaySignature,
       method: 'RAZORPAY',
       metadata: {
-        userId: req.user?._id?.toString(),
+        userId,
+        projectId,
+        planId,
+        plan,
+        cycle,
+        creditsToAdd,
+        category,
       },
       rawPayload: req.body,
     });
 
     return res.json({
       success: true,
-      message: 'Payment verified and credits/tier activated successfully.',
+      message: 'Payment verified and plan/credits activated successfully.',
       order: fulfillment.order,
+      project: fulfillment.project ? {
+        id: fulfillment.project._id,
+        plan: fulfillment.project.plan,
+        planCycle: fulfillment.project.planCycle,
+        isPro: fulfillment.project.plan === 'pro',
+        purchasedCredits: fulfillment.project.purchasedCredits || 0,
+      } : null,
     });
   } catch (error) {
     console.error('❌ Error verifying Razorpay payment:', error);

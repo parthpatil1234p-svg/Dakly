@@ -15,31 +15,11 @@ const Project = require('../models/Project');
 const User = require('../models/User');
 
 const AVAILABLE_PLANS = [
-  {
-    id: 'starter-pack',
-    name: 'Starter Credits Pack',
-    badge: 'PAY-AS-YOU-GO',
-    type: 'credits',
-    priceRupees: 99,
-    credits: 5000,
-    tagline: '5,000 emails for ₹99',
-    description: 'Instant top-up of 5,000 transactional emails. Credits never expire and stack on top of daily Gmail quota.',
-    features: ['5,000 extra email credits', 'Never expires', 'Zero SaaS markup fees', 'Dual-sender failover ready'],
-  },
-  {
-    id: 'growth-pack',
-    name: 'Growth Credits Pack',
-    badge: 'POPULAR',
-    type: 'credits',
-    priceRupees: 299,
-    credits: 25000,
-    tagline: '25,000 emails for ₹299',
-    description: 'High-volume batch dispatches for growing startups and SaaS platforms. Zero transaction fee via UPI.',
-    features: ['25,000 extra email credits', 'Never expires', 'Sub-second queue priority', 'Unlimited recipient domains'],
-  },
+  // 1. Pro Developer Subscription Passes
   {
     id: 'pro-monthly',
     name: 'Pro Monthly Pass',
+    category: 'plans',
     badge: 'MONTHLY',
     type: 'subscription',
     plan: 'pro',
@@ -53,6 +33,7 @@ const AVAILABLE_PLANS = [
   {
     id: 'pro-yearly',
     name: 'Pro Annual Pass',
+    category: 'plans',
     badge: '10% OFF',
     type: 'subscription',
     plan: 'pro',
@@ -64,18 +45,48 @@ const AVAILABLE_PLANS = [
     description: 'Monthly plan × 12 with 10% discount applied. 365 days of uninterrupted developer Pro features.',
     features: ['Full Pro developer features for 1 year', '10% discount applied', 'All future Pro templates included', 'Priority webhook delivery'],
   },
+  // 2. Extra Email Credit Packs (One-time, stacks on daily Gmail quota)
   {
-    id: 'pro-unlimited',
-    name: 'Pro Unlimited & Scale Pack',
-    badge: 'ENTERPRISE',
-    type: 'hybrid',
-    plan: 'pro',
-    cycle: 'monthly',
+    id: 'starter-pack',
+    name: 'Starter Credits Pack',
+    category: 'credits',
+    badge: 'PAY-AS-YOU-GO',
+    type: 'credits',
+    plan: null,
+    cycle: null,
+    priceRupees: 99,
+    credits: 5000,
+    tagline: '5,000 emails for ₹99',
+    description: 'Instant top-up of 5,000 transactional emails. Credits never expire and stack on top of daily Gmail quota.',
+    features: ['5,000 extra email credits', 'Never expires', 'Stacks over daily Gmail limit', 'Works with all REST endpoints & SDK'],
+  },
+  {
+    id: 'growth-pack',
+    name: 'Growth Credits Pack',
+    category: 'credits',
+    badge: 'MOST POPULAR',
+    type: 'credits',
+    plan: null,
+    cycle: null,
+    priceRupees: 299,
+    credits: 25000,
+    tagline: '25,000 emails for ₹299',
+    description: 'High-volume batch dispatches for growing startups and SaaS platforms. (₹0.011 / email).',
+    features: ['25,000 extra email credits', 'Permanent validity with zero expiry', 'Sub-second queue priority', 'Dedicated IP burst pacing protection'],
+  },
+  {
+    id: 'scale-pack',
+    name: 'Scale Credits Pack',
+    category: 'credits',
+    badge: 'BEST VALUE',
+    type: 'credits',
+    plan: null,
+    cycle: null,
     priceRupees: 499,
     credits: 50000,
-    tagline: '50,000 emails + Pro features',
-    description: 'Everything in Pro plus 50,000 high-speed transactional email credits.',
-    features: ['50,000 email credits', 'Pro Custom Templates unlocked', 'Dedicated IP warm-up routing', '24/7 developer webhook assistance'],
+    tagline: '50,000 emails for ₹499',
+    description: 'Maximum volume injection: 50,000 permanent email credits for large-scale marketing & launch OTPs.',
+    features: ['50,000 extra email credits', 'Never expires', 'Priority routing & burst protection', 'Volume discount (₹0.009 / email)'],
   },
 ];
 
@@ -96,14 +107,6 @@ function getRazorpayClient() {
 
 /**
  * Creates an order on Razorpay
- * 
- * @param {Object} options
- * @param {string} options.orderId - Unique Dakly internal order ID
- * @param {number} options.amount - Amount in INR (e.g. 20, 216, 299)
- * @param {string} [options.currency='INR'] - Currency code
- * @param {Object} [options.customer={}] - Customer name and email
- * @param {Object} [options.metadata={}] - Metadata to attach
- * @returns {Promise<{ razorpayOrderId: string, amount: number, currency: string, keyId: string }>}
  */
 async function createRazorpayOrder({ orderId, amount, currency = 'INR', customer = {}, metadata = {} }) {
   const instance = getRazorpayClient();
@@ -121,6 +124,7 @@ async function createRazorpayOrder({ orderId, amount, currency = 'INR', customer
       creditsToAdd: String(metadata.creditsToAdd || 0),
       plan: String(metadata.plan || ''),
       cycle: String(metadata.cycle || ''),
+      category: String(metadata.category || ''),
     },
   });
 
@@ -134,13 +138,6 @@ async function createRazorpayOrder({ orderId, amount, currency = 'INR', customer
 
 /**
  * Verifies the payment signature returned by the client-side Razorpay modal.
- * HMAC-SHA256 of `${razorpayOrderId}|${razorpayPaymentId}` with RAZORPAY_KEY_SECRET
- * 
- * @param {Object} params
- * @param {string} params.razorpayOrderId
- * @param {string} params.razorpayPaymentId
- * @param {string} params.razorpaySignature
- * @returns {boolean}
  */
 function verifyRazorpayPaymentSignature({ razorpayOrderId, razorpayPaymentId, razorpaySignature }) {
   const secret = process.env.RAZORPAY_KEY_SECRET;
@@ -165,11 +162,6 @@ function verifyRazorpayPaymentSignature({ razorpayOrderId, razorpayPaymentId, ra
 
 /**
  * Verifies Razorpay Webhook signature (x-razorpay-signature header)
- * 
- * @param {Buffer|string} rawBody - Raw unparsed webhook bytes
- * @param {string} signature - Header value
- * @param {string} secret - RAZORPAY_WEBHOOK_SECRET
- * @returns {boolean}
  */
 function verifyRazorpayWebhookSignature(rawBody, signature, secret) {
   if (!signature || !secret) {
@@ -197,18 +189,7 @@ function verifyRazorpayWebhookSignature(rawBody, signature, secret) {
 
 /**
  * Fulfills an authenticated payment order (upgrades plan tier and/or adds credits).
- * Implements strict idempotency so duplicate requests or webhooks are safely ignored.
- * 
- * @param {Object} params
- * @param {string} params.orderId - Unique internal order ID
- * @param {number} [params.amount] - Paid amount in INR
- * @param {string} [params.razorpayOrderId] - Razorpay Order ID
- * @param {string} [params.razorpayPaymentId] - Razorpay Payment ID
- * @param {string} [params.razorpaySignature] - Payment signature
- * @param {string} [params.method='RAZORPAY'] - Payment method
- * @param {Object} [params.metadata={}] - Metadata attached to checkout
- * @param {Object} [params.rawPayload=null] - Full event / verification payload
- * @returns {Promise<{ success: boolean, alreadyProcessed?: boolean, order: Object, project?: Object, user?: Object }>}
+ * Strictly guarantees database persistence in MongoDB so upgrades survive page refresh.
  */
 async function fulfillPaymentOrder({
   orderId,
@@ -224,7 +205,7 @@ async function fulfillPaymentOrder({
     throw new Error('Order ID or Razorpay Order ID is required for fulfillment');
   }
 
-  // Idempotency check: if this order was already successfully fulfilled, return cleanly
+  // Find existing order if already created in database
   let existingOrder = null;
   if (orderId) {
     existingOrder = await PaymentOrder.findOne({ orderId });
@@ -233,71 +214,91 @@ async function fulfillPaymentOrder({
     existingOrder = await PaymentOrder.findOne({ razorpayOrderId });
   }
 
+  // Idempotency: if already fulfilled, return current state
   if (existingOrder && existingOrder.status === 'SUCCESS') {
+    let p = null;
+    if (existingOrder.projectId) {
+      p = await Project.findById(existingOrder.projectId);
+    }
     return {
       success: true,
       alreadyProcessed: true,
       order: existingOrder,
+      project: p,
     };
   }
 
-  const planId = metadata.planId || existingOrder?.planId || null;
-  const creditsToAdd = Number(metadata.creditsToAdd || existingOrder?.creditsAdded || 0);
-  const targetPlan = metadata.plan || (planId && planId.startsWith('pro') ? 'pro' : null);
-  const targetCycle = metadata.cycle || (planId === 'pro-yearly' ? 'yearly' : 'monthly');
+  // Merge metadata: explicit parameters passed in verify call take precedence over initial pending order
+  const mergedMeta = {
+    ...(existingOrder?.metadata || {}),
+    ...metadata,
+  };
+
+  const planId = mergedMeta.planId || existingOrder?.planId || null;
+  const creditsToAdd = Number(mergedMeta.creditsToAdd || mergedMeta.credits || existingOrder?.creditsAdded || 0);
+
+  // Determine whether this purchase is for a Pro subscription pass or email credits
+  const isSubscriptionPass =
+    mergedMeta.category === 'plans' ||
+    planId === 'pro-monthly' ||
+    planId === 'pro-yearly' ||
+    (mergedMeta.plan === 'pro' && creditsToAdd === 0);
+
+  const targetPlan = isSubscriptionPass ? 'pro' : null;
+  const targetCycle = mergedMeta.cycle || (planId === 'pro-yearly' ? 'yearly' : 'monthly');
 
   let updatedProject = null;
   let updatedUser = null;
 
-  const targetProjectId = metadata.projectId || existingOrder?.projectId;
-  const targetUserId = metadata.userId || existingOrder?.userId;
+  const targetProjectId = mergedMeta.projectId || existingOrder?.projectId;
+  const targetUserId = mergedMeta.userId || existingOrder?.userId;
 
-  // 1. Fulfill Project Tier / Quota if targetProjectId is valid
+  // 1. Locate and update Project in MongoDB
   if (targetProjectId && mongoose.isValidObjectId(targetProjectId)) {
-    const project = await Project.findById(targetProjectId);
-    if (project) {
-      if (targetPlan === 'pro') {
-        project.plan = 'pro';
-        project.planCycle = targetCycle;
-      }
-      if (creditsToAdd > 0) {
-        project.purchasedCredits = (project.purchasedCredits || 0) + creditsToAdd;
-      }
-      await project.save();
-      updatedProject = project;
-    }
-  } else if (targetUserId && mongoose.isValidObjectId(targetUserId)) {
-    // If no specific projectId provided, upgrade user's primary project
-    const project = await Project.findOne({ userId: targetUserId });
-    if (project) {
-      if (targetPlan === 'pro') {
-        project.plan = 'pro';
-        project.planCycle = targetCycle;
-      }
-      if (creditsToAdd > 0) {
-        project.purchasedCredits = (project.purchasedCredits || 0) + creditsToAdd;
-      }
-      await project.save();
-      updatedProject = project;
-    }
+    updatedProject = await Project.findById(targetProjectId);
   }
 
-  // 2. Fulfill User Account Credits if targetUserId is valid
+  // Fallback: If not found by targetProjectId, look up by owner userId
+  if (!updatedProject && targetUserId && mongoose.isValidObjectId(targetUserId)) {
+    updatedProject = await Project.findOne({ userId: targetUserId });
+  }
+
+  // Fallback 2: Look up by team workspace member user ID
+  if (!updatedProject && targetUserId && mongoose.isValidObjectId(targetUserId)) {
+    updatedProject = await Project.findOne({ 'members.user': targetUserId });
+  }
+
+  // Apply updates to project
+  if (updatedProject) {
+    if (targetPlan === 'pro') {
+      updatedProject.plan = 'pro';
+      updatedProject.planCycle = targetCycle;
+      console.log(`🚀 [Payment] Project ${updatedProject.name} (${updatedProject._id}) upgraded to Pro (${targetCycle}).`);
+    }
+
+    if (creditsToAdd > 0) {
+      updatedProject.purchasedCredits = Number(updatedProject.purchasedCredits || 0) + creditsToAdd;
+      console.log(`💎 [Payment] Added ${creditsToAdd} credits to project ${updatedProject.name}. Total: ${updatedProject.purchasedCredits}`);
+    }
+
+    await updatedProject.save();
+  }
+
+  // 2. Fulfill User Account record if targetUserId is valid
   if (targetUserId && mongoose.isValidObjectId(targetUserId)) {
-    const user = await User.findById(targetUserId);
-    if (user && creditsToAdd > 0) {
-      user.credits = (user.credits || 0) + creditsToAdd;
-      await user.save();
-      updatedUser = user;
+    updatedUser = await User.findById(targetUserId);
+    if (updatedUser && creditsToAdd > 0) {
+      updatedUser.credits = Number(updatedUser.credits || 0) + creditsToAdd;
+      await updatedUser.save();
     }
   }
 
-  // 3. Record or Update PaymentOrder Record
+  // 3. Save or update PaymentOrder Record
   let order = existingOrder;
   if (!order) {
     order = new PaymentOrder({
       orderId: orderId || `dakly_rzp_${Date.now()}`,
-      userId: targetUserId && mongoose.isValidObjectId(targetUserId) ? targetUserId : null,
+      userId: targetUserId && mongoose.isValidObjectId(targetUserId) ? targetUserId : (updatedProject?.userId || null),
       projectId: updatedProject ? updatedProject._id : (targetProjectId && mongoose.isValidObjectId(targetProjectId) ? targetProjectId : null),
       amount: Number(amount) || 0,
       currency: 'INR',
@@ -309,7 +310,7 @@ async function fulfillPaymentOrder({
       planId,
       creditsAdded: creditsToAdd,
       planUpgraded: targetPlan,
-      metadata,
+      metadata: mergedMeta,
       rawWebhookPayload: rawPayload,
       fulfilledAt: new Date(),
     });
@@ -323,9 +324,12 @@ async function fulfillPaymentOrder({
     order.planId = planId || order.planId;
     order.creditsAdded = creditsToAdd || order.creditsAdded;
     order.planUpgraded = targetPlan || order.planUpgraded;
-    order.metadata = { ...order.metadata, ...metadata };
+    order.metadata = { ...order.metadata, ...mergedMeta };
     order.rawWebhookPayload = rawPayload || order.rawWebhookPayload;
     order.fulfilledAt = new Date();
+    if (updatedProject && !order.projectId) {
+      order.projectId = updatedProject._id;
+    }
   }
 
   await order.save();

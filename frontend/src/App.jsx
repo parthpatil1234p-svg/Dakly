@@ -5482,7 +5482,7 @@ curl -X POST "${API_BASE_URL}/api/send" \\
             setShowUpgradeModal(true);
           }}
           onUpgradeSuccess={(res, plan) => {
-            if (plan.plan === 'pro' || plan.id.startsWith('pro')) {
+            if (plan.category === 'plans' || plan.plan === 'pro' || plan.id.startsWith('pro-')) {
               setActiveProject((prev) => ({
                 ...prev,
                 plan: 'pro',
@@ -5496,6 +5496,24 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                     : p
                 )
               );
+              openNewCustomTemplateModal();
+            } else if (plan.credits > 0) {
+              setActiveProject((prev) => ({
+                ...prev,
+                purchasedCredits: (prev?.purchasedCredits || 0) + plan.credits,
+                remainingToday: (prev?.remainingToday || 0) + plan.credits,
+              }));
+              setProjects((prev) =>
+                prev.map((p) =>
+                  p.id === activeProject.id
+                    ? {
+                        ...p,
+                        purchasedCredits: (p?.purchasedCredits || 0) + plan.credits,
+                        remainingToday: (p?.remainingToday || 0) + plan.credits,
+                      }
+                    : p
+                )
+              );
             }
             if (authToken) {
               loadProjects(authToken);
@@ -5504,7 +5522,6 @@ curl -X POST "${API_BASE_URL}/api/send" \\
               }
             }
             setShowUpgradeModal(false);
-            openNewCustomTemplateModal();
           }}
         />
       )}

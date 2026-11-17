@@ -249,6 +249,7 @@ async function getStats(req, res) {
         totalDailyQuota: capacity.totalDailyQuota,
         sentToday: capacity.totalSentToday,
         remainingToday: capacity.remainingToday,
+        purchasedCredits: capacity.purchasedCredits || project.purchasedCredits || 0,
         activeSendersCount: capacity.sendersCount,
         senders: capacity.senders,
       },

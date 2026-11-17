@@ -78,6 +78,11 @@ app.use(
 // Serve Static Frontend Assets (Logos, SVGs, Badges - index: false ensures no HTML index is served)
 app.use(express.static(path.join(__dirname, '../public'), { index: false }));
 
+// Google AdSense ads.txt Crawler Verification Route
+app.get('/ads.txt', (req, res) => {
+  res.type('text/plain').send('google.com, pub-2484983247170714, DIRECT, f08c47fec0942fa0\n');
+});
+
 // Razorpay Payment Gateway Webhook (RAW bytes for HMAC verification)
 // CRITICAL REQUIREMENT: Must be mounted BEFORE express.json()
 app.post(
