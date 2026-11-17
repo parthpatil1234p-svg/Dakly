@@ -2360,24 +2360,24 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                   <div>
                     <div className="flex items-center space-x-2.5 flex-wrap gap-y-2">
                       <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center space-x-2.5">
-                        <Mail className="w-6 h-6 text-brand-600 dark:text-brand-400" />
+                        <Mail className="w-6 h-6 text-brand-600 dark:text-brand-400 shrink-0" />
                         <span>Email Templates &amp; Custom Template Studio</span>
                       </h2>
-                      <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300 border border-brand-200/60">
+                      <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300 border border-brand-200/60 whitespace-nowrap">
                         {allTemplates.length} templates
                       </span>
                       {activeProject?.plan === 'pro' ? (
-                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center space-x-1">
-                          <Sparkles className="w-3.5 h-3.5" />
+                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center space-x-1 whitespace-nowrap">
+                          <Sparkles className="w-3.5 h-3.5 shrink-0" />
                           <span>Pro Plan Active ({activeProject?.planCycle === 'yearly' ? '₹216/yr' : '₹20/mo'})</span>
                         </span>
                       ) : (
                         <button
                           type="button"
                           onClick={() => setShowUpgradeModal(true)}
-                          className="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition flex items-center space-x-1"
+                          className="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition flex items-center space-x-1 whitespace-nowrap"
                         >
-                          <Sparkles className="w-3.5 h-3.5" />
+                          <Sparkles className="w-3.5 h-3.5 shrink-0" />
                           <span>Unlock Custom Templates (Pro)</span>
                         </button>
                       )}
@@ -2387,7 +2387,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                     </p>
                   </div>
 
-                  <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+                  <div className="flex items-center space-x-2 flex-wrap gap-y-2 shrink-0">
                     <button
                       type="button"
                       onClick={() => {
@@ -2397,12 +2397,12 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                           openNewCustomTemplateModal();
                         }
                       }}
-                      className="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 shadow-sm"
+                      className="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 shadow-sm whitespace-nowrap shrink-0"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-4 h-4 shrink-0" />
                       <span>New Custom Template</span>
                       {activeProject?.plan !== 'pro' && (
-                        <span className="text-[10px] uppercase font-mono px-1 py-0.5 bg-amber-400 text-slate-900 rounded font-bold">
+                        <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-amber-400 text-slate-900 rounded font-bold shrink-0 whitespace-nowrap">
                           PRO
                         </span>
                       )}
@@ -2413,7 +2413,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                         const cur = allTemplates.find((t) => t.id === selectedTemplateId);
                         if (cur) setTemplateVars({ ...cur.sampleVars });
                       }}
-                      className="px-4 py-2 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[var(--surface)] text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition"
+                      className="px-4 py-2 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[var(--surface)] text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition whitespace-nowrap shrink-0"
                     >
                       Reset Variables
                     </button>
@@ -2421,7 +2421,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                 </div>
 
                 {/* Template Selector Cards & Custom Template Creator */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 gap-3.5">
                   {allTemplates.map((t) => {
                     const isSelected = selectedTemplateId === t.id;
                     return (
@@ -2450,11 +2450,11 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                         }`}
                       >
                         <div>
-                          <div className="flex items-center justify-between mb-2.5">
-                            <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border ${t.badgeColor}`}>
+                          <div className="flex items-center justify-between mb-2.5 gap-1.5">
+                            <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border whitespace-nowrap shrink-0 ${t.badgeColor}`}>
                               {t.badge}
                             </span>
-                            {isSelected && <span className="text-xs text-brand-600 dark:text-brand-400 font-bold">● Active</span>}
+                            {isSelected && <span className="text-xs text-brand-600 dark:text-brand-400 font-bold whitespace-nowrap shrink-0">● Active</span>}
                           </div>
                           <div className="text-sm font-bold text-slate-900 dark:text-white leading-tight mb-1.5 flex items-center space-x-1.5">
                             <span>{t.name}</span>
@@ -2508,16 +2508,18 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                     }}
                     className="rounded-lg p-5 border-2 border-dashed border-slate-200 dark:border-white/15 hover:border-brand-500 dark:hover:border-brand-400 bg-slate-50/50 dark:bg-white/[0.02] flex flex-col items-center justify-center text-center group transition min-h-[140px]"
                   >
-                    <div className="w-9 h-9 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                    <div className="w-9 h-9 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-2 group-hover:scale-110 transition shrink-0">
                       <Plus className="w-5 h-5" />
                     </div>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-1.5">
-                      <span>Add Custom Template</span>
-                      <span className="text-[10px] font-mono px-1 py-0.5 bg-amber-400 text-slate-900 rounded font-bold">
+                    <div className="flex items-center justify-center space-x-1.5 flex-wrap">
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                        Add Custom Template
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 bg-amber-400 text-slate-900 rounded font-bold shrink-0 whitespace-nowrap">
                         PRO
                       </span>
-                    </span>
-                    <span className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                    </div>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 mt-1 whitespace-nowrap">
                       {activeProject?.plan === 'pro' ? 'Design HTML & dynamic vars' : 'Unlock on Dakly Pro'}
                     </span>
                   </button>

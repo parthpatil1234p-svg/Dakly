@@ -218,7 +218,13 @@ button svg, a svg { flex-shrink: 0; }
 .console-app :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select) { min-height: 44px; }
 .console-app :is(button,a) { min-height: 44px; }
 .console-app button svg { pointer-events: none; }
-.console-main :is(h2,h3,p,span,code) { overflow-wrap: anywhere; }
+.console-main :is(h2,h3,p,span,code) { overflow-wrap: break-word; }
+.console-main :is(button, a, .whitespace-nowrap),
+.console-main :is(button, a, .whitespace-nowrap) * {
+  overflow-wrap: normal !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
+}
 .console-main pre code { overflow-wrap: normal; }
 .console-main :is(.flex-1,.grid > div) { min-width: 0; }
 .console-main pre { max-width: 100%; }
