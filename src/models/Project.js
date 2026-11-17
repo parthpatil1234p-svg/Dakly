@@ -42,6 +42,11 @@ const senderAccountSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Extra Email Credits purchased via YouPI PG
+    purchasedCredits: {
+      type: Number,
+      default: 0,
+    },
     lastQuotaReset: {
       type: Date,
       default: Date.now,
@@ -249,6 +254,11 @@ const projectSchema = new mongoose.Schema(
       default: 500,
     },
     emailsSentToday: {
+      type: Number,
+      default: 0,
+    },
+    // Extra Email Credits purchased via YouPI PG
+    purchasedCredits: {
       type: Number,
       default: 0,
     },
@@ -736,7 +746,8 @@ projectSchema.methods.getCapacitySummary = function () {
     totalDailyQuota,
     totalEffectiveDailyQuota,
     totalSentToday,
-    remainingToday: Math.max(0, totalEffectiveDailyQuota - totalSentToday),
+    purchasedCredits: this.purchasedCredits || 0,
+    remainingToday: Math.max(0, totalEffectiveDailyQuota - totalSentToday) + (this.purchasedCredits || 0),
     sendersCount: senders.length,
     allAliases,
     senders: senders.map((s, idx) => {

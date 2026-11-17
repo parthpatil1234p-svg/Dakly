@@ -445,6 +445,27 @@ export async function deleteCustomTemplate(projectId, templateId, token) {
   return res.json();
 }
 
+// YouPI Sovereign Payment Gateway Endpoints
+export async function fetchPricingPlans() {
+  const res = await fetch(`${API_BASE_URL}/api/payments/plans`);
+  return res.json();
+}
+
+export async function fetchPaymentOrders(token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/payments/orders`, { headers });
+  return res.json();
+}
+
+export async function fetchOrderStatus(orderId) {
+  const res = await fetch(`${API_BASE_URL}/api/payments/orders/${orderId}`);
+  return res.json();
+}
+
+
 
 
 

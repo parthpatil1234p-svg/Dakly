@@ -46,6 +46,7 @@ import ConsoleNavigation from './components/ConsoleNavigation';
 import Overview from './components/Overview';
 import Dialog from './components/Dialog';
 import SpotlightCard from './components/SpotlightCard';
+import PricingModal from './components/PricingModal';
 
 
 import {
@@ -396,9 +397,32 @@ export default function App() {
 
   // Custom Templates & Pro Tier State
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [pricingCategory, setPricingCategory] = useState('plans'); // 'plans' | 'credits'
   const [selectedPlanCycle, setSelectedPlanCycle] = useState('monthly'); // 'monthly' | 'yearly'
   const [isUpgradingPlan, setIsUpgradingPlan] = useState(false);
   const [upgradeError, setUpgradeError] = useState('');
+
+  const openPricingModal = (cat = 'plans') => {
+    setPricingCategory(cat);
+    setShowUpgradeModal(true);
+  };
+
+  // Sovereign UPI Payment Gateway: Global Browser Event Listener
+  useEffect(() => {
+    const onPaymentSuccess = (e) => {
+      const { order_id, amount_received, utr } = e.detail || {};
+      console.log(`🎉 [YouPI] Payment confirmed for Order #${order_id}. UTR: ${utr}`);
+      if (authToken) {
+        loadProjects(authToken);
+        if (activeProject?.apiKey) {
+          loadStats(activeProject.apiKey);
+        }
+      }
+    };
+
+    window.addEventListener('youpi:payment:success', onPaymentSuccess);
+    return () => window.removeEventListener('youpi:payment:success', onPaymentSuccess);
+  }, [authToken, activeProject?.apiKey]);
   const [showCustomTemplateModal, setShowCustomTemplateModal] = useState(false);
   const [isSavingCustomTemplate, setIsSavingCustomTemplate] = useState(false);
   const [customTemplateError, setCustomTemplateError] = useState('');
@@ -2289,7 +2313,8 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
       <ConsoleNavigation activeTab={activeTab} onTab={setActiveTab}
         projects={projects} activeProject={activeProject} onProject={handleSelectProject}
         user={currentUser} onLogout={handleLogout} onNewProject={() => setShowNewProjModal(true)}
-        theme={theme} onTheme={toggleTheme} onPrompt={() => setShowAiPromptModal(true)} />
+        theme={theme} onTheme={toggleTheme} onPrompt={() => setShowAiPromptModal(true)}
+        onPricing={() => openPricingModal('plans')} />
       {/* Main Container */}
       <main id="workspace" className="console-main">
 
@@ -2316,7 +2341,8 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                 <Overview project={activeProject} stats={stats} loading={statsLoading} error={statsError}
                   onRetry={() => loadStats(activeProject.apiKey)}
                   onSend={() => setActiveTab('playground')} onLogs={() => setActiveTab('logs')}
-                  onTemplates={() => setActiveTab('templates')} onSenders={() => setActiveTab('senders')} />
+                  onTemplates={() => setActiveTab('templates')} onSenders={() => setActiveTab('senders')}
+                  onBuyCredits={() => openPricingModal('credits')} />
                 
               </div>
             )}
@@ -5442,215 +5468,42 @@ curl -X POST "${API_BASE_URL}/api/send" \\
         </Dialog>
       )}
 
-      {/* MODAL: PRO PLAN UPGRADE */}
+      {/* MODAL: PRO PLAN UPGRADE & SOVEREIGN UPI CHECKOUT */}
       {showUpgradeModal && (
-        <Dialog
-          title="Upgrade to Dakly Pro"
-          busy={isUpgradingPlan}
+        <PricingModal
+          user={currentUser}
+          project={activeProject}
+          initialCategory={pricingCategory}
           onClose={() => {
             setShowUpgradeModal(false);
             setUpgradeError('');
           }}
-          className="dialog-wide"
-        >
-          <div className="legacy-dialog-content">
-            <p className="dialog-intro">
-              Custom Transactional Templates are an exclusive feature of the <strong>Dakly Pro Developer Pass</strong>.
-            </p>
-
-            {upgradeError && (
-              <div role="alert" className="notice notice-error mb-4">
-                {upgradeError}
-              </div>
-            )}
-
-            <div className="space-y-4">
-              {/* Feature Highlights Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
-                <div className="p-3.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] space-y-1">
-                  <div className="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
-                    <Sparkles className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                    <span>Custom HTML &amp; Dynamic Variables</span>
-                  </div>
-                  <p className="text-slate-500 text-xs leading-relaxed">
-                    Design bespoke transactional emails with unlimited <code>&#123;&#123;tags&#125;&#125;</code> and real-time live preview.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] space-y-1">
-                  <div className="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
-                    <Zap className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                    <span>Zero-Delay SDK &amp; API Execution</span>
-                  </div>
-                  <p className="text-slate-500 text-xs leading-relaxed">
-                    Call your custom templates directly via Node.js, Python, Fetch, or cURL using <code>template: "my_slug"</code>.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] space-y-1">
-                  <div className="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
-                    <CheckCircle className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                    <span>1:1 Verified Brand Logo Integration</span>
-                  </div>
-                  <p className="text-slate-500 text-xs leading-relaxed">
-                    Automatic header branding with anti-piracy verification across all outbound dispatches.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] space-y-1">
-                  <div className="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
-                    <ShieldCheck className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                    <span>Multi-Account Automatic Failover</span>
-                  </div>
-                  <p className="text-slate-500 text-xs leading-relaxed">
-                    Pool multiple backup Gmail inboxes to scale daily quota without hitting rate limits.
-                  </p>
-                </div>
-              </div>
-
-              {/* Plan Selection Cards: Monthly (₹20/mo) vs Yearly (₹1,499/yr) */}
-              <div className="space-y-2">
-                <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Select Subscription Plan:
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  
-                  {/* Option 1: Monthly Plan (₹20 / month) */}
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={selectedPlanCycle === 'monthly'}
-                    onClick={() => setSelectedPlanCycle('monthly')}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setSelectedPlanCycle('monthly');
-                      }
-                    }}
-                    className={`cursor-pointer rounded-xl p-4 border transition relative flex flex-col justify-between ${
-                      selectedPlanCycle === 'monthly'
-                        ? 'border-brand-500 ring-2 ring-brand-500 bg-brand-50/70 dark:bg-brand-950/40'
-                        : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 bg-slate-50/40 dark:bg-white/[0.02]'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-slate-900 dark:text-white text-sm">
-                          Pro Monthly
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-200 dark:bg-white/10 text-slate-800 dark:text-slate-200">
-                          MONTHLY
-                        </span>
-                      </div>
-                      <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                        ₹20
-                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
-                          /month
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                        Low commitment. Full access to Custom Templates, brand logos &amp; multi-account failover.
-                      </p>
-                    </div>
-
-                    <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Billed monthly</span>
-                      <span className={`font-semibold ${selectedPlanCycle === 'monthly' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`}>
-                        {selectedPlanCycle === 'monthly' ? '● Selected' : 'Select'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Option 2: Yearly Plan (₹20 x 12 with 10% discount = ₹216 / year) */}
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={selectedPlanCycle === 'yearly'}
-                    onClick={() => setSelectedPlanCycle('yearly')}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setSelectedPlanCycle('yearly');
-                      }
-                    }}
-                    className={`cursor-pointer rounded-xl p-4 border transition relative flex flex-col justify-between ${
-                      selectedPlanCycle === 'yearly'
-                        ? 'border-brand-500 ring-2 ring-brand-500 bg-brand-50/70 dark:bg-brand-950/40'
-                        : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 bg-slate-50/40 dark:bg-white/[0.02]'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-slate-900 dark:text-white text-sm">
-                          Pro Annual Pass
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-400 text-slate-900">
-                          10% OFF
-                        </span>
-                      </div>
-                      <div className="flex items-baseline space-x-1.5">
-                        <span className="text-sm line-through text-slate-400 dark:text-slate-500">
-                          ₹240
-                        </span>
-                        <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                          ₹216
-                          <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
-                            /year
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                        Monthly plan × 12 with 10% discount applied (save ₹24). Full year uninterrupted access.
-                      </p>
-                    </div>
-
-                    <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs">
-                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">₹18/mo effective</span>
-                      <span className={`font-semibold ${selectedPlanCycle === 'yearly' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`}>
-                        {selectedPlanCycle === 'yearly' ? '● Selected' : 'Select'}
-                      </span>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center justify-end space-x-3 pt-2">
-                <button
-                  type="button"
-                  className="button button-outline"
-                  onClick={() => setShowUpgradeModal(false)}
-                  disabled={isUpgradingPlan}
-                >
-                  Maybe later
-                </button>
-                <button
-                  type="button"
-                  className="button button-primary"
-                  onClick={handleUpgradeToPro}
-                  disabled={isUpgradingPlan}
-                >
-                  {isUpgradingPlan ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Activating Pro Pass…</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      <span>
-                        {selectedPlanCycle === 'monthly'
-                          ? 'Activate Pro Monthly (₹20/mo)'
-                          : 'Activate Pro Annual (₹216/yr • 10% OFF)'}
-                      </span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </Dialog>
+          onUpgradeSuccess={(res, plan) => {
+            if (plan.plan === 'pro' || plan.id.startsWith('pro')) {
+              setActiveProject((prev) => ({
+                ...prev,
+                plan: 'pro',
+                planCycle: plan.cycle || 'monthly',
+                isPro: true,
+              }));
+              setProjects((prev) =>
+                prev.map((p) =>
+                  p.id === activeProject.id
+                    ? { ...p, plan: 'pro', planCycle: plan.cycle || 'monthly', isPro: true }
+                    : p
+                )
+              );
+            }
+            if (authToken) {
+              loadProjects(authToken);
+              if (activeProject?.apiKey) {
+                loadStats(activeProject.apiKey);
+              }
+            }
+            setShowUpgradeModal(false);
+            openNewCustomTemplateModal();
+          }}
+        />
       )}
 
       {/* MODAL: CUSTOM TEMPLATE STUDIO */}

@@ -8,6 +8,8 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const emailRoutes = require('./routes/emailRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const paymentController = require('./controllers/paymentController');
 
 const rateLimit = require('express-rate-limit');
 
@@ -30,11 +32,19 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com'],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://cdn.tailwindcss.com',
+          'https://dakly-pay.fly.dev',
+          'https://www.googletagmanager.com',
+          'https://pagead2.googlesyndication.com',
+        ],
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", '*'],
+        connectSrc: ["'self'", '*', 'https://dakly-pay.fly.dev'],
+        frameSrc: ["'self'", 'https://dakly-pay.fly.dev'],
       },
     },
     crossOriginEmbedderPolicy: false,
@@ -61,12 +71,20 @@ app.use(
       }
     },
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-gateway-signature'],
   })
 );
 
 // Serve Static Frontend Assets (Logos, SVGs, Badges - index: false ensures no HTML index is served)
 app.use(express.static(path.join(__dirname, '../public'), { index: false }));
+
+// YouPI Sovereign Payment Gateway Webhook (RAW bytes for HMAC verification)
+// CRITICAL REQUIREMENT: Must be mounted BEFORE express.json()
+app.post(
+  '/api/webhooks/youpi',
+  express.raw({ type: 'application/json' }),
+  paymentController.handleYoupiWebhook
+);
 
 // Body Parsers (15MB limit to allow base64 PDF/image attachments)
 app.use(express.json({ limit: '15mb' }));
@@ -170,6 +188,7 @@ app.get('/', globalLimiter, (req, res) => {
 // Mount Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api', emailRoutes);
 
 // 404 Handler

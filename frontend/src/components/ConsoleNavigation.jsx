@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpRight, LayoutDashboard, Send, Mail, Server, FileText, Radio, ShieldCheck, Code, Menu, LogOut, Sun, Moon } from 'lucide-react';
+import { ArrowUpRight, LayoutDashboard, Send, Mail, Server, FileText, Radio, ShieldCheck, Code, Menu, LogOut, Sun, Moon, Sparkles } from 'lucide-react';
 import { Brand } from './Landing';
 
 const pages = [
@@ -9,7 +9,7 @@ const pages = [
   ['security', 'Security & team', ShieldCheck], ['snippets', 'API & SDK', Code],
 ];
 
-export default function ConsoleNavigation({ activeTab, onTab, projects, activeProject, onProject, user, onLogout, onNewProject, theme, onTheme, onPrompt }) {
+export default function ConsoleNavigation({ activeTab, onTab, projects, activeProject, onProject, user, onLogout, onNewProject, theme, onTheme, onPrompt, onPricing }) {
   const [expanded, setExpanded] = useState(false);
   return <>
     <a className="skip-link" href="#workspace">Skip to workspace</a>
@@ -18,7 +18,12 @@ export default function ConsoleNavigation({ activeTab, onTab, projects, activePr
       <div className="desktop-brand"><Brand /></div>
       <div className="workspace-selector"><label htmlFor="project-select">Workspace project</label><select id="project-select" value={activeProject?.id || ''} onChange={e => onProject(e.target.value)} disabled={!projects.length}>{!projects.length && <option value="">No projects yet</option>}{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select><button className="text-link" onClick={onNewProject}>+ New project</button></div>
       <nav aria-label="Workspace navigation">{pages.map(([id, title, Icon]) => <button key={id} aria-current={activeTab === id ? 'page' : undefined} onClick={() => { onTab(id); setExpanded(false); }}><Icon size={18} aria-hidden="true" /><span>{title}</span></button>)}</nav>
-      <div className="sidebar-bottom"><button className="sidebar-link" onClick={onPrompt}>AI setup prompt <ArrowUpRight size={15} aria-hidden="true" /></button><button className="sidebar-link" onClick={onTheme}>{theme === 'dark' ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />} {theme === 'dark' ? 'Light appearance' : 'Dark appearance'}</button><div className="sidebar-user"><span title={user?.name}>{user?.name || 'Your account'}</span><button className="icon-button" onClick={onLogout} aria-label="Sign out"><LogOut size={17} aria-hidden="true" /></button></div></div>
+      <div className="sidebar-bottom">
+        {onPricing && <button className="sidebar-link" onClick={onPricing}><Sparkles size={16} aria-hidden="true" /> Pricing &amp; Credits</button>}
+        <button className="sidebar-link" onClick={onPrompt}>AI setup prompt <ArrowUpRight size={15} aria-hidden="true" /></button>
+        <button className="sidebar-link" onClick={onTheme}>{theme === 'dark' ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />} {theme === 'dark' ? 'Light appearance' : 'Dark appearance'}</button>
+        <div className="sidebar-user"><span title={user?.name}>{user?.name || 'Your account'}</span><button className="icon-button" onClick={onLogout} aria-label="Sign out"><LogOut size={17} aria-hidden="true" /></button></div>
+      </div>
     </aside>
   </>;
 }
