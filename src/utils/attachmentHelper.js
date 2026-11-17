@@ -4,7 +4,7 @@
  * Enforces a strict 15MB size limit to prevent SMTP timeouts and memory exhaustion.
  */
 
-const { isSafeRemoteUrl, isPrivateIp, assertSafeRemoteUrl, sanitizeUrlString } = require('./ssrfHelper');
+const { isSafeRemoteUrl, isPrivateIp, assertSafeRemoteUrl, sanitizeUrlString, safeFetch } = require('./ssrfHelper');
 
 // CodeQL-sanitized FQDN URL pattern for SSRF prevention
 const SAFE_ATTACHMENT_URL_PATTERN = /^https?:\/\/(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/;
@@ -84,9 +84,8 @@ async function processAttachments(attachments = []) {
 
       let response;
       try {
-        response = await fetch(safeFetchUrl, {
-          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-          redirect: 'error',
+        response = await safeFetch(safeFetchUrl, {
+          timeout: FETCH_TIMEOUT_MS,
           headers: {
             'User-Agent': 'Dakly-Email-Engine/1.0',
           },

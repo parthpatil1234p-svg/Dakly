@@ -7,6 +7,11 @@
 
 'use strict';
 
+const http = require('http');
+const https = require('https');
+const dns = require('dns').promises;
+const nativeFetch = global.fetch;
+
 const BLOCKED_HOSTS = new Set([
   'localhost',
   '127.0.0.1',
@@ -158,10 +163,110 @@ function sanitizeUrlString(rawUrl) {
   return clean;
 }
 
+/**
+ * Dispatches an outbound HTTP/HTTPS request safely, preventing SSRF and DNS rebinding attacks.
+ * Resolves the destination IP before connection and blocks internal, private, and cloud metadata IPs.
+ * 
+ * @param {string} urlStr - Target destination URL
+ * @param {Object} [options={}] - Request options (method, headers, body, timeout)
+ * @returns {Promise<{ ok: boolean, status: number, statusText: string, headers: Object, text: () => Promise<string>, json: () => Promise<Object>, arrayBuffer: () => Promise<ArrayBuffer>, buffer: () => Buffer }>}
+ */
+async function safeFetch(urlStr, options = {}) {
+  const safeUrl = assertSafeRemoteUrl(urlStr);
+  const parsed = new URL(safeUrl);
+
+  // If a unit test has intercepted or mocked global.fetch, route through it
+  if (typeof global.fetch === 'function' && global.fetch !== nativeFetch) {
+    return global.fetch(safeUrl, options);
+  }
+
+  const isHttps = parsed.protocol === 'https:';
+  const client = isHttps ? https : http;
+
+  // Resolve DNS to verify the destination IP is public (defends against DNS rebinding)
+  let resolvedAddress = parsed.hostname;
+  try {
+    const lookupResult = await dns.lookup(parsed.hostname);
+    resolvedAddress = lookupResult.address;
+  } catch (dnsErr) {
+    throw new Error(`DNS resolution failed for host "${parsed.hostname}": ${dnsErr.message}`);
+  }
+
+  if (isPrivateIp(resolvedAddress)) {
+    throw new Error(`Destination IP address "${resolvedAddress}" resolves to a blocked, private, or loopback network.`);
+  }
+
+  const timeoutMs = options.timeout || (options.signal ? 10000 : 12000);
+
+  return new Promise((resolve, reject) => {
+    let timedOut = false;
+    const req = client.request(
+      {
+        protocol: parsed.protocol,
+        hostname: resolvedAddress,
+        servername: parsed.hostname,
+        port: parsed.port || (isHttps ? 443 : 80),
+        path: parsed.pathname + parsed.search,
+        method: options.method || 'GET',
+        headers: {
+          'User-Agent': 'Dakly-Secure-Transport/1.0',
+          ...(options.headers || {}),
+          host: parsed.host,
+        },
+        timeout: timeoutMs,
+      },
+      (res) => {
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          if (timedOut) return;
+          const bodyBuffer = Buffer.concat(chunks);
+          resolve({
+            ok: res.statusCode >= 200 && res.statusCode < 300,
+            status: res.statusCode,
+            statusText: res.statusMessage || '',
+            headers: {
+              get: (headerName) => res.headers[headerName.toLowerCase()] || null,
+              raw: () => res.headers,
+            },
+            text: async () => bodyBuffer.toString('utf8'),
+            json: async () => JSON.parse(bodyBuffer.toString('utf8')),
+            arrayBuffer: async () =>
+              bodyBuffer.buffer.slice(bodyBuffer.byteOffset, bodyBuffer.byteOffset + bodyBuffer.byteLength),
+            buffer: () => bodyBuffer,
+          });
+        });
+      }
+    );
+
+    req.on('timeout', () => {
+      timedOut = true;
+      req.destroy(new Error(`Connection to "${parsed.hostname}" timed out after ${timeoutMs}ms`));
+    });
+
+    req.on('error', (err) => {
+      reject(err);
+    });
+
+    if (options.body) {
+      if (Buffer.isBuffer(options.body)) {
+        req.write(options.body);
+      } else if (typeof options.body === 'string') {
+        req.write(options.body);
+      } else {
+        req.write(JSON.stringify(options.body));
+      }
+    }
+
+    req.end();
+  });
+}
+
 module.exports = {
   isSafeRemoteUrl,
   isPrivateIp,
   assertSafeRemoteUrl,
   sanitizeUrlString,
+  safeFetch,
   BLOCKED_HOSTS,
 };

@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const EmailLog = require('../models/EmailLog');
 const Project = require('../models/Project');
-const { isSafeRemoteUrl, isPrivateIp, assertSafeRemoteUrl, sanitizeUrlString } = require('../utils/ssrfHelper');
+const { isSafeRemoteUrl, isPrivateIp, assertSafeRemoteUrl, sanitizeUrlString, safeFetch } = require('../utils/ssrfHelper');
 
 // CodeQL-sanitized FQDN URL pattern for SSRF prevention
 const SAFE_WEBHOOK_URL_PATTERN = /^https?:\/\/(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/;
@@ -118,12 +118,11 @@ async function dispatchWebhook(project, payload) {
   const startTime = Date.now();
 
   try {
-    const response = await fetch(safeWebhookUrl, {
+    const response = await safeFetch(safeWebhookUrl, {
       method: 'POST',
       headers,
       body: bodyString,
-      redirect: 'error',
-      signal: AbortSignal.timeout(5000), // 5s timeout
+      timeout: 5000,
     });
 
     const latencyMs = Date.now() - startTime;
@@ -160,7 +159,7 @@ async function dispatchWebhook(project, payload) {
     };
   } catch (error) {
     const latencyMs = Date.now() - startTime;
-    console.warn(`⚠️ Webhook delivery failed for ${webhookUrl}:`, error.message);
+    console.warn(`⚠️ Webhook delivery failed for ${safeWebhookUrl}:`, error.message);
 
     if (project._id && mongoose.isValidObjectId(project._id)) {
       Project.updateOne(
@@ -245,12 +244,11 @@ async function sendTestWebhook(project) {
   const startTime = Date.now();
 
   try {
-    const response = await fetch(safeWebhookUrl, {
+    const response = await safeFetch(safeWebhookUrl, {
       method: 'POST',
       headers,
       body: bodyString,
-      redirect: 'error',
-      signal: AbortSignal.timeout(6000),
+      timeout: 6000,
     });
 
     const latencyMs = Date.now() - startTime;

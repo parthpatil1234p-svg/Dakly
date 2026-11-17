@@ -100,20 +100,23 @@ export const PLANS_CATALOG = [
 ];
 
 /**
- * Triggers Sovereign UPI Checkout via YouPI PG (window.Youpi.pay)
+ * Triggers Sovereign UPI Checkout via YouPI PG
  */
-export function initiateCreditPurchase(user, plan, project, onSuccess, onFailed) {
-  if (!window.Youpi) {
-    alert('YouPI payment gateway is initializing. Please try again in a moment.');
-    return;
-  }
-
+export function initiateCreditPurchase(user, plan, project, onSuccess, onFailed, onClosed) {
+  const YoupiObj = window.Youpi || window.YoupiCheckout;
   const orderId = `DAKLY-${plan.id}-${Date.now()}`;
+  const checkoutHost = 'https://dakly-pay.fly.dev';
+  const checkoutUrl = `${checkoutHost}/checkout/demo?customAmount=${encodeURIComponent(plan.priceRupees)}&customName=${encodeURIComponent(plan.name)}`;
 
-  window.Youpi.pay({
+  const checkoutOptions = {
     order_id: orderId,
+    orderId: orderId,
     amount: plan.priceRupees,
     currency: 'INR',
+    name: plan.name,
+    description: `${plan.name} (₹${plan.priceRupees}) - Instant Sovereign UPI Activation`,
+    checkoutUrl,
+    portalUrl: checkoutHost,
     customer: {
       name: user?.name || 'Dakly Developer',
       email: user?.email || 'developer@example.com',
@@ -136,8 +139,16 @@ export function initiateCreditPurchase(user, plan, project, onSuccess, onFailed)
         window.location.reload();
       }
     },
+    onSuccess: function (response) {
+      if (onSuccess) onSuccess(response, plan);
+    },
     onClose: function () {
       console.log('ℹ️ [YouPI] Checkout closed by customer.');
+      if (onClosed) onClosed();
+    },
+    onCancelled: function () {
+      console.log('ℹ️ [YouPI] Checkout cancelled.');
+      if (onClosed) onClosed();
     },
     onFailed: function (response) {
       console.warn('⚠️ [YouPI] Payment failed or cancelled:', response);
@@ -148,7 +159,37 @@ export function initiateCreditPurchase(user, plan, project, onSuccess, onFailed)
         alert(`Payment failed: ${reason}`);
       }
     },
-  });
+  };
+
+  if (!YoupiObj) {
+    console.warn('⚠️ YouPI SDK not detected on window, opening hosted checkout fallback.');
+    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+    if (onClosed) onClosed();
+    return;
+  }
+
+  try {
+    if (typeof YoupiObj.open === 'function') {
+      YoupiObj.open(checkoutOptions);
+    } else if (typeof YoupiObj.pay === 'function') {
+      YoupiObj.pay(checkoutOptions).catch((err) => {
+        console.warn('⚠️ [YouPI] pay() error, attempting direct open:', err);
+        if (typeof YoupiObj.open === 'function') {
+          YoupiObj.open(checkoutOptions);
+        } else {
+          window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+          if (onClosed) onClosed();
+        }
+      });
+    } else {
+      window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+      if (onClosed) onClosed();
+    }
+  } catch (err) {
+    console.error('❌ [YouPI Launch Error]:', err);
+    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+    if (onClosed) onClosed();
+  }
 }
 
 export default function PricingModal({
@@ -173,11 +214,17 @@ export default function PricingModal({
     setIsProcessing(true);
     setPaymentNotice(null);
 
+    // Timeout safety guard: reset isProcessing after 4 seconds so the button never stays stuck
+    const timeoutTimer = setTimeout(() => {
+      setIsProcessing(false);
+    }, 4000);
+
     initiateCreditPurchase(
       user,
       selectedPlan,
       project,
       (response, plan) => {
+        clearTimeout(timeoutTimer);
         setIsProcessing(false);
         setPaymentNotice({
           type: 'success',
@@ -188,11 +235,16 @@ export default function PricingModal({
         }
       },
       (errorReason) => {
+        clearTimeout(timeoutTimer);
         setIsProcessing(false);
         setPaymentNotice({
           type: 'error',
           message: `Payment failed: ${errorReason}`,
         });
+      },
+      () => {
+        clearTimeout(timeoutTimer);
+        setIsProcessing(false);
       }
     );
   };
