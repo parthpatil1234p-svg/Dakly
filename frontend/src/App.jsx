@@ -64,6 +64,7 @@ import {
   addSenderAlias,
   deleteSenderAlias,
   verifySenderAlias,
+  confirmSenderAlias,
   pingApiKey,
   uploadProjectLogo,
   deleteProjectLogo,
@@ -376,6 +377,8 @@ export default function App() {
   const [newAliasIsDefault, setNewAliasIsDefault] = useState(false);
   const [isSavingAlias, setIsSavingAlias] = useState(false);
   const [verifyingAlias, setVerifyingAlias] = useState('');
+  const [aliasVerificationChallenge, setAliasVerificationChallenge] = useState(null);
+  const [isConfirmingAliasCode, setIsConfirmingAliasCode] = useState(false);
   const [playFrom, setPlayFrom] = useState('');
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -1630,18 +1633,50 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
     setVerifyingAlias(alias.email);
     try {
       const res = await verifySenderAlias(projId, senderId, alias.email, authToken);
-      if (res.success) {
-        alert(`✓ Alias [${alias.email}] verified successfully with Google SMTP!`);
+      if (res.success && res.challengeSent) {
+        setAliasVerificationChallenge({
+          sender,
+          alias,
+          code: '',
+        });
+      } else if (res.success && res.verified) {
+        alert(`✓ Alias [${alias.email}] verified successfully!`);
         if (authToken) await loadProjects(authToken);
         if (activeProject.apiKey) await loadStats(activeProject.apiKey);
       } else {
-        alert(res.error || 'Google SMTP rejected alias verification.');
+        alert(res.error || 'Failed to dispatch verification code.');
       }
     } catch (err) {
-      console.error('Failed to verify alias:', err);
-      alert(err.message || 'Error occurred while verifying alias with Google SMTP.');
+      console.error('Failed to dispatch verification code:', err);
+      alert(err.message || 'Error occurred while verifying alias.');
     } finally {
       setVerifyingAlias('');
+    }
+  }
+
+  async function handleConfirmAliasCodeSubmit(e) {
+    e.preventDefault();
+    if (!aliasVerificationChallenge || !aliasVerificationChallenge.code) return;
+    const { sender, alias, code } = aliasVerificationChallenge;
+    const projId = activeProject.id || activeProject._id;
+    const senderId = sender.id || sender._id || sender.email;
+
+    setIsConfirmingAliasCode(true);
+    try {
+      const res = await confirmSenderAlias(projId, senderId, alias.email, code, authToken);
+      if (res.success) {
+        alert(`✓ Alias [${alias.email}] verified successfully!`);
+        setAliasVerificationChallenge(null);
+        if (authToken) await loadProjects(authToken);
+        if (activeProject.apiKey) await loadStats(activeProject.apiKey);
+      } else {
+        alert(res.error || 'Invalid verification code.');
+      }
+    } catch (err) {
+      console.error('Failed to confirm alias code:', err);
+      alert(err.message || 'Error verifying code.');
+    } finally {
+      setIsConfirmingAliasCode(false);
     }
   }
 
@@ -5122,6 +5157,59 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                   className="px-5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-bold transition disabled:opacity-50 flex items-center space-x-1.5"
                 >
                   <span>{isSavingAlias ? 'Saving...' : 'Add Alias'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </Dialog>
+      )}
+
+      {/* MODAL: CONFIRM ALIAS VERIFICATION CODE */}
+      {aliasVerificationChallenge && (
+        <Dialog
+          title="Enter 6-Digit Verification Code"
+          onClose={() => setAliasVerificationChallenge(null)}
+        >
+          <div className="legacy-dialog-content space-y-4">
+            <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300">
+              <p className="font-semibold mb-1">A 6-digit verification code was dispatched to:</p>
+              <p className="font-mono text-sm font-bold text-emerald-900 dark:text-emerald-200">{aliasVerificationChallenge.alias.email}</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Open that inbox, copy the 6-digit code, and enter it below to prove ownership.
+              </p>
+            </div>
+
+            <form onSubmit={handleConfirmAliasCodeSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  6-Digit Verification Code
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={6}
+                  autoFocus
+                  value={aliasVerificationChallenge.code || ''}
+                  onChange={(e) => setAliasVerificationChallenge({ ...aliasVerificationChallenge, code: e.target.value })}
+                  placeholder="e.g. 582910"
+                  className="w-full text-center text-2xl font-mono tracking-widest bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAliasVerificationChallenge(null)}
+                  className="button button-outline"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isConfirmingAliasCode || !aliasVerificationChallenge.code || aliasVerificationChallenge.code.length < 6}
+                  className="button button-primary"
+                >
+                  {isConfirmingAliasCode ? 'Verifying…' : 'Confirm & Verify'}
                 </button>
               </div>
             </form>

@@ -1540,46 +1540,133 @@ async function verifySenderAlias(req, res) {
       },
     });
 
-    const fromAddress = alias.displayName
-      ? `"${alias.displayName}" <${alias.email}>`
-      : alias.email;
+    // Generate cryptographically random 6-digit verification challenge
+    const verificationCode = crypto.randomInt(100000, 999999).toString();
+    alias.verificationCode = verificationCode;
+    alias.verificationExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    alias.lastTestedAt = new Date();
+    alias.isVerified = false; // Strictly requires user to enter the challenge code
 
     try {
-      // Send verification self-probe from the alias to the primary Gmail address
+      // Dispatch verification code directly to the alias inbox
       await transporter.sendMail({
-        from: fromAddress,
-        to: targetSender.email,
-        subject: `[Dakly] Google SMTP Alias Verification Probe (${alias.email})`,
-        text: `This is an automated verification probe from Dakly confirming that "${fromAddress}" is active and authorized under your primary Gmail (${targetSender.email}) via "Send mail as".`,
-        html: `<div style="font-family:sans-serif;padding:24px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;max-width:560px;"><h2 style="color:#10b981;margin-top:0;">✓ Alias Verified in Google SMTP</h2><p>Your alias <strong>${fromAddress}</strong> was successfully verified under primary sender <strong>${targetSender.email}</strong>.</p><p style="color:#64748b;font-size:12px;margin-bottom:0;">Automated verification probe dispatched by Dakly Transactional Email Engine.</p></div>`,
+        from: `"${targetSender.displayName || project.name}" <${targetSender.email}>`,
+        to: alias.email,
+        subject: `[Dakly] ${verificationCode} is your sender alias verification code`,
+        text: `Your 6-digit verification code for alias "${alias.email}" is: ${verificationCode}\n\nEnter this code in your Dakly dashboard to verify that you own and can receive email at this address.\n\nThis code expires in 15 minutes.`,
+        html: `<div style="font-family:sans-serif;padding:24px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;max-width:540px;">
+          <h2 style="color:#0f172a;margin-top:0;">Verify Sender Alias</h2>
+          <p style="color:#334155;font-size:15px;">To prove that you own and receive emails at <strong>${alias.email}</strong>, enter this 6-digit code in your Dakly dashboard:</p>
+          <div style="font-size:32px;font-weight:bold;letter-spacing:6px;color:#10b981;padding:16px;background:#ffffff;border:1px dashed #cbd5e1;border-radius:8px;text-align:center;margin:20px 0;">
+            ${verificationCode}
+          </div>
+          <p style="color:#64748b;font-size:13px;margin-bottom:0;">This code expires in 15 minutes. If you did not request this verification, you can safely ignore this email.</p>
+        </div>`,
       });
 
-      alias.isVerified = true;
-      alias.verifiedAt = new Date();
-      alias.lastTestedAt = new Date();
-      alias.verificationError = '';
       await project.save();
 
       return res.json({
         success: true,
-        verified: true,
-        message: `Alias [${alias.email}] successfully verified with Google SMTP.`,
-        alias,
-        capacity: project.getCapacitySummary(),
+        challengeSent: true,
+        message: `6-digit verification code sent to [${alias.email}]. Check that inbox and enter the code to verify.`,
+        aliasEmail: alias.email,
+        expiresIn: '15 minutes',
       });
     } catch (smtpErr) {
       alias.isVerified = false;
       alias.lastTestedAt = new Date();
-      alias.verificationError = smtpErr.message || 'SMTP rejection';
+      alias.verificationError = smtpErr.message || 'SMTP dispatch error';
       await project.save();
 
       return res.status(400).json({
         success: false,
-        verified: false,
-        error: `Google SMTP rejected dispatch: ${smtpErr.message}. Ensure "${alias.email}" is added to your Gmail under Settings > Accounts and Import > 'Send mail as'.`,
+        error: `Failed to deliver verification code to "${alias.email}": ${smtpErr.message}`,
         alias,
       });
     }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Confirm 6-digit verification code for an alias
+ * POST /api/projects/:id/senders/:senderId/aliases/:aliasEmail/confirm
+ */
+async function confirmSenderAliasVerification(req, res) {
+  try {
+    const { id, senderId, aliasEmail } = req.params;
+    const { code } = req.body;
+
+    if (!aliasEmail || !code) {
+      return res.status(400).json({ success: false, error: 'Alias email and 6-digit verification code are required.' });
+    }
+
+    const cleanAlias = decodeURIComponent(aliasEmail).trim().toLowerCase();
+    const cleanCode = String(code).trim();
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    let targetSender = null;
+    if (project.senders && project.senders.length > 0) {
+      targetSender =
+        project.senders.id(senderId) ||
+        project.senders.find((s) => s._id.toString() === senderId || s.email.toLowerCase() === senderId.toLowerCase());
+    }
+
+    if (!targetSender && (senderId === 'primary' || senderId === project._id.toString() || (project.senderEmail && senderId.toLowerCase() === project.senderEmail.toLowerCase()))) {
+      if (project.senders && project.senders.length > 0) {
+        targetSender = project.senders[0];
+      }
+    }
+
+    if (!targetSender) {
+      return res.status(404).json({ success: false, error: 'Sender account not found.' });
+    }
+
+    const alias = (targetSender.aliases || []).find((a) => a.email.toLowerCase() === cleanAlias);
+    if (!alias) {
+      return res.status(404).json({ success: false, error: `Alias [${cleanAlias}] not found on sender.` });
+    }
+
+    if (!alias.verificationCode || !alias.verificationExpires) {
+      return res.status(400).json({ success: false, error: 'No active verification code found. Please click "Verify" to receive a new code.' });
+    }
+
+    if (new Date() > new Date(alias.verificationExpires)) {
+      alias.verificationCode = undefined;
+      alias.verificationExpires = undefined;
+      alias.verificationError = 'Verification code expired.';
+      await project.save();
+      return res.status(400).json({ success: false, error: 'Verification code has expired. Please request a new code.' });
+    }
+
+    if (alias.verificationCode !== cleanCode) {
+      return res.status(400).json({ success: false, error: 'Incorrect verification code. Please check your inbox and try again.' });
+    }
+
+    alias.isVerified = true;
+    alias.verifiedAt = new Date();
+    alias.verificationCode = undefined;
+    alias.verificationExpires = undefined;
+    alias.verificationError = '';
+    await project.save();
+
+    return res.json({
+      success: true,
+      verified: true,
+      message: `Alias [${alias.email}] verified successfully!`,
+      alias,
+      capacity: project.getCapacitySummary(),
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -1902,4 +1989,5 @@ module.exports = {
   removeSenderAlias,
   getProjectAliases,
   verifySenderAlias,
+  confirmSenderAliasVerification,
 };

@@ -104,6 +104,12 @@ const senderAccountSchema = new mongoose.Schema(
           type: String,
           default: '',
         },
+        verificationCode: {
+          type: String,
+        },
+        verificationExpires: {
+          type: Date,
+        },
         addedAt: {
           type: Date,
           default: Date.now,

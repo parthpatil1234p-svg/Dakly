@@ -332,13 +332,23 @@ async function sendEmail({
 
       if (targetFromEmail.toLowerCase() !== senderEmail.toLowerCase()) {
         isUsingAlias = true;
-        if (!parsedRequestedFrom.displayName && currentSender.aliases && Array.isArray(currentSender.aliases)) {
-          const aliasObj = currentSender.aliases.find(
+        let aliasObj = null;
+        if (currentSender.aliases && Array.isArray(currentSender.aliases)) {
+          aliasObj = currentSender.aliases.find(
             (a) => a.email && a.email.toLowerCase() === targetFromEmail.toLowerCase()
           );
-          if (aliasObj && aliasObj.displayName) {
-            targetDisplayName = aliasObj.displayName;
-          }
+        }
+
+        // Strict Ownership & Verification Gate:
+        // An unverified alias cannot be used for sending to protect domain reputation and prevent spoofing
+        if (aliasObj && aliasObj.isVerified === false) {
+          throw new DaklyValidationError(
+            `Sender alias "${targetFromEmail}" is unverified on [${senderEmail}]. To prevent spoofing and delivery rejection, please verify this alias in your Dakly dashboard before sending.`
+          );
+        }
+
+        if (!parsedRequestedFrom.displayName && aliasObj && aliasObj.displayName) {
+          targetDisplayName = aliasObj.displayName;
         }
       }
     }

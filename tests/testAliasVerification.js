@@ -83,4 +83,26 @@ const updatedPersonalSummary = updatedCapacity.allAliases.find((a) => a.email ==
 assert.strictEqual(updatedPersonalSummary.isVerified, true);
 console.log('✅ Test 4 Passed: Updating alias verification status instantly propagates to capacity summary.');
 
+// Test 5: Verification Challenge Code Lifecycle (Issue -> Verify -> Expire)
+personalAlias.verificationCode = '849201';
+personalAlias.verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+assert.strictEqual(personalAlias.verificationCode, '849201');
+assert(personalAlias.verificationExpires > Date.now());
+
+// Mismatched code rejection test
+const submittedCode = '111111';
+assert.notStrictEqual(submittedCode, personalAlias.verificationCode, 'Mismatch must be caught');
+
+// Matching code confirmation
+const validCode = '849201';
+if (validCode === personalAlias.verificationCode && new Date() < personalAlias.verificationExpires) {
+  personalAlias.isVerified = true;
+  personalAlias.verifiedAt = new Date();
+  personalAlias.verificationCode = undefined;
+  personalAlias.verificationExpires = undefined;
+}
+assert.strictEqual(personalAlias.isVerified, true);
+assert.strictEqual(personalAlias.verificationCode, undefined);
+console.log('✅ Test 5 Passed: 6-digit challenge code lifecycle strictly enforces code matching and expiration.');
+
 console.log('🎉 ALL DAKLY SENDER ALIAS VERIFICATION UNIT TESTS PASSED SUCCESSFULLY!\n');

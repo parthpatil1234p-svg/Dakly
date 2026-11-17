@@ -118,6 +118,19 @@ export async function verifySenderAlias(projectId, senderId, aliasEmail, token) 
   return res.json();
 }
 
+export async function confirmSenderAlias(projectId, senderId, aliasEmail, code, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/senders/${senderId}/aliases/${encodeURIComponent(aliasEmail)}/confirm`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ code }),
+  });
+  return res.json();
+}
+
 export async function fetchProjectAliases(projectId, token) {
   const headers = {};
   if (token) {
