@@ -34,7 +34,7 @@ button svg, a svg { flex-shrink: 0; }
 .site-nav { display: none; gap: var(--space-8); }
 .site-nav a, .site-footer a { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 44px; }
 .site-nav a:hover, .site-footer :is(a,button):hover { color: var(--accent); }
-.button { display: inline-flex; justify-content: center; align-items: center; gap: var(--space-4); min-height: 44px; padding: 11px 20px; border: 1px solid transparent; border-radius: var(--radius-small); font-size: 14px; font-weight: 600; transition: background-color 140ms ease-out, border-color 140ms ease-out; }
+.button { display: inline-flex; justify-content: center; align-items: center; gap: var(--space-4); min-height: 44px; padding: 11px 20px; border: 1px solid transparent; border-radius: var(--radius-small); font-size: 14px; font-weight: 600; white-space: nowrap; transition: background-color 140ms ease-out, border-color 140ms ease-out; }
 .button-primary { background: var(--primary); color: var(--on-primary); }
 .button-primary:hover:not(:disabled) { background: var(--primary-hover); }
 .button-outline { border-color: var(--control-line); background: transparent; color: var(--ink); }
@@ -191,14 +191,19 @@ button svg, a svg { flex-shrink: 0; }
 .engagement-details { border-top: 1px solid var(--line); }
 .engagement-details > summary { padding-block: var(--space-4); font-size: 14px; cursor: pointer; }
 .engagement-details > p { font-size: 12px; color: var(--muted); }
-.dialog-wide { width: min(800px, calc(100% - 32px)); }
+.dialog-wide { width: min(920px, calc(100% - 32px)); }
 .legacy-dialog-content { margin-top: var(--space-6); }
 .legacy-dialog-content > * + * { margin-top: 20px; }
 .legacy-dialog-content :is(input,select,button) { min-height: 44px; }
 .legacy-dialog-content input { border-color: var(--control-line); }
 .legacy-dialog-content :is(p,span,code) { overflow-wrap: anywhere; }
+.legacy-dialog-content :is(button, a, .whitespace-nowrap),
+.legacy-dialog-content :is(button, a, .whitespace-nowrap) * { overflow-wrap: normal !important; white-space: nowrap !important; word-break: normal !important; }
 .legacy-dialog-content pre { overflow: auto; }
-.dark .console-app :is(.text-slate-400,.text-slate-500), .dark .legacy-dialog-content :is(.text-slate-400,.text-slate-500) { color: var(--muted); }
+.pricing-modal-content { margin-top: var(--space-4); }
+.pricing-modal-content :is(button, a, .whitespace-nowrap),
+.pricing-modal-content :is(button, a, .whitespace-nowrap) * { overflow-wrap: normal !important; white-space: nowrap !important; word-break: normal !important; }
+.dark .console-app :is(.text-slate-400,.text-slate-500), .dark .legacy-dialog-content :is(.text-slate-400,.text-slate-500), .dark .pricing-modal-content :is(.text-slate-400,.text-slate-500) { color: var(--muted); }
 .console-main [class*="dark:text-slate-400"] { color: var(--muted); }
 .console-main label:focus-within { outline-color: var(--accent); }
 .file-input { display: block; width: 100%; font-size: 12px; margin-bottom: var(--space-3); }

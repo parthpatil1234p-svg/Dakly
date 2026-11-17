@@ -296,7 +296,7 @@ export default function PricingModal({
       onClose={onClose}
       className="dialog-wide max-w-4xl"
     >
-      <div className="legacy-dialog-content space-y-5">
+      <div className="pricing-modal-content space-y-5">
         {/* Payment Notice Banner */}
         {paymentNotice && (
           <div
@@ -369,7 +369,7 @@ export default function PricingModal({
         </div>
 
         {/* Pricing Cards Grid */}
-        <div className={`grid grid-cols-1 ${filteredPlans.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3.5`}>
+        <div className={`grid grid-cols-1 ${filteredPlans.length === 2 ? 'sm:grid-cols-2 max-w-2xl mx-auto w-full' : 'sm:grid-cols-3'} gap-4`}>
           {filteredPlans.map((plan) => {
             const isSelected = selectedPlanId === plan.id;
             return (
@@ -387,16 +387,16 @@ export default function PricingModal({
                 }}
                 className={`cursor-pointer rounded-xl p-4 border transition relative flex flex-col justify-between ${
                   isSelected
-                    ? 'border-brand-500 ring-2 ring-brand-500 bg-brand-50/70 dark:bg-brand-950/40'
+                    ? 'border-brand-500 ring-2 ring-brand-500 bg-brand-50/70 dark:bg-brand-950/40 shadow-sm'
                     : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 bg-slate-50/40 dark:bg-white/[0.02]'
                 }`}
               >
                 <div>
-                  <div className="flex items-center justify-between gap-1.5 mb-2">
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="font-bold text-slate-900 dark:text-white text-sm whitespace-nowrap">
                       {plan.name}
                     </span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono ${plan.badgeColor}`}>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide whitespace-nowrap ${plan.badgeColor}`}>
                       {plan.badge}
                     </span>
                   </div>
@@ -408,7 +408,7 @@ export default function PricingModal({
                         ₹{plan.originalPriceRupees}
                       </span>
                     )}
-                    <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                    <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight whitespace-nowrap">
                       ₹{plan.priceRupees}
                       <span className="text-xs font-normal text-slate-500 dark:text-slate-400 ml-1">
                         {plan.interval}
@@ -443,52 +443,68 @@ export default function PricingModal({
         </div>
 
         {/* Razorpay Action Footer */}
-        <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-200 dark:border-white/10">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-slate-500 dark:text-slate-400">
-            <div className="flex items-center space-x-3">
-              <span className="inline-flex items-center space-x-1.5">
-                <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>UPI QR &amp; Apps</span>
+        <div className="pt-3 border-t border-slate-200 dark:border-white/10 space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Payment Methods Badges */}
+            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <span className="inline-flex items-center space-x-1.5 bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 px-2.5 py-1.5 rounded-md text-[11px] font-medium whitespace-nowrap">
+                <QrCode className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="whitespace-nowrap">UPI (GPay, PhonePe, Paytm, CRED)</span>
               </span>
-              <span className="inline-flex items-center space-x-1.5">
-                <CreditCard className="w-4 h-4 text-indigo-500" />
-                <span>Cards &amp; Netbanking</span>
+              <span className="inline-flex items-center space-x-1.5 bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 px-2.5 py-1.5 rounded-md text-[11px] font-medium whitespace-nowrap">
+                <CreditCard className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span className="whitespace-nowrap">Cards &amp; Netbanking</span>
               </span>
             </div>
-            <span className="hidden sm:inline text-slate-300 dark:text-white/20">•</span>
-            <a href="mailto:daklysupport@disheera.site" className="hover:underline text-[11px] text-slate-400 dark:text-slate-500">
-              daklysupport@disheera.site
-            </a>
+
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-2.5 shrink-0 self-end sm:self-auto">
+              <button
+                type="button"
+                className="button button-outline px-4 py-2 text-xs font-semibold whitespace-nowrap"
+                onClick={onClose}
+                disabled={isProcessing}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="button button-primary flex items-center space-x-2 px-5 py-2.5 text-xs font-bold whitespace-nowrap shadow-sm hover:shadow shrink-0"
+                style={{ whiteSpace: 'nowrap' }}
+                onClick={handleCheckout}
+                disabled={isProcessing || !selectedPlan}
+              >
+                {isProcessing ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
+                    <span className="whitespace-nowrap">Opening Razorpay…</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">Pay ₹{selectedPlan?.priceRupees} via Razorpay</span>
+                    <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center justify-end space-x-3">
-            <button
-              type="button"
-              className="button button-outline"
-              onClick={onClose}
-              disabled={isProcessing}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="button button-primary flex items-center space-x-2"
-              onClick={handleCheckout}
-              disabled={isProcessing || !selectedPlan}
-            >
-              {isProcessing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Opening Razorpay Checkout…</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>Pay ₹{selectedPlan?.priceRupees} via Razorpay</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+          {/* Sub-Footer: Security & Support */}
+          <div className="pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-white/5">
+            <span className="flex items-center space-x-1.5 whitespace-nowrap">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="whitespace-nowrap">256-bit bank encryption • Instant automatic activation</span>
+            </span>
+            <span className="whitespace-nowrap">
+              Need assistance?{' '}
+              <a
+                href="mailto:daklysupport@disheera.site"
+                className="text-brand-600 dark:text-brand-400 font-semibold underline hover:text-brand-500 ml-1 whitespace-nowrap"
+              >
+                daklysupport@disheera.site
+              </a>
+            </span>
           </div>
         </div>
       </div>
