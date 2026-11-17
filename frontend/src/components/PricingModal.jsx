@@ -198,6 +198,7 @@ export default function PricingModal({
   onClose,
   initialCategory = 'plans',
   onUpgradeSuccess,
+  onCancelReopen,
 }) {
   const [activeCategory, setActiveCategory] = useState(initialCategory); // 'plans' | 'credits'
   const [selectedPlanId, setSelectedPlanId] = useState(
@@ -214,37 +215,34 @@ export default function PricingModal({
     setIsProcessing(true);
     setPaymentNotice(null);
 
-    // Timeout safety guard: reset isProcessing after 4 seconds so the button never stays stuck
-    const timeoutTimer = setTimeout(() => {
-      setIsProcessing(false);
-    }, 4000);
+    // Dismiss the pricing modal so native <dialog showModal()> doesn't sit in the top-layer over the checkout iframe
+    if (onClose) {
+      onClose();
+    }
 
     initiateCreditPurchase(
       user,
       selectedPlan,
       project,
       (response, plan) => {
-        clearTimeout(timeoutTimer);
         setIsProcessing(false);
-        setPaymentNotice({
-          type: 'success',
-          message: `Payment confirmed! UTR: ${response.utr || response.bank_reference || 'OK'}. Plan / Credits applied successfully.`,
-        });
         if (onUpgradeSuccess) {
           onUpgradeSuccess(response, plan);
         }
       },
       (errorReason) => {
-        clearTimeout(timeoutTimer);
         setIsProcessing(false);
-        setPaymentNotice({
-          type: 'error',
-          message: `Payment failed: ${errorReason}`,
-        });
+        console.warn('⚠️ [YouPI] Checkout error:', errorReason);
+        if (onCancelReopen) {
+          onCancelReopen();
+        }
       },
       () => {
-        clearTimeout(timeoutTimer);
         setIsProcessing(false);
+        console.log('ℹ️ [YouPI] Checkout closed.');
+        if (onCancelReopen) {
+          onCancelReopen();
+        }
       }
     );
   };

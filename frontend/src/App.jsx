@@ -5478,6 +5478,9 @@ curl -X POST "${API_BASE_URL}/api/send" \\
             setShowUpgradeModal(false);
             setUpgradeError('');
           }}
+          onCancelReopen={() => {
+            setShowUpgradeModal(true);
+          }}
           onUpgradeSuccess={(res, plan) => {
             if (plan.plan === 'pro' || plan.id.startsWith('pro')) {
               setActiveProject((prev) => ({
