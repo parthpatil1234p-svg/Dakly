@@ -63,6 +63,7 @@ import {
   deleteSender,
   addSenderAlias,
   deleteSenderAlias,
+  verifySenderAlias,
   pingApiKey,
   uploadProjectLogo,
   deleteProjectLogo,
@@ -374,6 +375,7 @@ export default function App() {
   const [newAliasDisplayName, setNewAliasDisplayName] = useState('');
   const [newAliasIsDefault, setNewAliasIsDefault] = useState(false);
   const [isSavingAlias, setIsSavingAlias] = useState(false);
+  const [verifyingAlias, setVerifyingAlias] = useState('');
   const [playFrom, setPlayFrom] = useState('');
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -1620,6 +1622,29 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
     }
   }
 
+  async function handleVerifyAlias(sender, alias) {
+    if (!activeProject) return;
+    const projId = activeProject.id || activeProject._id;
+    const senderId = sender.id || sender._id || sender.email;
+
+    setVerifyingAlias(alias.email);
+    try {
+      const res = await verifySenderAlias(projId, senderId, alias.email, authToken);
+      if (res.success) {
+        alert(`✓ Alias [${alias.email}] verified successfully with Google SMTP!`);
+        if (authToken) await loadProjects(authToken);
+        if (activeProject.apiKey) await loadStats(activeProject.apiKey);
+      } else {
+        alert(res.error || 'Google SMTP rejected alias verification.');
+      }
+    } catch (err) {
+      console.error('Failed to verify alias:', err);
+      alert(err.message || 'Error occurred while verifying alias with Google SMTP.');
+    } finally {
+      setVerifyingAlias('');
+    }
+  }
+
   // Auto-refresh logs when enabled
   useEffect(() => {
     let interval;
@@ -2008,6 +2033,34 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                                     <span className="px-1.5 py-0.2 rounded text-xs font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                       Default
                                     </span>
+                                  )}
+                                  {alias.isVerified ? (
+                                    <span
+                                      className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 inline-flex items-center space-x-1"
+                                      title={`Verified with Google SMTP on ${alias.verifiedAt ? new Date(alias.verifiedAt).toLocaleDateString() : 'Active'}`}
+                                    >
+                                      <span>✓ Verified in Gmail</span>
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      disabled={verifyingAlias === alias.email}
+                                      onClick={() => handleVerifyAlias(s, alias)}
+                                      className="px-2 py-0.5 rounded text-[10px] font-semibold bg-brand-500/10 hover:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-500/30 transition inline-flex items-center space-x-1 active:scale-95 disabled:opacity-50"
+                                      title="Send a quick probe via Google SMTP to test and verify this alias"
+                                    >
+                                      {verifyingAlias === alias.email ? (
+                                        <>
+                                          <RefreshCw className="w-3 h-3 animate-spin" />
+                                          <span>Checking…</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ShieldCheck className="w-3 h-3 text-brand-600 dark:text-brand-400" />
+                                          <span>Verify with Gmail</span>
+                                        </>
+                                      )}
+                                    </button>
                                   )}
                                   <button
                                     type="button"

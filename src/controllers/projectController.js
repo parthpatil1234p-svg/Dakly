@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const Project = require('../models/Project');
 const Suppression = require('../models/Suppression');
-const { encrypt } = require('../utils/crypto');
+const { encrypt, decrypt } = require('../utils/crypto');
 const { invalidateTransporter } = require('../services/emailService');
 const { validateLogoImage } = require('../utils/logoValidator');
 const { calculateWarmupStage } = require('../utils/warmupHelper');
@@ -1466,6 +1466,126 @@ async function getProjectAliases(req, res) {
 }
 
 /**
+ * Test & Verify an alias with Google SMTP
+ * POST /api/projects/:id/senders/:senderId/aliases/:aliasEmail/verify
+ */
+async function verifySenderAlias(req, res) {
+  try {
+    const { id, senderId, aliasEmail } = req.params;
+
+    if (!aliasEmail) {
+      return res.status(400).json({ success: false, error: 'Alias email is required.' });
+    }
+
+    const cleanAlias = decodeURIComponent(aliasEmail).trim().toLowerCase();
+
+    const project = await Project.findById(id).select(
+      '+encryptedPassword +iv +authTag +senders.encryptedPassword +senders.iv +senders.authTag'
+    );
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    let targetSender = null;
+    if (project.senders && project.senders.length > 0) {
+      targetSender =
+        project.senders.id(senderId) ||
+        project.senders.find((s) => s._id.toString() === senderId || s.email.toLowerCase() === senderId.toLowerCase());
+    }
+
+    if (!targetSender && (senderId === 'primary' || senderId === project._id.toString() || (project.senderEmail && senderId.toLowerCase() === project.senderEmail.toLowerCase()))) {
+      if (project.senders && project.senders.length > 0) {
+        targetSender = project.senders[0];
+      }
+    }
+
+    if (!targetSender) {
+      return res.status(404).json({ success: false, error: 'Sender account not found.' });
+    }
+
+    const alias = (targetSender.aliases || []).find((a) => a.email.toLowerCase() === cleanAlias);
+    if (!alias) {
+      return res.status(404).json({ success: false, error: `Alias [${cleanAlias}] not found on sender [${targetSender.email}].` });
+    }
+
+    // Decrypt credentials
+    let decryptedPassword;
+    try {
+      if (targetSender.encryptedPassword && targetSender.iv && targetSender.authTag) {
+        decryptedPassword = decrypt(targetSender.encryptedPassword, targetSender.iv, targetSender.authTag);
+      } else if (project.encryptedPassword && project.iv && project.authTag) {
+        decryptedPassword = decrypt(project.encryptedPassword, project.iv, project.authTag);
+      }
+    } catch (decErr) {
+      return res.status(500).json({ success: false, error: 'Failed to decrypt sender credentials.' });
+    }
+
+    if (!decryptedPassword) {
+      return res.status(400).json({ success: false, error: 'Sender credentials not available.' });
+    }
+
+    // Connect to Google SMTP
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: targetSender.email,
+        pass: decryptedPassword,
+      },
+    });
+
+    const fromAddress = alias.displayName
+      ? `"${alias.displayName}" <${alias.email}>`
+      : alias.email;
+
+    try {
+      // Send verification self-probe from the alias to the primary Gmail address
+      await transporter.sendMail({
+        from: fromAddress,
+        to: targetSender.email,
+        subject: `[Dakly] Google SMTP Alias Verification Probe (${alias.email})`,
+        text: `This is an automated verification probe from Dakly confirming that "${fromAddress}" is active and authorized under your primary Gmail (${targetSender.email}) via "Send mail as".`,
+        html: `<div style="font-family:sans-serif;padding:24px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;max-width:560px;"><h2 style="color:#10b981;margin-top:0;">✓ Alias Verified in Google SMTP</h2><p>Your alias <strong>${fromAddress}</strong> was successfully verified under primary sender <strong>${targetSender.email}</strong>.</p><p style="color:#64748b;font-size:12px;margin-bottom:0;">Automated verification probe dispatched by Dakly Transactional Email Engine.</p></div>`,
+      });
+
+      alias.isVerified = true;
+      alias.verifiedAt = new Date();
+      alias.lastTestedAt = new Date();
+      alias.verificationError = '';
+      await project.save();
+
+      return res.json({
+        success: true,
+        verified: true,
+        message: `Alias [${alias.email}] successfully verified with Google SMTP.`,
+        alias,
+        capacity: project.getCapacitySummary(),
+      });
+    } catch (smtpErr) {
+      alias.isVerified = false;
+      alias.lastTestedAt = new Date();
+      alias.verificationError = smtpErr.message || 'SMTP rejection';
+      await project.save();
+
+      return res.status(400).json({
+        success: false,
+        verified: false,
+        error: `Google SMTP rejected dispatch: ${smtpErr.message}. Ensure "${alias.email}" is added to your Gmail under Settings > Accounts and Import > 'Send mail as'.`,
+        alias,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
  * Upgrade project plan / subscription tier (Free -> Pro)
  * POST /api/projects/:id/upgrade
  */
@@ -1781,4 +1901,5 @@ module.exports = {
   addSenderAlias,
   removeSenderAlias,
   getProjectAliases,
+  verifySenderAlias,
 };

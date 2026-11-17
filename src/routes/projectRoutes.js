@@ -27,6 +27,7 @@ const {
   addSenderAlias,
   removeSenderAlias,
   getProjectAliases,
+  verifySenderAlias,
   upgradeProjectPlan,
   getProjectCustomTemplates,
   createProjectCustomTemplate,
@@ -58,6 +59,7 @@ router.get('/:id/senders', getSenders);
 router.delete('/:id/senders/:senderId', removeSender);
 router.get('/:id/aliases', getProjectAliases);
 router.post('/:id/senders/:senderId/aliases', addSenderAlias);
+router.post('/:id/senders/:senderId/aliases/:aliasEmail/verify', verifySenderAlias);
 router.delete('/:id/senders/:senderId/aliases/:aliasEmail', removeSenderAlias);
 router.delete('/:id', deleteProject);
 

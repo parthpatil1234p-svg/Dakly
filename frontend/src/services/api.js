@@ -106,6 +106,18 @@ export async function deleteSenderAlias(projectId, senderId, aliasEmail, token) 
   return res.json();
 }
 
+export async function verifySenderAlias(projectId, senderId, aliasEmail, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/senders/${senderId}/aliases/${encodeURIComponent(aliasEmail)}/verify`, {
+    method: 'POST',
+    headers,
+  });
+  return res.json();
+}
+
 export async function fetchProjectAliases(projectId, token) {
   const headers = {};
   if (token) {

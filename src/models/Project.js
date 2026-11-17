@@ -90,6 +90,20 @@ const senderAccountSchema = new mongoose.Schema(
           type: Boolean,
           default: false,
         },
+        isVerified: {
+          type: Boolean,
+          default: false,
+        },
+        verifiedAt: {
+          type: Date,
+        },
+        lastTestedAt: {
+          type: Date,
+        },
+        verificationError: {
+          type: String,
+          default: '',
+        },
         addedAt: {
           type: Date,
           default: Date.now,
@@ -737,6 +751,10 @@ projectSchema.methods.getCapacitySummary = function () {
           senderEmail: s.email,
           senderId: s._id,
           isDefault: !!a.isDefault,
+          isVerified: !!a.isVerified,
+          verifiedAt: a.verifiedAt,
+          lastTestedAt: a.lastTestedAt,
+          verificationError: a.verificationError || '',
         });
       });
     }
@@ -772,6 +790,10 @@ projectSchema.methods.getCapacitySummary = function () {
           email: a.email,
           displayName: a.displayName || '',
           isDefault: !!a.isDefault,
+          isVerified: !!a.isVerified,
+          verifiedAt: a.verifiedAt,
+          lastTestedAt: a.lastTestedAt,
+          verificationError: a.verificationError || '',
           addedAt: a.addedAt,
         })),
         warmup: {
