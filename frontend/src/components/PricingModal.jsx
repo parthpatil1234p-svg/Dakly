@@ -444,15 +444,21 @@ export default function PricingModal({
 
         {/* Razorpay Action Footer */}
         <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-200 dark:border-white/10">
-          <div className="flex items-center space-x-3 text-xs text-slate-500 dark:text-slate-400">
-            <span className="inline-flex items-center space-x-1.5">
-              <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>UPI QR &amp; Apps (GPay, PhonePe, Paytm, CRED)</span>
-            </span>
-            <span className="inline-flex items-center space-x-1.5">
-              <CreditCard className="w-4 h-4 text-indigo-500" />
-              <span>Cards &amp; Netbanking</span>
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex items-center space-x-3">
+              <span className="inline-flex items-center space-x-1.5">
+                <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>UPI QR &amp; Apps</span>
+              </span>
+              <span className="inline-flex items-center space-x-1.5">
+                <CreditCard className="w-4 h-4 text-indigo-500" />
+                <span>Cards &amp; Netbanking</span>
+              </span>
+            </div>
+            <span className="hidden sm:inline text-slate-300 dark:text-white/20">•</span>
+            <a href="mailto:daklysupport@disheera.site" className="hover:underline text-[11px] text-slate-400 dark:text-slate-500">
+              daklysupport@disheera.site
+            </a>
           </div>
 
           <div className="flex items-center justify-end space-x-3">

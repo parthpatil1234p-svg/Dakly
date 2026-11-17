@@ -105,7 +105,7 @@ export default function Landing({ authMode, setAuthMode, authForm, setAuthForm, 
         <section className="faq-section page-width" aria-labelledby="faq-title"><div><p className="eyebrow">Before you connect</p><h2 id="faq-title">A few useful details.</h2></div><div>{faqs.map(([q, a]) => <details key={q}><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div></section>
       </main>
       <div className="page-width"><AdBanner /></div>
-      <footer className="site-footer page-width"><span>Dakly / Mail with your own return address.</span><nav aria-label="Legal"><button onClick={onPrivacy}>Privacy</button><button onClick={onTerms}>Terms</button><a href={`${repository}/blob/main/LICENSE`} target="_blank" rel="noreferrer">MIT license <ArrowUpRight size={13} aria-hidden="true" /></a></nav></footer>
+      <footer className="site-footer page-width"><span>Dakly / Mail with your own return address.</span><nav aria-label="Legal"><a href="mailto:daklysupport@disheera.site">Support</a><button onClick={onPrivacy}>Privacy</button><button onClick={onTerms}>Terms</button><a href={`${repository}/blob/main/LICENSE`} target="_blank" rel="noreferrer">MIT license <ArrowUpRight size={13} aria-hidden="true" /></a></nav></footer>
       {authOpen && <Dialog title={authMode === 'register' ? 'Create Dakly account' : 'Sign in to Console'} onClose={() => setAuthOpen(false)} busy={authLoading}>
         <p className="dialog-intro">{authMode === 'register' ? 'Register your account to manage projects, generate API keys, and connect Gmail.' : 'Sign in with your Dakly account to access projects, senders, and delivery logs.'}</p>
         <form onSubmit={onAuthSubmit} aria-busy={authLoading} className="auth-form">

@@ -2127,9 +2127,9 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                   Dakly provides optional open rate and click tracking via secure reverse-proxy redirect endpoints and transparent 1x1 tracking beacons. This telemetry is only accessible by authorized members of your project workspace.
                 </p>
 
-                <h4 className="font-bold text-slate-900 dark:text-white pt-2">4. Contact Us</h4>
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">4. Contact & Support</h4>
                 <p>
-                  If you have questions regarding this Privacy Policy or your data, you can reach out via our GitHub repository or contact the platform maintainers.
+                  If you have questions regarding this Privacy Policy, data privacy, or require technical assistance, please contact our support desk directly at <a href="mailto:daklysupport@disheera.site" className="text-brand-600 dark:text-brand-400 font-semibold underline">daklysupport@disheera.site</a>.
                 </p>
               </div>
 
@@ -2174,6 +2174,11 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                 <h4 className="font-bold text-slate-900 dark:text-white pt-2">3. Disclaimer & Limitation of Liability</h4>
                 <p>
                   Dakly is provided "as is" without warranty of any kind. Under no circumstances shall the creators be liable for any downtime, delivery failure, or data loss arising from third-party provider policies.
+                </p>
+
+                <h4 className="font-bold text-slate-900 dark:text-white pt-2">4. Support & Billing Contact</h4>
+                <p>
+                  For billing assistance, plan queries, or general support, contact our dedicated team at <a href="mailto:daklysupport@disheera.site" className="text-brand-600 dark:text-brand-400 font-semibold underline">daklysupport@disheera.site</a>.
                 </p>
               </div>
 
@@ -4972,7 +4977,7 @@ curl -X POST "${API_BASE_URL}/api/send" \\
       {/* Multiplex / Matched Content AdSense Unit (Autorelaxed) */}
       
 
-      <footer className="console-footer"><span>Dakly / Your email workspace</span><button onClick={() => setShowPrivacyModal(true)}>Privacy</button><button onClick={() => setShowTermsModal(true)}>Terms</button></footer>
+      <footer className="console-footer"><span>Dakly / Your email workspace</span><a href="mailto:daklysupport@disheera.site" className="hover:underline">Support</a><button onClick={() => setShowPrivacyModal(true)}>Privacy</button><button onClick={() => setShowTermsModal(true)}>Terms</button></footer>
       {/* Legal & Privacy Policy Modals for Dashboard View */}
       {renderLegalModals()}
 
