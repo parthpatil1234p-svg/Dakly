@@ -71,19 +71,19 @@ app.use(
       }
     },
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-gateway-signature'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-razorpay-signature'],
   })
 );
 
 // Serve Static Frontend Assets (Logos, SVGs, Badges - index: false ensures no HTML index is served)
 app.use(express.static(path.join(__dirname, '../public'), { index: false }));
 
-// YouPI Sovereign Payment Gateway Webhook (RAW bytes for HMAC verification)
+// Razorpay Payment Gateway Webhook (RAW bytes for HMAC verification)
 // CRITICAL REQUIREMENT: Must be mounted BEFORE express.json()
 app.post(
-  '/api/webhooks/youpi',
+  '/api/webhooks/razorpay',
   express.raw({ type: 'application/json' }),
-  paymentController.handleYoupiWebhook
+  paymentController.handleRazorpayWebhook
 );
 
 // Body Parsers (15MB limit to allow base64 PDF/image attachments)

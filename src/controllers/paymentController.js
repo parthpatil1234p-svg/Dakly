@@ -1,72 +1,15 @@
 /**
  * Payment Controller for Dakly
- * Handles YouPI Gateway Webhook ingestion and client-side payment queries.
+ * Handles Razorpay order creation, payment signature verification, and webhook fulfillment.
  * 
  * @license MIT
  */
 
 'use strict';
 
+const mongoose = require('mongoose');
 const paymentService = require('../services/paymentService');
 const PaymentOrder = require('../models/PaymentOrder');
-
-/**
- * Authoritative Webhook Receiver for Sovereign UPI (YouPI PG)
- * Expects unparsed raw bytes in req.body to verify cryptographic HMAC-SHA256 signature.
- * 
- * POST /api/webhooks/youpi
- */
-async function handleYoupiWebhook(req, res) {
-  try {
-    const signature = req.headers['x-gateway-signature']; // e.g. "sha256=..."
-    const webhookSecret = process.env.YOUPI_WEBHOOK_SECRET;
-
-    if (!signature || !webhookSecret) {
-      return res.status(401).json({ error: 'Missing webhook signature or secret' });
-    }
-
-    // Verify HMAC-SHA256 over raw unparsed request bytes
-    const isValid = paymentService.verifyWebhookSignature(req.body, signature, webhookSecret);
-    if (!isValid) {
-      console.warn('⚠️ [YouPI Webhook] Rejected request with invalid HMAC signature.');
-      return res.status(401).json({ error: 'Invalid HMAC signature' });
-    }
-
-    // Parse JSON payload from verified raw buffer
-    let payload;
-    try {
-      const rawString = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body);
-      payload = JSON.parse(rawString);
-    } catch (parseErr) {
-      return res.status(400).json({ error: 'Invalid JSON payload' });
-    }
-
-    if (payload.event === 'SUCCESS' && (payload.method === 'UPI' || !payload.method)) {
-      const orderId = payload.orderId || payload.order_id;
-      const amount = payload.amount || payload.amount_received;
-      const utr = payload.utr || payload.bank_reference || null;
-      const metadata = payload.metadata || {};
-
-      console.log(`🎉 [YouPI Webhook] Order ${orderId} verified. Paid: ₹${amount}, UTR: ${utr}`);
-
-      await paymentService.fulfillPaymentOrder({
-        orderId,
-        amount,
-        utr,
-        method: payload.method || 'UPI',
-        metadata,
-        rawPayload: payload,
-      });
-    } else {
-      console.log(`ℹ️ [YouPI Webhook] Received unhandled event: ${payload.event}`);
-    }
-
-    return res.status(200).json({ received: true });
-  } catch (error) {
-    console.error('❌ [YouPI Webhook Error]:', error);
-    return res.status(500).json({ error: 'Webhook processing failure', message: error.message });
-  }
-}
 
 /**
  * Get available subscription plans and credit packs
@@ -76,11 +19,187 @@ function getPlans(req, res) {
   return res.json({
     success: true,
     currency: 'INR',
-    payeeVpa: '9923092340@ptaxis',
-    merchantKey: process.env.YOUPI_MERCHANT_KEY || '00000000-0000-0000-0000-000000000001',
-    checkoutHost: process.env.YOUPI_CHECKOUT_HOST || 'https://dakly-pay.fly.dev',
+    keyId: process.env.RAZORPAY_KEY_ID || '',
     plans: paymentService.AVAILABLE_PLANS,
   });
+}
+
+/**
+ * Create a new Razorpay order for checkout
+ * POST /api/payments/razorpay/create-order
+ */
+async function createRazorpayOrder(req, res) {
+  try {
+    const { planId, priceRupees, credits, plan, cycle, projectId } = req.body;
+    if (!planId || !priceRupees) {
+      return res.status(400).json({ success: false, error: 'planId and priceRupees are required.' });
+    }
+
+    const orderId = `DAKLY-${planId}-${Date.now()}`;
+    const user = req.user;
+
+    const rzpData = await paymentService.createRazorpayOrder({
+      orderId,
+      amount: priceRupees,
+      currency: 'INR',
+      customer: {
+        name: user?.name || 'Dakly Developer',
+        email: user?.email || 'developer@example.com',
+      },
+      metadata: {
+        userId: user?._id?.toString() || '',
+        projectId: projectId || '',
+        planId,
+        creditsToAdd: credits || 0,
+        plan: plan || (planId.startsWith('pro') ? 'pro' : 'free'),
+        cycle: cycle || (planId === 'pro-yearly' ? 'yearly' : 'monthly'),
+      },
+    });
+
+    // Save initial PENDING order record in database
+    await PaymentOrder.create({
+      orderId,
+      userId: user?._id || null,
+      projectId: projectId && mongoose.isValidObjectId(projectId) ? projectId : null,
+      amount: priceRupees,
+      currency: 'INR',
+      status: 'PENDING',
+      method: 'RAZORPAY',
+      razorpayOrderId: rzpData.razorpayOrderId,
+      planId,
+      creditsAdded: credits || 0,
+      metadata: {
+        planId,
+        creditsToAdd: credits || 0,
+        plan,
+        cycle,
+      },
+    }).catch((err) => console.warn('Could not save initial pending order record:', err.message));
+
+    return res.json({
+      success: true,
+      orderId,
+      razorpayOrderId: rzpData.razorpayOrderId,
+      amount: rzpData.amount, // amount in paise
+      currency: rzpData.currency,
+      keyId: rzpData.keyId,
+    });
+  } catch (error) {
+    console.error('❌ Error creating Razorpay order:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Verify client-side payment signature from Razorpay modal
+ * POST /api/payments/razorpay/verify
+ */
+async function verifyRazorpayPayment(req, res) {
+  try {
+    const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      return res.status(400).json({
+        success: false,
+        error: 'razorpayOrderId, razorpayPaymentId, and razorpaySignature are required.',
+      });
+    }
+
+    const isValid = paymentService.verifyRazorpayPaymentSignature({
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+    });
+
+    if (!isValid) {
+      console.warn('⚠️ [Razorpay] Invalid payment signature received.');
+      return res.status(400).json({ success: false, error: 'Invalid payment signature' });
+    }
+
+    // Signature is cryptographically verified - fulfill order
+    const fulfillment = await paymentService.fulfillPaymentOrder({
+      orderId,
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+      method: 'RAZORPAY',
+      metadata: {
+        userId: req.user?._id?.toString(),
+      },
+      rawPayload: req.body,
+    });
+
+    return res.json({
+      success: true,
+      message: 'Payment verified and credits/tier activated successfully.',
+      order: fulfillment.order,
+    });
+  } catch (error) {
+    console.error('❌ Error verifying Razorpay payment:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Authoritative Webhook Receiver for Razorpay Events
+ * Expects unparsed raw bytes in req.body to verify cryptographic HMAC-SHA256 signature.
+ * 
+ * POST /api/webhooks/razorpay
+ */
+async function handleRazorpayWebhook(req, res) {
+  try {
+    const signature = req.headers['x-razorpay-signature'];
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET;
+
+    if (!signature || !webhookSecret) {
+      return res.status(401).json({ error: 'Missing webhook signature or secret' });
+    }
+
+    const isValid = paymentService.verifyRazorpayWebhookSignature(req.body, signature, webhookSecret);
+    if (!isValid) {
+      console.warn('⚠️ [Razorpay Webhook] Rejected request with invalid HMAC signature.');
+      return res.status(401).json({ error: 'Invalid HMAC signature' });
+    }
+
+    let payload;
+    try {
+      const rawString = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body);
+      payload = JSON.parse(rawString);
+    } catch {
+      return res.status(400).json({ error: 'Invalid JSON payload' });
+    }
+
+    const event = payload.event;
+    console.log(`ℹ️ [Razorpay Webhook] Event received: ${event}`);
+
+    if (event === 'order.paid' || event === 'payment.captured') {
+      const paymentEntity = payload.payload?.payment?.entity || {};
+      const orderEntity = payload.payload?.order?.entity || {};
+
+      const razorpayOrderId = paymentEntity.order_id || orderEntity.id;
+      const razorpayPaymentId = paymentEntity.id;
+      const notes = paymentEntity.notes || orderEntity.notes || {};
+      const orderId = notes.orderId;
+      const amount = (paymentEntity.amount || orderEntity.amount || 0) / 100;
+
+      await paymentService.fulfillPaymentOrder({
+        orderId,
+        amount,
+        razorpayOrderId,
+        razorpayPaymentId,
+        method: paymentEntity.method || 'RAZORPAY',
+        metadata: notes,
+        rawPayload: payload,
+      });
+
+      console.log(`🎉 [Razorpay Webhook] Successfully processed order ${orderId || razorpayOrderId}`);
+    }
+
+    return res.status(200).json({ status: 'ok' });
+  } catch (error) {
+    console.error('❌ [Razorpay Webhook Error]:', error);
+    return res.status(500).json({ error: 'Webhook processing failure', message: error.message });
+  }
 }
 
 /**
@@ -115,7 +234,10 @@ async function getPaymentHistory(req, res) {
 async function getOrderStatus(req, res) {
   try {
     const { orderId } = req.params;
-    const order = await PaymentOrder.findOne({ orderId }).lean();
+    const order = await PaymentOrder.findOne({
+      $or: [{ orderId }, { razorpayOrderId: orderId }],
+    }).lean();
+
     if (!order) {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
@@ -124,9 +246,9 @@ async function getOrderStatus(req, res) {
       success: true,
       order: {
         orderId: order.orderId,
+        razorpayOrderId: order.razorpayOrderId,
         status: order.status,
         amount: order.amount,
-        utr: order.utr,
         planId: order.planId,
         creditsAdded: order.creditsAdded,
         fulfilledAt: order.fulfilledAt,
@@ -137,72 +259,11 @@ async function getOrderStatus(req, res) {
   }
 }
 
-/**
- * Create a new sovereign UPI payment session on YouPI PG
- * POST /api/payments/create-session
- */
-async function createCheckoutSession(req, res) {
-  try {
-    const { planId, priceRupees, credits, plan, cycle, projectId } = req.body;
-    if (!planId || !priceRupees) {
-      return res.status(400).json({ success: false, error: 'planId and priceRupees are required.' });
-    }
-
-    const orderId = `DAKLY-${planId}-${Date.now()}`;
-    const user = req.user;
-
-    const session = await paymentService.createCheckoutSession({
-      orderId,
-      amount: priceRupees,
-      customer: {
-        name: user?.name || 'Dakly Developer',
-        email: user?.email || 'developer@example.com',
-        phone: user?.phone || '',
-      },
-      metadata: {
-        userId: user?._id?.toString() || '',
-        projectId: projectId || '',
-        planId,
-        creditsToAdd: credits || 0,
-        plan: plan || (planId.startsWith('pro') ? 'pro' : 'free'),
-        cycle: cycle || (planId === 'pro-yearly' ? 'yearly' : 'monthly'),
-      },
-    });
-
-    const mongoose = require('mongoose');
-    await PaymentOrder.create({
-      orderId,
-      userId: user?._id || null,
-      projectId: projectId && mongoose.isValidObjectId(projectId) ? projectId : null,
-      amount: priceRupees,
-      currency: 'INR',
-      status: 'PENDING',
-      method: 'UPI',
-      planId,
-      metadata: {
-        paymentId: session.paymentId,
-        checkoutUrl: session.checkoutUrl,
-        creditsToAdd: credits || 0,
-      },
-    }).catch((err) => console.warn('Could not save pending order record:', err.message));
-
-    return res.json({
-      success: true,
-      orderId,
-      paymentId: session.paymentId,
-      checkoutUrl: session.checkoutUrl,
-      amount: session.amount,
-    });
-  } catch (error) {
-    console.error('Error creating checkout session:', error);
-    return res.status(500).json({ success: false, error: error.message });
-  }
-}
-
 module.exports = {
-  handleYoupiWebhook,
   getPlans,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+  handleRazorpayWebhook,
   getPaymentHistory,
   getOrderStatus,
-  createCheckoutSession,
 };

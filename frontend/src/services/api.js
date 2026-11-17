@@ -445,7 +445,7 @@ export async function deleteCustomTemplate(projectId, templateId, token) {
   return res.json();
 }
 
-// YouPI Sovereign Payment Gateway Endpoints
+// Razorpay Payment Gateway Endpoints
 export async function fetchPricingPlans() {
   const res = await fetch(`${API_BASE_URL}/api/payments/plans`);
   return res.json();

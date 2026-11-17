@@ -45,7 +45,21 @@ const paymentOrderSchema = new mongoose.Schema(
     },
     method: {
       type: String,
-      default: 'UPI',
+      default: 'RAZORPAY',
+    },
+    razorpayOrderId: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    razorpayPaymentId: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    razorpaySignature: {
+      type: String,
+      default: null,
     },
     utr: {
       type: String,

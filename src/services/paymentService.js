@@ -1,6 +1,6 @@
 /**
- * Sovereign UPI Payment Gateway (YouPI PG) Service for Dakly
- * Handles signature verification, plan pricing, credit bundles, and order fulfillment.
+ * Razorpay Payment Gateway Service for Dakly
+ * Handles Razorpay order generation, signature verification, plan pricing, credit bundles, and order fulfillment.
  * 
  * @license MIT
  */
@@ -9,6 +9,7 @@
 
 const crypto = require('crypto');
 const mongoose = require('mongoose');
+const Razorpay = require('razorpay');
 const PaymentOrder = require('../models/PaymentOrder');
 const Project = require('../models/Project');
 const User = require('../models/User');
@@ -79,14 +80,99 @@ const AVAILABLE_PLANS = [
 ];
 
 /**
- * Verifies the HMAC-SHA256 signature from YouPI PG over the raw request bytes.
- * @param {Buffer|string} rawBody - Raw unparsed request body
- * @param {string} signatureHeader - 'x-gateway-signature' header (e.g. 'sha256=...')
- * @param {string} secret - YOUPI_WEBHOOK_SECRET
- * @returns {boolean} Whether signature is valid and authentic
+ * Returns an authenticated Razorpay instance
+ * @returns {Razorpay}
  */
-function verifyWebhookSignature(rawBody, signatureHeader, secret) {
-  if (!signatureHeader || !secret) {
+function getRazorpayClient() {
+  const key_id = process.env.RAZORPAY_KEY_ID;
+  const key_secret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!key_id || !key_secret) {
+    throw new Error('Razorpay keys not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in environment variables.');
+  }
+
+  return new Razorpay({ key_id, key_secret });
+}
+
+/**
+ * Creates an order on Razorpay
+ * 
+ * @param {Object} options
+ * @param {string} options.orderId - Unique Dakly internal order ID
+ * @param {number} options.amount - Amount in INR (e.g. 20, 216, 299)
+ * @param {string} [options.currency='INR'] - Currency code
+ * @param {Object} [options.customer={}] - Customer name and email
+ * @param {Object} [options.metadata={}] - Metadata to attach
+ * @returns {Promise<{ razorpayOrderId: string, amount: number, currency: string, keyId: string }>}
+ */
+async function createRazorpayOrder({ orderId, amount, currency = 'INR', customer = {}, metadata = {} }) {
+  const instance = getRazorpayClient();
+  const amountPaise = Math.round(Number(amount) * 100);
+
+  const rzpOrder = await instance.orders.create({
+    amount: amountPaise,
+    currency,
+    receipt: (orderId || `order_${Date.now()}`).substring(0, 40),
+    notes: {
+      orderId: String(orderId || ''),
+      userId: String(metadata.userId || ''),
+      projectId: String(metadata.projectId || ''),
+      planId: String(metadata.planId || ''),
+      creditsToAdd: String(metadata.creditsToAdd || 0),
+      plan: String(metadata.plan || ''),
+      cycle: String(metadata.cycle || ''),
+    },
+  });
+
+  return {
+    razorpayOrderId: rzpOrder.id,
+    amount: rzpOrder.amount,
+    currency: rzpOrder.currency,
+    keyId: process.env.RAZORPAY_KEY_ID,
+  };
+}
+
+/**
+ * Verifies the payment signature returned by the client-side Razorpay modal.
+ * HMAC-SHA256 of `${razorpayOrderId}|${razorpayPaymentId}` with RAZORPAY_KEY_SECRET
+ * 
+ * @param {Object} params
+ * @param {string} params.razorpayOrderId
+ * @param {string} params.razorpayPaymentId
+ * @param {string} params.razorpaySignature
+ * @returns {boolean}
+ */
+function verifyRazorpayPaymentSignature({ razorpayOrderId, razorpayPaymentId, razorpaySignature }) {
+  const secret = process.env.RAZORPAY_KEY_SECRET;
+  if (!secret || !razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+    return false;
+  }
+
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+    .digest('hex');
+
+  const providedBuf = Buffer.from(String(razorpaySignature).trim());
+  const expectedBuf = Buffer.from(expectedSignature.trim());
+
+  if (providedBuf.length !== expectedBuf.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(providedBuf, expectedBuf);
+}
+
+/**
+ * Verifies Razorpay Webhook signature (x-razorpay-signature header)
+ * 
+ * @param {Buffer|string} rawBody - Raw unparsed webhook bytes
+ * @param {string} signature - Header value
+ * @param {string} secret - RAZORPAY_WEBHOOK_SECRET
+ * @returns {boolean}
+ */
+function verifyRazorpayWebhookSignature(rawBody, signature, secret) {
+  if (!signature || !secret) {
     return false;
   }
 
@@ -94,15 +180,13 @@ function verifyWebhookSignature(rawBody, signatureHeader, secret) {
     ? rawBody
     : Buffer.from(typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody), 'utf8');
 
-  const expectedHash = crypto
+  const expectedSignature = crypto
     .createHmac('sha256', secret)
     .update(rawBuffer)
     .digest('hex');
 
-  const expectedSignature = `sha256=${expectedHash}`;
-
-  const providedBuf = Buffer.from(signatureHeader.trim());
-  const expectedBuf = Buffer.from(expectedSignature);
+  const providedBuf = Buffer.from(String(signature).trim());
+  const expectedBuf = Buffer.from(expectedSignature.trim());
 
   if (providedBuf.length !== expectedBuf.length) {
     return false;
@@ -113,31 +197,42 @@ function verifyWebhookSignature(rawBody, signatureHeader, secret) {
 
 /**
  * Fulfills an authenticated payment order (upgrades plan tier and/or adds credits).
- * Implements strict idempotency so duplicate webhook dispatches are safely ignored.
+ * Implements strict idempotency so duplicate requests or webhooks are safely ignored.
  * 
  * @param {Object} params
- * @param {string} params.orderId - Unique merchant order id
- * @param {number} params.amount - Paid amount in INR
- * @param {string} [params.utr] - UPI bank transaction reference
- * @param {string} [params.method='UPI'] - Payment method
+ * @param {string} params.orderId - Unique internal order ID
+ * @param {number} [params.amount] - Paid amount in INR
+ * @param {string} [params.razorpayOrderId] - Razorpay Order ID
+ * @param {string} [params.razorpayPaymentId] - Razorpay Payment ID
+ * @param {string} [params.razorpaySignature] - Payment signature
+ * @param {string} [params.method='RAZORPAY'] - Payment method
  * @param {Object} [params.metadata={}] - Metadata attached to checkout
- * @param {Object} [params.rawPayload=null] - Full unparsed gateway event
- * @returns {Promise<{ success: boolean, alreadyProcessed?: boolean, order: Object, project?: Object }>}
+ * @param {Object} [params.rawPayload=null] - Full event / verification payload
+ * @returns {Promise<{ success: boolean, alreadyProcessed?: boolean, order: Object, project?: Object, user?: Object }>}
  */
 async function fulfillPaymentOrder({
   orderId,
   amount,
-  utr = null,
-  method = 'UPI',
+  razorpayOrderId = null,
+  razorpayPaymentId = null,
+  razorpaySignature = null,
+  method = 'RAZORPAY',
   metadata = {},
   rawPayload = null,
 }) {
-  if (!orderId) {
-    throw new Error('Order ID is required for fulfillment');
+  if (!orderId && !razorpayOrderId) {
+    throw new Error('Order ID or Razorpay Order ID is required for fulfillment');
   }
 
-  // Idempotency check: if this order was already successfully fulfilled, skip re-fulfillment
-  const existingOrder = await PaymentOrder.findOne({ orderId });
+  // Idempotency check: if this order was already successfully fulfilled, return cleanly
+  let existingOrder = null;
+  if (orderId) {
+    existingOrder = await PaymentOrder.findOne({ orderId });
+  }
+  if (!existingOrder && razorpayOrderId) {
+    existingOrder = await PaymentOrder.findOne({ razorpayOrderId });
+  }
+
   if (existingOrder && existingOrder.status === 'SUCCESS') {
     return {
       success: true,
@@ -146,17 +241,20 @@ async function fulfillPaymentOrder({
     };
   }
 
-  const planId = metadata.planId || null;
-  const creditsToAdd = Number(metadata.creditsToAdd || 0);
+  const planId = metadata.planId || existingOrder?.planId || null;
+  const creditsToAdd = Number(metadata.creditsToAdd || existingOrder?.creditsAdded || 0);
   const targetPlan = metadata.plan || (planId && planId.startsWith('pro') ? 'pro' : null);
   const targetCycle = metadata.cycle || (planId === 'pro-yearly' ? 'yearly' : 'monthly');
 
   let updatedProject = null;
   let updatedUser = null;
 
-  // 1. Fulfill Project Tier / Quota if projectId or userId is present
-  if (metadata.projectId && mongoose.isValidObjectId(metadata.projectId)) {
-    const project = await Project.findById(metadata.projectId);
+  const targetProjectId = metadata.projectId || existingOrder?.projectId;
+  const targetUserId = metadata.userId || existingOrder?.userId;
+
+  // 1. Fulfill Project Tier / Quota if targetProjectId is valid
+  if (targetProjectId && mongoose.isValidObjectId(targetProjectId)) {
+    const project = await Project.findById(targetProjectId);
     if (project) {
       if (targetPlan === 'pro') {
         project.plan = 'pro';
@@ -168,9 +266,9 @@ async function fulfillPaymentOrder({
       await project.save();
       updatedProject = project;
     }
-  } else if (metadata.userId && mongoose.isValidObjectId(metadata.userId)) {
-    // If no specific projectId provided, upgrade user's first/primary project
-    const project = await Project.findOne({ userId: metadata.userId });
+  } else if (targetUserId && mongoose.isValidObjectId(targetUserId)) {
+    // If no specific projectId provided, upgrade user's primary project
+    const project = await Project.findOne({ userId: targetUserId });
     if (project) {
       if (targetPlan === 'pro') {
         project.plan = 'pro';
@@ -184,9 +282,9 @@ async function fulfillPaymentOrder({
     }
   }
 
-  // 2. Fulfill User Account Credits if userId is provided
-  if (metadata.userId && mongoose.isValidObjectId(metadata.userId)) {
-    const user = await User.findById(metadata.userId);
+  // 2. Fulfill User Account Credits if targetUserId is valid
+  if (targetUserId && mongoose.isValidObjectId(targetUserId)) {
+    const user = await User.findById(targetUserId);
     if (user && creditsToAdd > 0) {
       user.credits = (user.credits || 0) + creditsToAdd;
       await user.save();
@@ -198,14 +296,16 @@ async function fulfillPaymentOrder({
   let order = existingOrder;
   if (!order) {
     order = new PaymentOrder({
-      orderId,
-      userId: metadata.userId && mongoose.isValidObjectId(metadata.userId) ? metadata.userId : null,
-      projectId: updatedProject ? updatedProject._id : (metadata.projectId && mongoose.isValidObjectId(metadata.projectId) ? metadata.projectId : null),
+      orderId: orderId || `dakly_rzp_${Date.now()}`,
+      userId: targetUserId && mongoose.isValidObjectId(targetUserId) ? targetUserId : null,
+      projectId: updatedProject ? updatedProject._id : (targetProjectId && mongoose.isValidObjectId(targetProjectId) ? targetProjectId : null),
       amount: Number(amount) || 0,
       currency: 'INR',
       status: 'SUCCESS',
-      method: method || 'UPI',
-      utr: utr || null,
+      method: method || 'RAZORPAY',
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
       planId,
       creditsAdded: creditsToAdd,
       planUpgraded: targetPlan,
@@ -216,10 +316,13 @@ async function fulfillPaymentOrder({
   } else {
     order.status = 'SUCCESS';
     order.amount = Number(amount) || order.amount;
-    order.utr = utr || order.utr;
+    order.method = method || order.method || 'RAZORPAY';
+    order.razorpayOrderId = razorpayOrderId || order.razorpayOrderId;
+    order.razorpayPaymentId = razorpayPaymentId || order.razorpayPaymentId;
+    order.razorpaySignature = razorpaySignature || order.razorpaySignature;
     order.planId = planId || order.planId;
-    order.creditsAdded = creditsToAdd;
-    order.planUpgraded = targetPlan;
+    order.creditsAdded = creditsToAdd || order.creditsAdded;
+    order.planUpgraded = targetPlan || order.planUpgraded;
     order.metadata = { ...order.metadata, ...metadata };
     order.rawWebhookPayload = rawPayload || order.rawWebhookPayload;
     order.fulfilledAt = new Date();
@@ -235,58 +338,11 @@ async function fulfillPaymentOrder({
   };
 }
 
-/**
- * Creates a server-side Sovereign UPI checkout session via YouPI PG
- * 
- * @param {Object} options
- * @param {string} options.orderId - Unique order ID
- * @param {number} options.amount - Amount in INR
- * @param {Object} options.customer - Customer details (name, email, phone)
- * @param {Object} options.metadata - Order metadata
- * @returns {Promise<{ paymentId: string, checkoutUrl: string, orderId: string, amount: string }>}
- */
-async function createCheckoutSession({ orderId, amount, customer = {}, metadata = {} }) {
-  const host = process.env.YOUPI_CHECKOUT_HOST || 'https://dakly-pay.fly.dev';
-  const merchantId = process.env.YOUPI_MERCHANT_KEY || '00000000-0000-0000-0000-000000000001';
-  const merchantKey = process.env.YOUPI_MERCHANT_API_KEY || 'mk_live_25a249554b4028c390b2f1f5b9728472ade498445dabc630';
-
-  const res = await fetch(`${host}/api/v1/payments`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Merchant-Id': merchantId,
-      'X-Merchant-Key': merchantKey,
-    },
-    body: JSON.stringify({
-      orderId,
-      amount: Number(amount).toFixed(2),
-      currency: 'INR',
-      method: 'MANUAL_UPI',
-      customer: {
-        name: customer.name || 'Dakly Developer',
-        email: customer.email || 'developer@example.com',
-        phone: customer.phone || '',
-      },
-      metadata,
-    }),
-  });
-
-  const data = await res.json();
-  if (!res.ok || !data.paymentId) {
-    throw new Error(data.error || 'Failed to create payment session on YouPI PG');
-  }
-
-  return {
-    paymentId: data.paymentId,
-    checkoutUrl: data.checkoutUrl,
-    orderId: data.orderId,
-    amount: data.amount,
-  };
-}
-
 module.exports = {
   AVAILABLE_PLANS,
-  verifyWebhookSignature,
+  getRazorpayClient,
+  createRazorpayOrder,
+  verifyRazorpayPaymentSignature,
+  verifyRazorpayWebhookSignature,
   fulfillPaymentOrder,
-  createCheckoutSession,
 };

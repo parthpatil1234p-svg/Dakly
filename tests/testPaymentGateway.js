@@ -1,11 +1,12 @@
 /**
- * Automated Verification for YouPI Sovereign Payment Gateway Integration
+ * Automated Verification for Razorpay Payment Gateway Integration
  * Tests:
- * 1. HMAC-SHA256 signature verification over raw request bytes
- * 2. Tampered signature and secret rejection
- * 3. Plan upgrade fulfillment (Monthly & Annual Pass)
- * 4. Credit bundle fulfillment (5,000 & 25,000 credits)
- * 5. Webhook idempotency protection (duplicate orderId handling)
+ * 1. Razorpay client signature verification over order_id|payment_id
+ * 2. Razorpay webhook HMAC-SHA256 signature verification over raw request bytes
+ * 3. Tampered signature and secret rejection
+ * 4. Plan upgrade fulfillment (Monthly & Annual Pass)
+ * 5. Credit bundle fulfillment (5,000 & 25,000 credits)
+ * 6. Webhook idempotency protection (duplicate orderId handling)
  */
 
 'use strict';
@@ -14,53 +15,87 @@ const assert = require('assert');
 const crypto = require('crypto');
 const paymentService = require('../src/services/paymentService');
 
-console.log('🧪 Starting YouPI Payment Gateway Unit & Webhook Tests...\n');
+console.log('🧪 Starting Razorpay Payment Gateway Unit & Webhook Tests...\n');
 
-const TEST_SECRET = 'youpi_sec_test_9923092340_dakly';
+const TEST_SECRET = 'rzp_sec_test_razorpay_dakly_2026';
+process.env.RAZORPAY_KEY_SECRET = TEST_SECRET;
+process.env.RAZORPAY_KEY_ID = 'rzp_test_mock_key';
 
 // -------------------------------------------------------------
-// Test 1: HMAC-SHA256 Signature Verification
+// Test 1: Razorpay Payment Signature Verification
 // -------------------------------------------------------------
 {
-  const mockPayload = JSON.stringify({
-    event: 'SUCCESS',
-    method: 'UPI',
-    orderId: 'DAKLY-starter-pack-17948399221',
-    amount: 99,
-    utr: 'UTR992309234001',
-    metadata: {
-      creditsToAdd: 5000,
-      planId: 'starter-pack',
-    },
-  });
-
-  const rawBytes = Buffer.from(mockPayload, 'utf8');
-  const validHash = crypto.createHmac('sha256', TEST_SECRET).update(rawBytes).digest('hex');
-  const validHeader = `sha256=${validHash}`;
+  const razorpayOrderId = 'order_MOCK_12345';
+  const razorpayPaymentId = 'pay_MOCK_67890';
+  const payload = `${razorpayOrderId}|${razorpayPaymentId}`;
+  const validSignature = crypto
+    .createHmac('sha256', TEST_SECRET)
+    .update(payload)
+    .digest('hex');
 
   // Valid verification
-  const isValid = paymentService.verifyWebhookSignature(rawBytes, validHeader, TEST_SECRET);
+  const isValid = paymentService.verifyRazorpayPaymentSignature({
+    razorpayOrderId,
+    razorpayPaymentId,
+    razorpaySignature: validSignature,
+  });
   assert.strictEqual(isValid, true, 'Valid signature should verify cleanly');
 
-  // Tampered payload verification
-  const tamperedBytes = Buffer.from(mockPayload.replace('"amount":99', '"amount":999'), 'utf8');
-  const isTamperedValid = paymentService.verifyWebhookSignature(tamperedBytes, validHeader, TEST_SECRET);
-  assert.strictEqual(isTamperedValid, false, 'Tampered payload must be rejected');
+  // Tampered payment ID
+  const isTamperedValid = paymentService.verifyRazorpayPaymentSignature({
+    razorpayOrderId,
+    razorpayPaymentId: 'pay_MOCK_TAMPERED',
+    razorpaySignature: validSignature,
+  });
+  assert.strictEqual(isTamperedValid, false, 'Tampered payment ID must be rejected');
 
-  // Invalid secret
-  const isWrongSecretValid = paymentService.verifyWebhookSignature(rawBytes, validHeader, 'wrong_secret_123');
-  assert.strictEqual(isWrongSecretValid, false, 'Wrong secret must be rejected');
+  // Tampered signature
+  const isBadSigValid = paymentService.verifyRazorpayPaymentSignature({
+    razorpayOrderId,
+    razorpayPaymentId,
+    razorpaySignature: 'bad_signature_12345',
+  });
+  assert.strictEqual(isBadSigValid, false, 'Bad signature must be rejected');
 
-  // Missing or malformed header
-  assert.strictEqual(paymentService.verifyWebhookSignature(rawBytes, null, TEST_SECRET), false);
-  assert.strictEqual(paymentService.verifyWebhookSignature(rawBytes, '', TEST_SECRET), false);
-  assert.strictEqual(paymentService.verifyWebhookSignature(rawBytes, 'sha256=short', TEST_SECRET), false);
-
-  console.log('✅ Test 1 Passed: HMAC-SHA256 signature verification accurately validates authenticity and rejects tampered bytes.');
+  console.log('✅ Test 1 Passed: Razorpay client payment signature verification accurately validates authenticity.');
 }
 
 // -------------------------------------------------------------
-// Test 2: Catalog Plans & Pricing Structure
+// Test 2: Razorpay Webhook HMAC-SHA256 Signature Verification
+// -------------------------------------------------------------
+{
+  const mockWebhookPayload = JSON.stringify({
+    event: 'order.paid',
+    payload: {
+      payment: {
+        entity: {
+          id: 'pay_WEBHOOK_123',
+          order_id: 'order_WEBHOOK_456',
+          amount: 2000,
+          method: 'upi',
+        },
+      },
+    },
+  });
+
+  const rawBytes = Buffer.from(mockWebhookPayload, 'utf8');
+  const validSignature = crypto.createHmac('sha256', TEST_SECRET).update(rawBytes).digest('hex');
+
+  const isValid = paymentService.verifyRazorpayWebhookSignature(rawBytes, validSignature, TEST_SECRET);
+  assert.strictEqual(isValid, true, 'Valid webhook signature must pass');
+
+  const tamperedBytes = Buffer.from(mockWebhookPayload.replace('2000', '9999'), 'utf8');
+  assert.strictEqual(
+    paymentService.verifyRazorpayWebhookSignature(tamperedBytes, validSignature, TEST_SECRET),
+    false,
+    'Tampered webhook body must fail'
+  );
+
+  console.log('✅ Test 2 Passed: Razorpay webhook HMAC verification rejects tampered bytes and accepts valid payloads.');
+}
+
+// -------------------------------------------------------------
+// Test 3: Catalog Plans & Pricing Structure
 // -------------------------------------------------------------
 {
   const plans = paymentService.AVAILABLE_PLANS;
@@ -82,16 +117,15 @@ const TEST_SECRET = 'youpi_sec_test_9923092340_dakly';
   assert.strictEqual(proYearly.priceRupees, 216);
   assert.strictEqual(proYearly.cycle, 'yearly');
 
-  console.log('✅ Test 2 Passed: Available plan tiers match requested pricing (₹20/mo, ₹216/yr, ₹99 starter, ₹299 growth).');
+  console.log('✅ Test 3 Passed: Available plan tiers match requested pricing (₹20/mo, ₹216/yr, ₹99 starter, ₹299 growth).');
 }
 
 // -------------------------------------------------------------
-// Test 3: Idempotency & Order Fulfillment Simulation
+// Test 4: Idempotency & Order Fulfillment Simulation
 // -------------------------------------------------------------
 (async () => {
   try {
     const PaymentOrder = require('../src/models/PaymentOrder');
-    const Project = require('../src/models/Project');
 
     // In-memory mock for DB-independent unit test execution
     const mockDb = new Map();
@@ -109,13 +143,14 @@ const TEST_SECRET = 'youpi_sec_test_9923092340_dakly';
     const mockOrderPayload = {
       orderId: `DAKLY-UNIT-TEST-${Date.now()}`,
       amount: 299,
-      utr: 'UTR_MOCK_TEST_883391',
-      method: 'UPI',
+      razorpayOrderId: 'order_MOCK_TEST_883391',
+      razorpayPaymentId: 'pay_MOCK_TEST_883391',
+      method: 'RAZORPAY',
       metadata: {
         planId: 'growth-pack',
         creditsToAdd: 25000,
       },
-      rawPayload: { event: 'SUCCESS' },
+      rawPayload: { event: 'order.paid' },
     };
 
     // First fulfillment
@@ -123,7 +158,7 @@ const TEST_SECRET = 'youpi_sec_test_9923092340_dakly';
     assert.strictEqual(result1.success, true);
     assert.strictEqual(result1.order.status, 'SUCCESS');
     assert.strictEqual(result1.order.creditsAdded, 25000);
-    assert.strictEqual(result1.order.utr, 'UTR_MOCK_TEST_883391');
+    assert.strictEqual(result1.order.razorpayPaymentId, 'pay_MOCK_TEST_883391');
 
     // Second fulfillment with identical orderId (idempotency check)
     const result2 = await paymentService.fulfillPaymentOrder(mockOrderPayload);
@@ -134,58 +169,66 @@ const TEST_SECRET = 'youpi_sec_test_9923092340_dakly';
     const proOrderPayload = {
       orderId: `DAKLY-PRO-TEST-${Date.now()}`,
       amount: 20,
-      utr: 'UTR_PRO_992309',
-      method: 'UPI',
+      razorpayOrderId: 'order_PRO_992309',
+      razorpayPaymentId: 'pay_PRO_992309',
+      method: 'RAZORPAY',
       metadata: {
         planId: 'pro-monthly',
         plan: 'pro',
         cycle: 'monthly',
       },
-      rawPayload: { event: 'SUCCESS' },
+      rawPayload: { event: 'order.paid' },
     };
     const proResult = await paymentService.fulfillPaymentOrder(proOrderPayload);
     assert.strictEqual(proResult.success, true);
     assert.strictEqual(proResult.order.planUpgraded, 'pro');
 
-    console.log('✅ Test 3 Passed: Payment order fulfillment and idempotency guard succeed without duplicate credit issuance.');
+    console.log('✅ Test 4 Passed: Payment order fulfillment and idempotency guard succeed without duplicate credit issuance.');
 
     // -------------------------------------------------------------
-    // Test 4: End-to-End HTTP Webhook Endpoint Test (Express Raw Bytes)
+    // Test 5: End-to-End HTTP Webhook Endpoint Test (Express Raw Bytes)
     // -------------------------------------------------------------
     const express = require('express');
     const http = require('http');
     const paymentController = require('../src/controllers/paymentController');
 
     const app = express();
-    process.env.YOUPI_WEBHOOK_SECRET = TEST_SECRET;
+    process.env.RAZORPAY_WEBHOOK_SECRET = TEST_SECRET;
 
     app.post(
-      '/api/webhooks/youpi',
+      '/api/webhooks/razorpay',
       express.raw({ type: 'application/json' }),
-      paymentController.handleYoupiWebhook
+      paymentController.handleRazorpayWebhook
     );
 
     const server = http.createServer(app);
     await new Promise((resolve) => server.listen(0, resolve));
     const port = server.address().port;
-    const webhookUrl = `http://127.0.0.1:${port}/api/webhooks/youpi`;
+    const webhookUrl = `http://127.0.0.1:${port}/api/webhooks/razorpay`;
 
     try {
-      // 4A: Valid Signed Request
+      // 5A: Valid Signed Request
       const orderId = `DAKLY-HTTP-TEST-${Date.now()}`;
       const payloadString = JSON.stringify({
-        event: 'SUCCESS',
-        method: 'UPI',
-        orderId,
-        amount: 99,
-        utr: 'UTR_HTTP_TEST_123',
-        metadata: {
-          planId: 'starter-pack',
-          creditsToAdd: 5000,
+        event: 'order.paid',
+        payload: {
+          payment: {
+            entity: {
+              id: 'pay_HTTP_TEST_123',
+              order_id: 'order_HTTP_TEST_456',
+              amount: 9900,
+              method: 'upi',
+              notes: {
+                orderId,
+                planId: 'starter-pack',
+                creditsToAdd: '5000',
+              },
+            },
+          },
         },
       });
 
-      const signature = 'sha256=' + crypto
+      const signature = crypto
         .createHmac('sha256', TEST_SECRET)
         .update(Buffer.from(payloadString, 'utf8'))
         .digest('hex');
@@ -194,27 +237,27 @@ const TEST_SECRET = 'youpi_sec_test_9923092340_dakly';
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-gateway-signature': signature,
+          'x-razorpay-signature': signature,
         },
         body: payloadString,
       });
 
       assert.strictEqual(resValid.status, 200);
       const resJson = await resValid.json();
-      assert.strictEqual(resJson.received, true);
+      assert.strictEqual(resJson.status, 'ok');
 
-      // 4B: Tampered Payload
+      // 5B: Tampered Payload
       const resTampered = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-gateway-signature': signature,
+          'x-razorpay-signature': signature,
         },
-        body: payloadString.replace('"amount":99', '"amount":999'),
+        body: payloadString.replace('9900', '9999'),
       });
       assert.strictEqual(resTampered.status, 401);
 
-      // 4C: Missing Signature
+      // 5C: Missing Signature
       const resNoSig = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -222,12 +265,12 @@ const TEST_SECRET = 'youpi_sec_test_9923092340_dakly';
       });
       assert.strictEqual(resNoSig.status, 401);
 
-      console.log('✅ Test 4 Passed: Raw HTTP Webhook endpoint successfully receives, validates HMAC, and acknowledges with 200 { received: true }.');
+      console.log('✅ Test 5 Passed: Raw HTTP Webhook endpoint successfully receives, validates HMAC, and acknowledges with 200 { status: "ok" }.');
     } finally {
       await new Promise((resolve) => server.close(resolve));
     }
 
-    console.log('\n🎉 ALL YOUPI PAYMENT GATEWAY UNIT & HTTP TESTS PASSED SUCCESSFULLY!');
+    console.log('\n🎉 ALL RAZORPAY PAYMENT GATEWAY UNIT & HTTP TESTS PASSED SUCCESSFULLY!');
   } catch (err) {
     console.error('❌ Test failed:', err);
     process.exit(1);

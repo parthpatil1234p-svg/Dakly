@@ -407,11 +407,11 @@ export default function App() {
     setShowUpgradeModal(true);
   };
 
-  // Sovereign UPI Payment Gateway: Global Browser Event Listener
+  // Razorpay / Payment completion refresh listener
   useEffect(() => {
     const onPaymentSuccess = (e) => {
-      const { order_id, amount_received, utr } = e.detail || {};
-      console.log(`🎉 [YouPI] Payment confirmed for Order #${order_id}. UTR: ${utr}`);
+      const { order_id } = e.detail || {};
+      console.log(`🎉 Payment confirmed for Order #${order_id || 'active'}`);
       if (authToken) {
         loadProjects(authToken);
         if (activeProject?.apiKey) {
@@ -420,8 +420,8 @@ export default function App() {
       }
     };
 
-    window.addEventListener('youpi:payment:success', onPaymentSuccess);
-    return () => window.removeEventListener('youpi:payment:success', onPaymentSuccess);
+    window.addEventListener('dakly:payment:success', onPaymentSuccess);
+    return () => window.removeEventListener('dakly:payment:success', onPaymentSuccess);
   }, [authToken, activeProject?.apiKey]);
   const [showCustomTemplateModal, setShowCustomTemplateModal] = useState(false);
   const [isSavingCustomTemplate, setIsSavingCustomTemplate] = useState(false);
