@@ -220,6 +220,8 @@ button svg, a svg { flex-shrink: 0; }
 .console-app :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select) { min-height: 44px; }
 .console-app :is(button,a) { min-height: 44px; }
 .console-app button svg { pointer-events: none; }
+.alias-chip, .inline-chip { display: inline-flex; align-items: center; }
+.alias-chip :is(button, a), .inline-chip :is(button, a) { min-height: auto !important; height: auto !important; line-height: normal !important; }
 .console-main :is(h2,h3,p,span,code) { overflow-wrap: break-word; }
 .console-main :is(button, a, .whitespace-nowrap),
 .console-main :is(button, a, .whitespace-nowrap) * {

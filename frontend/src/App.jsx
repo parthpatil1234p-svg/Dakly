@@ -2055,23 +2055,23 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                           </div>
 
                           {s.aliases && s.aliases.length > 0 ? (
-                            <div className="flex flex-wrap gap-2 pt-1">
+                            <div className="flex flex-wrap gap-2 pt-1 items-center">
                               {s.aliases.map((alias, aIdx) => (
                                 <div
                                   key={aIdx}
-                                  className="inline-flex items-center space-x-2 px-2.5 py-1 rounded-lg text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10"
+                                  className="alias-chip inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 min-h-[34px] shadow-sm"
                                 >
-                                  <span className="font-mono text-slate-800 dark:text-slate-200">
+                                  <span className="font-mono text-slate-800 dark:text-slate-200 leading-none">
                                     {alias.displayName ? `${alias.displayName} <${alias.email}>` : alias.email}
                                   </span>
                                   {alias.isDefault && (
-                                    <span className="px-1.5 py-0.2 rounded text-xs font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 whitespace-nowrap leading-none">
                                       Default
                                     </span>
                                   )}
                                   {alias.isVerified ? (
                                     <span
-                                      className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 inline-flex items-center space-x-1"
+                                      className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 inline-flex items-center space-x-1 whitespace-nowrap leading-none"
                                       title={`Verified with Google SMTP on ${alias.verifiedAt ? new Date(alias.verifiedAt).toLocaleDateString() : 'Active'}`}
                                     >
                                       <span>✓ Verified in Gmail</span>
@@ -2081,13 +2081,13 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                                       type="button"
                                       disabled={verifyingAlias === alias.email}
                                       onClick={() => handleVerifyAlias(s, alias)}
-                                      className="px-2 py-0.5 rounded text-[10px] font-semibold bg-brand-500/10 hover:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-500/30 transition inline-flex items-center space-x-1 active:scale-95 disabled:opacity-50"
-                                      title="Send a quick probe via Google SMTP to test and verify this alias"
+                                      className="px-2 py-0.5 rounded text-[10px] font-semibold bg-brand-500/10 hover:bg-brand-500/20 text-brand-700 dark:text-brand-300 border border-brand-500/30 transition inline-flex items-center space-x-1 active:scale-95 disabled:opacity-50 whitespace-nowrap leading-none !min-h-0 !h-[22px]"
+                                      title="Send a 6-digit verification code to this inbox"
                                     >
                                       {verifyingAlias === alias.email ? (
                                         <>
                                           <RefreshCw className="w-3 h-3 animate-spin" />
-                                          <span>Checking…</span>
+                                          <span>Sending PIN…</span>
                                         </>
                                       ) : (
                                         <>
@@ -2100,10 +2100,10 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteAlias(s, alias)}
-                                    className="text-slate-400 hover:text-rose-500 transition p-0.5"
+                                    className="text-slate-400 hover:text-rose-500 transition p-0.5 rounded hover:bg-rose-500/10 inline-flex items-center justify-center !min-h-0 !h-[22px] !w-[22px]"
                                     title={`Delete alias ${alias.email}`}
                                   >
-                                    <X className="w-3 h-3" />
+                                    <X className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
                               ))}
