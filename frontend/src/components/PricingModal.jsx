@@ -115,6 +115,7 @@ export default function PricingModal({
   onClose,
   initialCategory = 'plans',
   onUpgradeSuccess,
+  onCancelReopen,
 }) {
   const [activeCategory, setActiveCategory] = useState(initialCategory); // 'plans' | 'credits'
   const [selectedPlanId, setSelectedPlanId] = useState(
@@ -199,6 +200,9 @@ export default function PricingModal({
         modal: {
           ondismiss: function () {
             setIsProcessing(false);
+            if (onCancelReopen) {
+              onCancelReopen();
+            }
           },
         },
         handler: async function (response) {
@@ -228,27 +232,24 @@ export default function PricingModal({
             }
 
             try {
-              confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+              confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
             } catch {}
 
-            setPaymentNotice({
-              type: 'success',
-              message: `🎉 Payment successful! Payment ID: ${response.razorpay_payment_id}. Your account is upgraded!`,
-            });
+            window.dispatchEvent(
+              new CustomEvent('dakly:payment:success', {
+                detail: {
+                  order_id: data.orderId,
+                  payment_id: response.razorpay_payment_id,
+                },
+              })
+            );
 
             if (onUpgradeSuccess) {
               onUpgradeSuccess(verifyData.order, selectedPlan);
             }
-
-            setTimeout(() => {
-              if (onClose) onClose();
-            }, 2000);
           } catch (verifyErr) {
             console.error('Razorpay verification error:', verifyErr);
-            setPaymentNotice({
-              type: 'error',
-              message: verifyErr.message || 'Payment completed but verification failed. Please contact support.',
-            });
+            alert(`Payment completed (ID: ${response.razorpay_payment_id}), but verification failed: ${verifyErr.message}`);
           } finally {
             setIsProcessing(false);
           }
@@ -257,12 +258,17 @@ export default function PricingModal({
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (failResp) {
-        setPaymentNotice({
-          type: 'error',
-          message: failResp.error?.description || 'Payment could not be completed.',
-        });
+        alert(`Payment failed: ${failResp.error?.description || 'Transaction could not be completed.'}`);
         setIsProcessing(false);
+        if (onCancelReopen) {
+          onCancelReopen();
+        }
       });
+
+      // Close the PricingModal dialog so HTML5 <dialog> top layer does not cover Razorpay checkout
+      if (onClose) {
+        onClose();
+      }
 
       rzp.open();
     } catch (err) {
