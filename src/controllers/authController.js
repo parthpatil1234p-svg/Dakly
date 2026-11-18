@@ -35,12 +35,12 @@ function sanitizePlainText(input) {
  */
 async function register(req, res) {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !phone) {
       return res.status(400).json({
         success: false,
-        error: 'Please provide name, email, and password.',
+        error: 'Please provide name, email, mobile number, and password.',
       });
     }
 
@@ -88,10 +88,27 @@ async function register(req, res) {
       });
     }
 
+    const cleanPhone = String(phone).replace(/[\s-]/g, '').trim();
+    if (!/^\+?[1-9]\d{9,14}$/.test(cleanPhone)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a valid 10 to 15 digit mobile number (e.g. +919876543210 or 9876543210).',
+      });
+    }
+
+    const existingPhone = await User.findOne({ phone: cleanPhone });
+    if (existingPhone) {
+      return res.status(400).json({
+        success: false,
+        error: 'This mobile number is already registered to another account. Each user can only have one unique mobile number.',
+      });
+    }
+
     const user = await User.create({
       name: cleanName,
       email: cleanEmail,
       password: trimmedPassword,
+      phone: cleanPhone,
     });
 
     // Auto-link any pending team workspace invitations for this email
@@ -112,6 +129,7 @@ async function register(req, res) {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone || '',
         role: user.role,
       },
     });
@@ -198,7 +216,9 @@ async function login(req, res) {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone || '',
         role: user.role,
+        credits: user.credits || 0,
       },
     });
   } catch (error) {
@@ -240,7 +260,7 @@ async function updateUserSettings(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required.' });
     }
 
-    const { name, email, currentPassword, newPassword } = req.body;
+    const { name, email, phone, currentPassword, newPassword } = req.body;
 
     const user = await User.findById(userId).select('+password');
     if (!user) {
@@ -285,7 +305,36 @@ async function updateUserSettings(req, res) {
       }
     }
 
-    // 3. Change Password if provided
+    // 3. Update Mobile Number (Mandatory 1 mobile number per user)
+    if (phone !== undefined) {
+      const cleanPhone = String(phone).replace(/[\s-]/g, '').trim();
+      if (!cleanPhone) {
+        return res.status(400).json({
+          success: false,
+          error: 'Mobile number is mandatory and cannot be removed. Each user must have one linked mobile number.',
+        });
+      }
+
+      if (!/^\+?[1-9]\d{9,14}$/.test(cleanPhone)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please enter a valid mobile number (10 to 15 digits, e.g. +919876543210 or 9876543210).',
+        });
+      }
+
+      const existingPhone = await User.findOne({ phone: cleanPhone, _id: { $ne: user._id } });
+      if (existingPhone) {
+        return res.status(400).json({
+          success: false,
+          error: 'This mobile number is already registered to another account. Each user can only have one unique mobile number.',
+        });
+      }
+
+      user.phone = cleanPhone;
+      updated = true;
+    }
+
+    // 4. Change Password if provided
     if (newPassword) {
       if (!currentPassword) {
         return res.status(400).json({
@@ -341,6 +390,7 @@ async function updateUserSettings(req, res) {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone || '',
         role: user.role,
         credits: user.credits || 0,
         createdAt: user.createdAt,

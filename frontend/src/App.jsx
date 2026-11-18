@@ -88,6 +88,7 @@ import {
   updateCustomTemplate,
   deleteCustomTemplate,
   updateUserSettingsApi,
+  updateSenderApi,
 } from './services/api';
 
 const DEFAULT_TEMPLATES = [
@@ -323,7 +324,7 @@ export default function App() {
   });
 
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
-  const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
+  const [authForm, setAuthForm] = useState({ name: '', email: '', password: '', phone: '' });
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
@@ -343,6 +344,7 @@ export default function App() {
   // User Settings State
   const [profileNameInput, setProfileNameInput] = useState('');
   const [profileEmailInput, setProfileEmailInput] = useState('');
+  const [profilePhoneInput, setProfilePhoneInput] = useState('');
   const [currentPasswordInput, setCurrentPasswordInput] = useState('');
   const [newPasswordInput, setNewPasswordInput] = useState('');
   const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
@@ -355,6 +357,14 @@ export default function App() {
   const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState('');
   const [passwordUpdateError, setPasswordUpdateError] = useState('');
   const [copiedUserId, setCopiedUserId] = useState(false);
+
+  // Sender Password/Credential Update Modal State
+  const [editingSender, setEditingSender] = useState(null);
+  const [editSenderAppPassword, setEditSenderAppPassword] = useState('');
+  const [editSenderDisplayName, setEditSenderDisplayName] = useState('');
+  const [editSenderLoading, setEditSenderLoading] = useState(false);
+  const [editSenderError, setEditSenderError] = useState('');
+  const [editSenderSuccess, setEditSenderSuccess] = useState('');
 
   // Stats & Logs
   const [stats, setStats] = useState(null);
@@ -1356,7 +1366,17 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
       if (authMode === 'login') {
         res = await loginUser({ email: authForm.email, password: authForm.password });
       } else {
-        res = await registerUser(authForm);
+        if (!authForm.phone || !/^\+?[1-9]\d{9,14}$/.test(authForm.phone.replace(/[\s-]/g, ''))) {
+          setAuthError('Mobile number is mandatory. Please provide a valid 10-15 digit phone number (e.g. +919876543210).');
+          setAuthLoading(false);
+          return;
+        }
+        res = await registerUser({
+          name: authForm.name,
+          email: authForm.email,
+          password: authForm.password,
+          phone: authForm.phone.replace(/[\s-]/g, '').trim(),
+        });
       }
 
       if (res.success) {
@@ -1389,6 +1409,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
     if (currentUser) {
       setProfileNameInput(currentUser.name || '');
       setProfileEmailInput(currentUser.email || '');
+      setProfilePhoneInput(currentUser.phone || '');
     }
   }, [currentUser, activeTab]);
 
@@ -1405,6 +1426,10 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
       setProfileUpdateError('Email address is required.');
       return;
     }
+    if (profilePhoneInput && !/^\+?[1-9]\d{9,14}$/.test(profilePhoneInput.replace(/[\s-]/g, ''))) {
+      setProfileUpdateError('Please enter a valid 10-15 digit mobile number (e.g. +919876543210 or 9876543210).');
+      return;
+    }
 
     setProfileUpdateLoading(true);
     try {
@@ -1412,6 +1437,7 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
         {
           name: profileNameInput.trim(),
           email: profileEmailInput.trim().toLowerCase(),
+          phone: profilePhoneInput ? profilePhoneInput.replace(/[\s-]/g, '').trim() : undefined,
         },
         authToken
       );
@@ -1422,12 +1448,53 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
 
       setCurrentUser(res.user);
       localStorage.setItem('dakly_auth_user', JSON.stringify(res.user));
-      setProfileUpdateSuccess('Profile updated successfully!');
+      setProfileUpdateSuccess('Profile and mobile number updated successfully!');
       setTimeout(() => setProfileUpdateSuccess(''), 4000);
     } catch (err) {
       setProfileUpdateError(err.message || 'Error updating profile.');
     } finally {
       setProfileUpdateLoading(false);
+    }
+  };
+
+  const handleUpdateSenderCredentials = async (e) => {
+    e.preventDefault();
+    if (!activeProject || !editingSender) return;
+    setEditSenderError('');
+    setEditSenderSuccess('');
+
+    if (editSenderAppPassword && editSenderAppPassword.replace(/\s+/g, '').length < 16) {
+      setEditSenderError('Google App Passwords are 16 characters long. Please check your password.');
+      return;
+    }
+
+    setEditSenderLoading(true);
+    try {
+      const res = await updateSenderApi(
+        {
+          projectId: activeProject.id || activeProject._id,
+          senderId: editingSender.id || editingSender._id,
+          appPassword: editSenderAppPassword ? editSenderAppPassword.replace(/\s+/g, '') : undefined,
+          displayName: editSenderDisplayName || undefined,
+        },
+        authToken
+      );
+
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to update sender credentials.');
+      }
+
+      setEditSenderSuccess('Gmail sender credentials verified and updated successfully!');
+      setTimeout(() => {
+        setEditingSender(null);
+        setEditSenderAppPassword('');
+        setEditSenderSuccess('');
+        loadProjects(authToken);
+      }, 1500);
+    } catch (err) {
+      setEditSenderError(err.message || 'Error updating sender credentials.');
+    } finally {
+      setEditSenderLoading(false);
     }
   };
 
@@ -2132,6 +2199,20 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                             ></span>
                             <button
                               type="button"
+                              onClick={() => {
+                                setEditingSender(s);
+                                setEditSenderDisplayName(s.displayName || '');
+                                setEditSenderAppPassword('');
+                                setEditSenderError('');
+                                setEditSenderSuccess('');
+                              }}
+                              className="p-2 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 dark:hover:bg-amber-500/15 border border-transparent hover:border-amber-500/20 transition active:scale-95"
+                              title={`Update Google App Password / credentials for ${s.email}`}
+                            >
+                              <Key className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => handleDeleteSender(s)}
                               disabled={isDeletingSender}
                               className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 dark:hover:bg-rose-500/15 border border-transparent hover:border-rose-500/20 transition active:scale-95 disabled:opacity-50"
@@ -2268,6 +2349,24 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
                                  Enable Warm-up
                               </button>
                             )}
+
+                            <span className="text-slate-300 dark:text-slate-700">•</span>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingSender(s);
+                                setEditSenderDisplayName(s.displayName || '');
+                                setEditSenderAppPassword('');
+                                setEditSenderError('');
+                                setEditSenderSuccess('');
+                              }}
+                              className="text-xs sm:text-sm text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 hover:underline font-mono font-semibold transition flex items-center space-x-1"
+                              title={`Update Google App Password or credentials for ${s.email}`}
+                            >
+                              <Key className="w-3.5 h-3.5 inline" />
+                              <span>Update Credentials</span>
+                            </button>
 
                             <span className="text-slate-300 dark:text-slate-700">•</span>
 
@@ -5261,6 +5360,29 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                         </p>
                       </div>
 
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Mobile Number <span className="text-amber-500 font-bold">*</span>
+                          </label>
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                            1 user : 1 number
+                          </span>
+                        </div>
+                        <input
+                          type="tel"
+                          required
+                          value={profilePhoneInput}
+                          onChange={(e) => setProfilePhoneInput(e.target.value)}
+                          className="w-full text-xs font-mono px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          placeholder="+91 98765 43210"
+                          disabled={profileUpdateLoading}
+                        />
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                          Mandatory mobile number. Each user account can only link one unique phone number.
+                        </p>
+                      </div>
+
                       <div className="pt-2">
                         <button
                           type="submit"
@@ -5660,6 +5782,116 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                   className="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-semibold"
                 >
                   {modalLoading ? 'Connecting...' : (stats?.capacity?.senders?.length > 0 ? 'Add Backup Account' : 'Connect Gmail Sender')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </Dialog>
+      )}
+
+      {/* MODAL: UPDATE SENDER CREDENTIALS (GMAIL PASSWORD / DISPLAY NAME) */}
+      {editingSender && (
+        <Dialog
+          title="Update Gmail Sender Credentials"
+          onClose={() => {
+            setEditingSender(null);
+            setEditSenderAppPassword('');
+            setEditSenderError('');
+            setEditSenderSuccess('');
+          }}
+          className="dialog-wide"
+        >
+          <div className="legacy-dialog-content">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Update the Google App Password or display name for <strong className="font-mono text-slate-900 dark:text-white">{editingSender.email}</strong>. Our system validates the password directly against Google SMTP before saving.
+            </p>
+
+            {editSenderError && (
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start space-x-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{editSenderError}</span>
+              </div>
+            )}
+
+            {editSenderSuccess && (
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-start space-x-2">
+                <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{editSenderSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateSenderCredentials} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Gmail Account
+                </label>
+                <input
+                  type="email"
+                  disabled
+                  value={editingSender.email}
+                  className="w-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-500 font-mono cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-medium text-slate-700 dark:text-slate-300">
+                    New Google App Password (16 characters)
+                  </label>
+                  <a
+                    href="https://myaccount.google.com/apppasswords"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-brand-500 hover:underline"
+                  >
+                    Generate App Password &rarr;
+                  </a>
+                </div>
+                <input
+                  type="password"
+                  value={editSenderAppPassword}
+                  onChange={(e) => setEditSenderAppPassword(e.target.value)}
+                  placeholder="Leave blank to keep existing password, or enter new 16 chars"
+                  className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"
+                />
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  If an incorrect password is typed, Google SMTP rejects the handshake, the change is declined, and existing valid credentials remain untouched.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Display Name
+                </label>
+                <input
+                  type="text"
+                  value={editSenderDisplayName}
+                  onChange={(e) => setEditSenderDisplayName(e.target.value)}
+                  placeholder="e.g. Support Team or Disheera"
+                  className="w-full bg-slate-50 dark:bg-[var(--surface)] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingSender(null);
+                    setEditSenderAppPassword('');
+                    setEditSenderError('');
+                    setEditSenderSuccess('');
+                  }}
+                  className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSenderLoading}
+                  className="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-semibold flex items-center space-x-1.5"
+                >
+                  {editSenderLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{editSenderLoading ? 'Verifying with Google...' : 'Verify & Update'}</span>
                 </button>
               </div>
             </form>

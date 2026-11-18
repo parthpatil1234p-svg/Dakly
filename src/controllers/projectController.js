@@ -382,6 +382,112 @@ async function addSender(req, res) {
 }
 
 /**
+ * Update sender credentials (Gmail address, Google App Password, display name, daily quota)
+ * Validates the new Google App Password against Google SMTP before updating.
+ * PATCH /api/projects/:id/senders/:senderId
+ */
+async function updateSender(req, res) {
+  try {
+    const { id, senderId } = req.params;
+    const { email, appPassword, displayName, dailyQuota } = req.body;
+
+    const project = await Project.findById(id).select(
+      '+encryptedPassword +iv +authTag +senders.encryptedPassword +senders.iv +senders.authTag'
+    );
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Access denied to this project.' });
+    }
+
+    const sender = project.senders && (project.senders.id(senderId) || project.senders.find((s) => s._id.toString() === senderId));
+    if (!sender) {
+      return res.status(404).json({ success: false, error: 'Sender not found.' });
+    }
+
+    const targetEmail = email ? email.trim().toLowerCase() : sender.email;
+
+    // If an App Password is provided, validate it with Google SMTP
+    if (appPassword) {
+      const cleanPassword = appPassword.replace(/\s+/g, '');
+      if (cleanPassword.length < 16) {
+        return res.status(400).json({
+          success: false,
+          error: 'Google App Passwords are 16 characters long. Please check your password.',
+        });
+      }
+
+      // Live Google SMTP verification handshake
+      if (process.env.NODE_ENV !== 'test' && !process.env.SKIP_SMTP_VERIFY) {
+        const nodemailer = require('nodemailer');
+        const testTransporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true,
+          auth: {
+            user: targetEmail,
+            pass: cleanPassword,
+          },
+        });
+
+        try {
+          await testTransporter.verify();
+        } catch (smtpErr) {
+          return res.status(400).json({
+            success: false,
+            error: `Google rejected this App Password: ${smtpErr.message}. Ensure 2-Step Verification is active on the account and you generated a 16-character App Password at myaccount.google.com/apppasswords.`,
+          });
+        }
+      }
+
+      const { encrypt } = require('../utils/crypto');
+      const { encryptedData, iv, authTag } = encrypt(cleanPassword);
+      sender.encryptedPassword = encryptedData;
+      sender.iv = iv;
+      sender.authTag = authTag;
+
+      if (sender.priority === 0 || project.senderEmail === sender.email) {
+        project.encryptedPassword = encryptedData;
+        project.iv = iv;
+        project.authTag = authTag;
+      }
+    }
+
+    if (email) {
+      sender.email = targetEmail;
+      if (sender.priority === 0 || project.senderEmail === sender.email) {
+        project.senderEmail = targetEmail;
+      }
+    }
+
+    if (displayName !== undefined) {
+      sender.displayName = displayName.trim();
+      if (sender.priority === 0) {
+        project.senderDisplayName = displayName.trim();
+      }
+    }
+
+    if (dailyQuota !== undefined) {
+      sender.dailyQuota = parseInt(dailyQuota, 10) || 500;
+    }
+
+    await project.save();
+    invalidateTransporter(project._id);
+
+    const capacity = project.getCapacitySummary();
+    res.json({
+      success: true,
+      message: `Sender [${targetEmail}] credentials updated successfully!`,
+      capacity,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
  * List all senders for a project
  * GET /api/projects/:id/senders
  */
@@ -1980,6 +2086,7 @@ module.exports = {
   updateProjectCustomTemplate,
   deleteProjectCustomTemplate,
   addSender,
+  updateSender,
   getSenders,
   removeSender,
   deleteProject,

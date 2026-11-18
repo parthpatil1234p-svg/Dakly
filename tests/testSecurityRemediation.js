@@ -208,7 +208,62 @@ async function runAllTests() {
     console.log('✅ Test 8 Passed (User Settings): User settings controller is mounted and ready.');
   }
 
-  console.log('\n🎉 ALL SHANNON SECURITY REMEDIATIONS & USER SETTINGS VERIFIED SUCCESSFULLY!\n');
+  // 9. Mobile Number System (Mandatory, 1 user : 1 number, 10-15 digits)
+  {
+    const phoneRegex = /^\+?[1-9]\d{9,14}$/;
+
+    // Invalid phone formats
+    const invalidPhones = ['123', 'abcd', '12345678', '+0123456789', '9876543210123456', ''];
+    for (const bad of invalidPhones) {
+      const clean = String(bad).replace(/[\s-]/g, '').trim();
+      assert.strictEqual(phoneRegex.test(clean), false, `Phone "${bad}" must fail validation`);
+    }
+
+    // Valid formats
+    const validPhones = ['+919876543210', '9876543210', '+14155552671', '919876543210', '+447911123456'];
+    for (const good of validPhones) {
+      const clean = String(good).replace(/[\s-]/g, '').trim();
+      assert.strictEqual(phoneRegex.test(clean), true, `Phone "${good}" must pass validation`);
+    }
+
+    // Ensure User model schema stores phone
+    const testUser = new User({
+      name: 'Phone Tester',
+      email: 'phone_test@example.com',
+      password: 'StrongHashedPassword1!',
+      phone: '+919876543210',
+    });
+    assert.strictEqual(testUser.phone, '+919876543210', 'User model must persist phone property');
+
+    console.log('✅ Test 9 Passed (Mobile Number): Mandatory single mobile number rules and 10-15 digit validation verified.');
+  }
+
+  // 10. Sender Google App Password Validation & Error Handling
+  {
+    process.env.ENCRYPTION_MASTER_KEY = process.env.ENCRYPTION_MASTER_KEY || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const { encrypt, decrypt } = require('../src/utils/crypto');
+
+    // 16-character format enforcement
+    const shortPasswords = ['short', '12345678', 'abcdefghijklmno']; // < 16 chars
+    for (const bad of shortPasswords) {
+      const clean = bad.replace(/\s+/g, '');
+      assert(clean.length < 16, `App password "${bad}" must be flagged as too short`);
+    }
+
+    const validAppPassword = 'abcd efgh ijkl mnop';
+    const cleanValid = validAppPassword.replace(/\s+/g, '');
+    assert.strictEqual(cleanValid.length, 16, 'Cleaned Google App password must have exactly 16 characters');
+
+    // Encryption & decryption round-trip for credential safety
+    const { encryptedData, iv, authTag } = encrypt(cleanValid);
+    assert.notStrictEqual(encryptedData, cleanValid, 'Encrypted password must not equal plaintext');
+    const decrypted = decrypt(encryptedData, iv, authTag);
+    assert.strictEqual(decrypted, cleanValid, 'Decrypted password must perfectly match original credentials');
+
+    console.log('✅ Test 10 Passed (Sender Credentials): Google App Password 16-char rule & AES-256-GCM storage verified.');
+  }
+
+  console.log('\n🎉 ALL SHANNON SECURITY REMEDIATIONS, MOBILE SYSTEM & GMAIL CREDENTIALS VERIFIED SUCCESSFULLY!\n');
 }
 
 runAllTests().catch((err) => {

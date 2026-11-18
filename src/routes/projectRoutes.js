@@ -5,6 +5,7 @@ const {
   getProjects,
   updateProject,
   addSender,
+  updateSender,
   getSenders,
   removeSender,
   deleteProject,
@@ -56,6 +57,7 @@ router.post('/', createProject);
 router.get('/', getProjects);
 router.patch('/:id', updateProject);
 router.post('/:id/senders', addSender);
+router.patch('/:id/senders/:senderId', updateSender);
 router.get('/:id/senders', getSenders);
 router.delete('/:id/senders/:senderId', removeSender);
 router.get('/:id/aliases', getProjectAliases);

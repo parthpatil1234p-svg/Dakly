@@ -111,7 +111,27 @@ export default function Landing({ authMode, setAuthMode, authForm, setAuthForm, 
         <form onSubmit={onAuthSubmit} aria-busy={authLoading} className="auth-form">
           {authError && <div className="notice notice-error" role="alert">{authError}</div>}
           <fieldset disabled={authLoading}>
-            {authMode === 'register' && <label htmlFor="auth-name">Your name<input id="auth-name" name="name" autoComplete="name" required value={authForm.name} onChange={e => setAuthForm({ ...authForm, name: e.target.value })} /></label>}
+            {authMode === 'register' && (
+              <>
+                <label htmlFor="auth-name">Your name<input id="auth-name" name="name" autoComplete="name" required value={authForm.name} onChange={e => setAuthForm({ ...authForm, name: e.target.value })} /></label>
+                <label htmlFor="auth-phone">
+                  Mobile number (mandatory)
+                  <input
+                    id="auth-phone"
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    required
+                    placeholder="+91 98765 43210"
+                    value={authForm.phone || ''}
+                    onChange={e => setAuthForm({ ...authForm, phone: e.target.value })}
+                  />
+                  <span className="field-help" style={{ fontSize: '11px', display: 'block', marginTop: '2px', opacity: 0.8 }}>
+                    1 user can only add 1 mobile number (mandatory for account security).
+                  </span>
+                </label>
+              </>
+            )}
             <label htmlFor="auth-email">Email address<input id="auth-email" name="email" type="email" autoComplete="email" required value={authForm.email} onChange={e => setAuthForm({ ...authForm, email: e.target.value })} /></label>
             <div className="password-group"><label htmlFor="auth-password">Password</label><div className="password-field"><input id="auth-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete={authMode === 'register' ? 'new-password' : 'current-password'} required minLength={authMode === 'register' ? 8 : undefined} aria-describedby={authMode === 'register' ? 'password-help' : undefined} value={authForm.password} onChange={e => setAuthForm({ ...authForm, password: e.target.value })} /><button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? 'Hide' : 'Show'}</button></div></div>
             {authMode === 'register' && <p id="password-help" className="field-help">At least 8 characters (letters & numbers). Use a password unique to Dakly.</p>}

@@ -93,6 +93,19 @@ export async function deleteSender(projectId, senderId, token) {
   return res.json();
 }
 
+export async function updateSenderApi({ projectId, senderId, email, appPassword, displayName, dailyQuota }, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/senders/${senderId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ email, appPassword, displayName, dailyQuota }),
+  });
+  return res.json();
+}
+
 export async function addSenderAlias(projectId, senderId, { email, displayName, isDefault }, token) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) {
