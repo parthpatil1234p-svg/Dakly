@@ -886,8 +886,15 @@ async function generateWebhookSecret(req, res) {
       return res.status(404).json({ success: false, error: 'Project not found.' });
     }
 
-    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, error: 'Access denied.' });
+    // SSRF-02: Require authentication and owner/admin authorization to test webhooks
+    if (project.userId) {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required to test webhooks.' });
+      }
+      const userRole = project.getUserRole ? project.getUserRole(req.user) : (project.userId.toString() === req.user._id.toString() ? 'owner' : null);
+      if (!['owner', 'admin'].includes(userRole)) {
+        return res.status(403).json({ success: false, error: 'Access denied. Only project Owner or Admin can test webhooks.' });
+      }
     }
 
     const newSecret = `daksec_${crypto.randomBytes(24).toString('hex')}`;
@@ -916,8 +923,15 @@ async function testWebhookEndpoint(req, res) {
       return res.status(404).json({ success: false, error: 'Project not found.' });
     }
 
-    if (project.userId && req.user && project.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, error: 'Access denied.' });
+    // SSRF-02: Require authentication and owner/admin authorization to test webhooks
+    if (project.userId) {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required to test webhooks.' });
+      }
+      const userRole = project.getUserRole ? project.getUserRole(req.user) : (project.userId.toString() === req.user._id.toString() ? 'owner' : null);
+      if (!['owner', 'admin'].includes(userRole)) {
+        return res.status(403).json({ success: false, error: 'Access denied. Only project Owner or Admin can test webhooks.' });
+      }
     }
 
     // Allow testing a new URL before saving

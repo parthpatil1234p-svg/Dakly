@@ -170,18 +170,12 @@ async function processAttachments(attachments = []) {
       continue;
     }
 
-    // 3. Fallback: Local filesystem path (if provided as regular local path)
+    // 3. Reject direct filesystem path access to prevent Path Traversal / Local File Inclusion (INJ-01)
     if (path) {
-      filename = filename || path.split(/[/\\]/).pop();
-      processed.push({
-        filename,
-        path,
-        contentType: contentType || undefined,
-      });
-      continue;
+      throw new Error(`Direct server filesystem paths in attachments are restricted for security. Please provide attachments using "content" (base64/buffer) or "url".`);
     }
 
-    throw new Error(`Attachment at index ${i} must provide either "url", "content", or "path".`);
+    throw new Error(`Attachment at index ${i} must provide either "url" or "content".`);
   }
 
   return processed;

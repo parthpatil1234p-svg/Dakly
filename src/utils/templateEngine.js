@@ -609,6 +609,12 @@ function renderCustomTemplate(customTpl, vars = {}, project = {}) {
   renderedHtml = renderedHtml.replace(/{{\s*([a-zA-Z0-9_.-]+)\s*}}/g, '');
   renderedSubject = renderedSubject.replace(/{{\s*([a-zA-Z0-9_.-]+)\s*}}/g, '').trim();
 
+  // INJ-02: Sanitize template output to neutralize executable script or iframe injections
+  renderedHtml = renderedHtml
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/javascript\s*:/gi, 'blocked:');
+
   // If the user's custom template already contains a full HTML shell (e.g. <!DOCTYPE html or <html), use as-is;
   // otherwise wrap in standard branded Dakly shell so it gets the 1:1 logo, header, and footer!
   const isFullDoc = /<html[\s>]/i.test(renderedHtml) || /<!doctype html/i.test(renderedHtml);

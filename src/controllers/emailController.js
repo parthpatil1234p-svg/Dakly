@@ -125,12 +125,13 @@ async function getLogs(req, res) {
     }
 
     if (search && search.trim()) {
-      const term = search.trim();
+      // INJ-03: Escape special regex characters to prevent MongoDB ReDoS
+      const safeTerm = search.trim().slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { to: { $regex: term, $options: 'i' } },
-        { subject: { $regex: term, $options: 'i' } },
-        { trackingId: { $regex: term, $options: 'i' } },
-        { template: { $regex: term, $options: 'i' } },
+        { to: { $regex: safeTerm, $options: 'i' } },
+        { subject: { $regex: safeTerm, $options: 'i' } },
+        { trackingId: { $regex: safeTerm, $options: 'i' } },
+        { template: { $regex: safeTerm, $options: 'i' } },
       ];
     }
 
@@ -600,23 +601,12 @@ async function trackClick(req, res) {
       }).catch((err) => console.error('Track Click DB Error:', err.message));
     }
 
-    // Validate target destination URL to prevent Open Redirect attacks to internal cloud metadata
+    // Validate target destination URL to prevent Open Redirect / SSRF attacks to internal networks or cloud metadata (SSRF-01)
     let safeDestination = defaultFrontend;
     try {
-      const parsed = new URL(targetUrl);
-      if (
-        (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
-        !/[\r\n]/.test(targetUrl)
-      ) {
-        const host = parsed.hostname.toLowerCase();
-        // Allow all valid websites and localhost/dev endpoints; block only cloud instance metadata endpoints
-        if (
-          host !== '169.254.169.254' &&
-          host !== 'metadata.google.internal' &&
-          !host.endsWith('.metadata.google.internal')
-        ) {
-          safeDestination = parsed.href;
-        }
+      const { isSafeRemoteUrl } = require('../utils/ssrfHelper');
+      if (isSafeRemoteUrl(targetUrl) && !/[\r\n]/.test(targetUrl)) {
+        safeDestination = targetUrl;
       }
     } catch {
       safeDestination = defaultFrontend;

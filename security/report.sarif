@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Shannon",
+          "informationUri": "https://github.com/KeygraphHQ/shannon",
+          "rules": [
+            {
+              "id": "shannon/auth",
+              "name": "Authentication",
+              "shortDescription": {
+                "text": "Authentication"
+              },
+              "fullDescription": {
+                "text": "A weakness in credential verification or session lifecycle that lets an attacker assume another identity or retain access they should have lost."
+              },
+              "help": {
+                "text": "Issue a fresh session identifier on every privilege change, set HttpOnly, Secure and SameSite on session cookies, rate-limit credential endpoints, and verify the signature and algorithm of externally issued tokens."
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "shannon"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "automationDetails": {
+        "id": "shannon/exploit/dakly-cc-cd_shannon-1794930492108"
+      },
+      "invocations": [
+        {
+          "executionSuccessful": false
+        }
+      ],
+      "taxonomies": [
+        {
+          "name": "OWASP Top Ten 2025",
+          "organization": "OWASP",
+          "informationUri": "https://owasp.org/Top10/",
+          "shortDescription": {
+            "text": "OWASP Top Ten 2025 categories."
+          },
+          "taxa": [
+            {
+              "id": "A07:2025",
+              "name": "Authentication Failures"
+            }
+          ]
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "shannon/auth",
+          "level": "error",
+          "message": {
+            "text": "JWT token storage in localStorage without HttpOnly protection combined with stored XSS in name field. JWT tokens are stored in localStorage as dakly_auth_token without HttpOnly cookie protection, making them vulnerable to theft via XSS attacks. Combined with stored XSS vulnerability in the registration name field, attackers can steal authentication tokens and hijack user sessions.",
+            "markdown": "**JWT token storage in localStorage without HttpOnly protection combined with stored XSS in name field**\n\nJWT tokens are stored in localStorage as dakly_auth_token without HttpOnly cookie protection, making them vulnerable to theft via XSS attacks. Combined with stored XSS vulnerability in the registration name field, attackers can steal authentication tokens and hijack user sessions.\n\n**Impact**\n\nAttackers can execute XSS payloads to steal JWT tokens from localStorage, enabling complete session hijacking and account takeover. The stored XSS vulnerability in the name field creates a persistent attack vector where malicious user names execute JavaScript whenever viewed.\n\n**Remediation**\n\n1. Store JWT tokens in HttpOnly, Secure cookies instead of localStorage. 2. Implement proper input validation and output encoding for user-supplied content (name field). 3. Add Content Security Policy (CSP) headers to restrict script execution. 4. Implement strict CORS policies and use the SameSite attribute for cookies.\n\nFull exploitation evidence: `Security-Assessment-Report.pdf`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend/src/App.jsx"
+                },
+                "region": {
+                  "startLine": 27,
+                  "endLine": 27
+                }
+              },
+              "logicalLocations": [
+                {
+                  "name": "useState localStorage getItem",
+                  "kind": "function"
+                }
+              ],
+              "message": {
+                "text": "sink"
+              }
+            }
+          ],
+          "relatedLocations": [
+            {
+              "id": 1,
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/controllers/authController.js"
+                },
+                "region": {
+                  "startLine": 116,
+                  "endLine": 131
+                }
+              },
+              "logicalLocations": [
+                {
+                  "name": "generateToken",
+                  "kind": "function"
+                }
+              ],
+              "message": {
+                "text": "source"
+              }
+            }
+          ],
+          "taxa": [
+            {
+              "id": "A07:2025",
+              "toolComponent": {
+                "name": "OWASP Top Ten 2025"
+              }
+            }
+          ],
+          "properties": {
+            "findingId": "AUTH-01",
+            "status": "exploited",
+            "authState": "Unauthenticated",
+            "prerequisites": "1. Victim must view a page where malicious user name is displayed (profile, user list, admin panel). 2. XSS payload must be stored in database via registration or other input. 3. Frontend must render user names without proper output encoding."
+          },
+          "ruleIndex": 0
+        },
+        {
+          "ruleId": "shannon/auth",
+          "level": "error",
+          "message": {
+            "text": "Missing account lockout mechanism on login endpoint. The login endpoint lacks account-specific lockout mechanisms, allowing brute-force password guessing attacks. Rate limiting (50 attempts/15min per IP) provides some protection but doesn't prevent targeted attacks. The password 'password123' was successfully guessed for test@example.com on the 9th attempt, demonstrating complete account takeover via brute force.",
+            "markdown": "**Missing account lockout mechanism on login endpoint**\n\nThe login endpoint lacks account-specific lockout mechanisms, allowing brute-force password guessing attacks. Rate limiting (50 attempts/15min per IP) provides some protection but doesn't prevent targeted attacks. The password 'password123' was successfully guessed for test@example.com on the 9th attempt, demonstrating complete account takeover via brute force.\n\n**Impact**\n\nAttackers can brute-force user passwords, leading to complete account takeover. With known email addresses (via email enumeration), attackers can systematically guess weak passwords and compromise accounts. Successful brute-force attack demonstrated with password 'password123' guessed in 9 attempts.\n\n**Remediation**\n\n1. Implement account lockout after 5-10 failed login attempts (temporary lock for 15-30 minutes). 2. Add progressive delays between failed attempts (exponential backoff). 3. Implement CAPTCHA after 3-5 failed attempts. 4. Enforce strong password policies to reduce guessability. 5. Monitor and alert on brute-force patterns.\n\nFull exploitation evidence: `Security-Assessment-Report.pdf`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/controllers/authController.js"
+                },
+                "region": {
+                  "startLine": 75,
+                  "endLine": 131
+                }
+              },
+              "logicalLocations": [
+                {
+                  "name": "login function",
+                  "kind": "function"
+                }
+              ],
+              "message": {
+                "text": "sink"
+              }
+            }
+          ],
+          "taxa": [
+            {
+              "id": "A07:2025",
+              "toolComponent": {
+                "name": "OWASP Top Ten 2025"
+              }
+            }
+          ],
+          "properties": {
+            "findingId": "AUTH-02",
+            "status": "exploited",
+            "authState": "Unauthenticated",
+            "prerequisites": "1. Target user email must be known (can be obtained via email enumeration). 2. Attacker must have network access to application. 3. Some rate limiting exists but doesn't prevent targeted brute-force attacks."
+          },
+          "ruleIndex": 0
+        },
+        {
+          "ruleId": "shannon/auth",
+          "level": "warning",
+          "message": {
+            "text": "Email enumeration via registration endpoint differential responses. The registration endpoint returns different error messages for existing vs new accounts, allowing attackers to enumerate valid user emails. When a user already exists, the API returns HTTP 400 with specific error: 'An account with this email address already exists. Please log in.' For new accounts, it returns HTTP 201 with success message. This differential response enables email enumeration attacks.",
+            "markdown": "**Email enumeration via registration endpoint differential responses**\n\nThe registration endpoint returns different error messages for existing vs new accounts, allowing attackers to enumerate valid user emails. When a user already exists, the API returns HTTP 400 with specific error: 'An account with this email address already exists. Please log in.' For new accounts, it returns HTTP 201 with success message. This differential response enables email enumeration attacks.\n\n**Impact**\n\nAttackers can enumerate valid user emails, which enables targeted attacks including phishing, credential stuffing, and social engineering. Email enumeration violates user privacy and serves as reconnaissance for more sophisticated attacks. Rate limiting provides some protection but doesn't prevent enumeration at scale.\n\n**Remediation**\n\n1. Return generic error messages for both existing and non-existing emails (e.g., 'Registration failed' for both cases). 2. Use HTTP 200 status for both scenarios with identical response structure. 3. Implement progressive delays for enumeration attempts. 4. Add CAPTCHA to registration endpoint. 5. Send verification emails before account creation to validate email ownership.\n\nFull exploitation evidence: `Security-Assessment-Report.pdf`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/controllers/authController.js"
+                },
+                "region": {
+                  "startLine": 27,
+                  "endLine": 31
+                }
+              },
+              "logicalLocations": [
+                {
+                  "name": "register function",
+                  "kind": "function"
+                }
+              ],
+              "message": {
+                "text": "sink"
+              }
+            }
+          ],
+          "taxa": [
+            {
+              "id": "A07:2025",
+              "toolComponent": {
+                "name": "OWASP Top Ten 2025"
+              }
+            }
+          ],
+          "properties": {
+            "findingId": "AUTH-03",
+            "status": "exploited",
+            "authState": "Unauthenticated",
+            "prerequisites": "None - attack can be performed by any unauthenticated user with network access to the application"
+          },
+          "ruleIndex": 0
+        },
+        {
+          "ruleId": "shannon/auth",
+          "level": "warning",
+          "message": {
+            "text": "Weak password policy with only 6-character minimum requirement. The password policy only requires a minimum of 6 characters with no complexity requirements (uppercase, lowercase, numbers, symbols). This allows extremely weak passwords like 'abc123', 'password', and '123456', making accounts vulnerable to brute-force and password spraying attacks.",
+            "markdown": "**Weak password policy with only 6-character minimum requirement**\n\nThe password policy only requires a minimum of 6 characters with no complexity requirements (uppercase, lowercase, numbers, symbols). This allows extremely weak passwords like 'abc123', 'password', and '123456', making accounts vulnerable to brute-force and password spraying attacks.\n\n**Impact**\n\nUsers can create accounts with easily guessable passwords, enabling successful brute-force attacks (as demonstrated in AUTH-02). Common weak passwords like 'password123' are accepted, significantly reducing the security of user accounts and making password guessing attacks practical.\n\n**Remediation**\n\n1. Increase minimum password length to 12+ characters. 2. Require mixed character types (uppercase, lowercase, numbers, symbols). 3. Implement password strength meter with real-time feedback. 4. Block common weak passwords using deny lists. 5. Enforce password history to prevent reuse. 6. Consider implementing password managers or passphrase support.\n\nFull exploitation evidence: `Security-Assessment-Report.pdf`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/models/User.js"
+                },
+                "region": {
+                  "startLine": 27,
+                  "endLine": 27
+                }
+              },
+              "logicalLocations": [
+                {
+                  "name": "password field",
+                  "kind": "function"
+                }
+              ],
+              "message": {
+                "text": "sink"
+              }
+            }
+          ],
+          "relatedLocations": [
+            {
+              "id": 1,
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/controllers/authController.js"
+                },
+                "region": {
+                  "startLine": 16,
+                  "endLine": 17
+                }
+              },
+              "logicalLocations": [
+                {
+                  "name": "register validation",
+                  "kind": "function"
+                }
+              ],
+              "message": {
+                "text": "guard"
+              }
+            }
+          ],
+          "taxa": [
+            {
+              "id": "A07:2025",
+              "toolComponent": {
+                "name": "OWASP Top Ten 2025"
+              }
+            }
+          ],
+          "properties": {
+            "findingId": "AUTH-04",
+            "status": "exploited",
+            "authState": "Unauthenticated",
+            "prerequisites": "Ability to register new accounts (unauthenticated) or knowledge of existing user emails"
+          },
+          "ruleIndex": 0
+        }
+      ],
+      "properties": {
+        "target": "https://dakly.cc.cd",
+        "assessmentDate": "2026-11-17",
+        "model": "deepseek.v3.2"
+      }
+    }
+  ]
+}
