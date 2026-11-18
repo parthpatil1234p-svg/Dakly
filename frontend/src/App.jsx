@@ -87,6 +87,7 @@ import {
   createCustomTemplate,
   updateCustomTemplate,
   deleteCustomTemplate,
+  updateUserSettingsApi,
 } from './services/api';
 
 const DEFAULT_TEMPLATES = [
@@ -338,6 +339,22 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isKeyVisible, setIsKeyVisible] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
+
+  // User Settings State
+  const [profileNameInput, setProfileNameInput] = useState('');
+  const [profileEmailInput, setProfileEmailInput] = useState('');
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [profileUpdateLoading, setProfileUpdateLoading] = useState(false);
+  const [profileUpdateSuccess, setProfileUpdateSuccess] = useState('');
+  const [profileUpdateError, setProfileUpdateError] = useState('');
+  const [passwordUpdateLoading, setPasswordUpdateLoading] = useState(false);
+  const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState('');
+  const [passwordUpdateError, setPasswordUpdateError] = useState('');
+  const [copiedUserId, setCopiedUserId] = useState(false);
 
   // Stats & Logs
   const [stats, setStats] = useState(null);
@@ -1366,6 +1383,101 @@ console.log('Delivered! Tracking ID:', result.trackingId);`;
     localStorage.removeItem('dakly_auth_token');
     localStorage.removeItem('dakly_auth_user');
   }
+
+  // Sync profile fields with logged-in user
+  useEffect(() => {
+    if (currentUser) {
+      setProfileNameInput(currentUser.name || '');
+      setProfileEmailInput(currentUser.email || '');
+    }
+  }, [currentUser, activeTab]);
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setProfileUpdateError('');
+    setProfileUpdateSuccess('');
+
+    if (!profileNameInput || profileNameInput.trim().length < 2) {
+      setProfileUpdateError('Name must be at least 2 characters long.');
+      return;
+    }
+    if (!profileEmailInput || !profileEmailInput.trim()) {
+      setProfileUpdateError('Email address is required.');
+      return;
+    }
+
+    setProfileUpdateLoading(true);
+    try {
+      const res = await updateUserSettingsApi(
+        {
+          name: profileNameInput.trim(),
+          email: profileEmailInput.trim().toLowerCase(),
+        },
+        authToken
+      );
+
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to update profile.');
+      }
+
+      setCurrentUser(res.user);
+      localStorage.setItem('dakly_auth_user', JSON.stringify(res.user));
+      setProfileUpdateSuccess('Profile updated successfully!');
+      setTimeout(() => setProfileUpdateSuccess(''), 4000);
+    } catch (err) {
+      setProfileUpdateError(err.message || 'Error updating profile.');
+    } finally {
+      setProfileUpdateLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordUpdateError('');
+    setPasswordUpdateSuccess('');
+
+    if (!currentPasswordInput) {
+      setPasswordUpdateError('Please enter your current password.');
+      return;
+    }
+    if (!newPasswordInput || newPasswordInput.length < 8) {
+      setPasswordUpdateError('New password must be at least 8 characters long.');
+      return;
+    }
+    if (!/[a-zA-Z]/.test(newPasswordInput) || !/[0-9]/.test(newPasswordInput)) {
+      setPasswordUpdateError('New password must contain at least one letter and one number.');
+      return;
+    }
+    if (newPasswordInput !== confirmPasswordInput) {
+      setPasswordUpdateError('New passwords do not match.');
+      return;
+    }
+
+    setPasswordUpdateLoading(true);
+    try {
+      const res = await updateUserSettingsApi(
+        {
+          currentPassword: currentPasswordInput,
+          newPassword: newPasswordInput,
+        },
+        authToken
+      );
+
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to change password.');
+      }
+
+      setCurrentPasswordInput('');
+      setNewPasswordInput('');
+      setConfirmPasswordInput('');
+      setPasswordUpdateSuccess('Password updated successfully!');
+      setTimeout(() => setPasswordUpdateSuccess(''), 4000);
+    } catch (err) {
+      setPasswordUpdateError(err.message || 'Error updating password.');
+    } finally {
+      setPasswordUpdateLoading(false);
+    }
+  };
 
   function handleSelectProject(projId) {
     const found = projects.find((p) => p.id === projId);
@@ -5054,6 +5166,278 @@ curl -X POST "${API_BASE_URL}/api/send" \\
                   </pre>
                 </SpotlightCard>
 
+              </div>
+            )}
+
+            {/* TAB: ACCOUNT & USER SETTINGS */}
+            {activeTab === 'settings' && (
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="pb-4 border-b border-slate-200 dark:border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
+                        Account Settings
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-300 border border-slate-200 dark:border-white/10">
+                        Role: {currentUser?.role || 'user'}
+                      </span>
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1.5">
+                      User Profile &amp; Security Settings
+                    </h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                      Update your account name, manage your login email address, and change your password.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20 text-xs font-semibold flex items-center gap-1.5">
+                      <ShieldCheck size={14} className="text-emerald-500" /> Account Active
+                    </span>
+                  </div>
+                </div>
+
+                {/* Profile & Password Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Card 1: Profile Information */}
+                  <SpotlightCard className="p-6 space-y-5">
+                    <div className="flex items-center space-x-3 pb-3 border-b border-slate-200/80 dark:border-white/5">
+                      <div className="p-2 rounded-lg bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Profile Details</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Update your public display name and account email</p>
+                      </div>
+                    </div>
+
+                    {profileUpdateSuccess && (
+                      <div className="notice" role="status">
+                        {profileUpdateSuccess}
+                      </div>
+                    )}
+                    {profileUpdateError && (
+                      <div className="notice notice-error" role="alert">
+                        {profileUpdateError}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleUpdateProfile} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                          Display Name
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          maxLength={50}
+                          value={profileNameInput}
+                          onChange={(e) => setProfileNameInput(e.target.value)}
+                          className="w-full text-xs font-mono px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          placeholder="Your name"
+                          disabled={profileUpdateLoading}
+                        />
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                          Visible in workspace collaborator lists and sender aliases.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={profileEmailInput}
+                          onChange={(e) => setProfileEmailInput(e.target.value)}
+                          className="w-full text-xs font-mono px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          placeholder="developer@example.com"
+                          disabled={profileUpdateLoading}
+                        />
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                          Primary email used for sign-in and delivery notifications.
+                        </p>
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="submit"
+                          disabled={profileUpdateLoading}
+                          className="button button-primary text-xs"
+                        >
+                          {profileUpdateLoading ? 'Saving changes…' : 'Save Profile Changes'}
+                        </button>
+                      </div>
+                    </form>
+                  </SpotlightCard>
+
+                  {/* Card 2: Change Password */}
+                  <SpotlightCard className="p-6 space-y-5">
+                    <div className="flex items-center space-x-3 pb-3 border-b border-slate-200/80 dark:border-white/5">
+                      <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                        <KeyRound className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Security &amp; Password</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Change your password to keep your account protected</p>
+                      </div>
+                    </div>
+
+                    {passwordUpdateSuccess && (
+                      <div className="notice" role="status">
+                        {passwordUpdateSuccess}
+                      </div>
+                    )}
+                    {passwordUpdateError && (
+                      <div className="notice notice-error" role="alert">
+                        {passwordUpdateError}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleChangePassword} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                          Current Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showCurrentPassword ? 'text' : 'password'}
+                            required
+                            value={currentPasswordInput}
+                            onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                            className="w-full text-xs font-mono px-3 py-2 pr-10 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                            placeholder="••••••••••••"
+                            disabled={passwordUpdateLoading}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                          >
+                            {showCurrentPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                          New Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showNewPassword ? 'text' : 'password'}
+                            required
+                            minLength={8}
+                            value={newPasswordInput}
+                            onChange={(e) => setNewPasswordInput(e.target.value)}
+                            className="w-full text-xs font-mono px-3 py-2 pr-10 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                            placeholder="At least 8 characters (letters &amp; numbers)"
+                            disabled={passwordUpdateLoading}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                          >
+                            {showNewPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                          Must be at least 8 characters with both letters and numbers.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                          Confirm New Password
+                        </label>
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          required
+                          minLength={8}
+                          value={confirmPasswordInput}
+                          onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                          className="w-full text-xs font-mono px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          placeholder="Re-type new password"
+                          disabled={passwordUpdateLoading}
+                        />
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="submit"
+                          disabled={passwordUpdateLoading}
+                          className="button button-outline text-xs"
+                        >
+                          {passwordUpdateLoading ? 'Updating password…' : 'Change Password'}
+                        </button>
+                      </div>
+                    </form>
+                  </SpotlightCard>
+                </div>
+
+                {/* Card 3: Account Overview & Metadata */}
+                <SpotlightCard className="p-6 space-y-4">
+                  <div className="flex items-center space-x-3 pb-3 border-b border-slate-200/80 dark:border-white/5">
+                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                      <Key className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Account Details</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Unique account identifier and system privileges</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-1">
+                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                      <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">User ID</div>
+                      <div className="flex items-center justify-between gap-2 mt-1">
+                        <span className="font-mono text-xs text-slate-800 dark:text-slate-200 truncate">
+                          {currentUser?.id || currentUser?._id || '—'}
+                        </span>
+                        {(currentUser?.id || currentUser?._id) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(currentUser.id || currentUser._id);
+                              setCopiedUserId(true);
+                              setTimeout(() => setCopiedUserId(false), 2000);
+                            }}
+                            className="p-1 hover:text-brand-500 text-slate-400"
+                            title="Copy User ID"
+                          >
+                            {copiedUserId ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                      <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Role Privilege</div>
+                      <div className="font-semibold text-xs text-slate-900 dark:text-white capitalize mt-1">
+                        {currentUser?.role || 'user'}
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                      <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Account Credits</div>
+                      <div className="font-mono font-semibold text-xs text-slate-900 dark:text-white mt-1">
+                        {currentUser?.credits ?? 0} credits
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                      <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Protection Status</div>
+                      <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                        <CheckCircle size={13} /> Lockout Guard Active
+                      </div>
+                    </div>
+                  </div>
+                </SpotlightCard>
               </div>
             )}
           </>

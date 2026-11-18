@@ -228,8 +228,136 @@ async function getMe(req, res) {
   }
 }
 
+/**
+ * Update current user settings / profile & password
+ * PATCH /api/auth/settings
+ * PUT /api/auth/profile
+ */
+async function updateUserSettings(req, res) {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Authentication required.' });
+    }
+
+    const { name, email, currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User account not found.' });
+    }
+
+    let updated = false;
+
+    // 1. Update Display Name if provided
+    if (name !== undefined) {
+      const cleanName = sanitizePlainText(name);
+      if (!cleanName || cleanName.length < 2) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please provide a valid name (at least 2 characters, without HTML or script tags).',
+        });
+      }
+      user.name = cleanName;
+      updated = true;
+    }
+
+    // 2. Update Email if provided and changed
+    if (email !== undefined) {
+      const cleanEmail = email.trim().toLowerCase();
+      if (!cleanEmail || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanEmail)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please provide a valid email address.',
+        });
+      }
+
+      if (cleanEmail !== user.email) {
+        const existing = await User.findOne({ email: cleanEmail, _id: { $ne: user._id } });
+        if (existing) {
+          return res.status(400).json({
+            success: false,
+            error: 'This email address is already associated with another account.',
+          });
+        }
+        user.email = cleanEmail;
+        updated = true;
+      }
+    }
+
+    // 3. Change Password if provided
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Current password is required to set a new password.',
+        });
+      }
+
+      const isCurrentMatch = await user.matchPassword(currentPassword);
+      if (!isCurrentMatch) {
+        return res.status(401).json({
+          success: false,
+          error: 'Current password does not match.',
+        });
+      }
+
+      const trimmedPassword = String(newPassword);
+      if (trimmedPassword.length < 8) {
+        return res.status(400).json({
+          success: false,
+          error: 'New password must be at least 8 characters long.',
+        });
+      }
+
+      if (COMMON_WEAK_PASSWORDS.has(trimmedPassword.toLowerCase())) {
+        return res.status(400).json({
+          success: false,
+          error: 'This password is too easily guessed. Please choose a more secure password.',
+        });
+      }
+
+      if (!/[a-zA-Z]/.test(trimmedPassword) || !/[0-9]/.test(trimmedPassword)) {
+        return res.status(400).json({
+          success: false,
+          error: 'New password must contain at least one letter and one number.',
+        });
+      }
+
+      user.password = trimmedPassword; // Hashed by userSchema.pre('save')
+      user.failedLoginAttempts = 0;
+      user.lockUntil = null;
+      updated = true;
+    }
+
+    if (updated) {
+      await user.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'User settings updated successfully!',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        credits: user.credits || 0,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error('Update User Settings Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   register,
   login,
   getMe,
+  updateUserSettings,
 };

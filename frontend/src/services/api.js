@@ -33,6 +33,18 @@ export async function fetchMe(token) {
   return res.json();
 }
 
+export async function updateUserSettingsApi(payload, token) {
+  const res = await fetch(`${API_BASE_URL}/api/auth/settings`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
 // Project & Dashboard Endpoints
 export async function fetchProjects(token) {
   const headers = {};

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpRight, LayoutDashboard, Send, Mail, Server, FileText, Radio, ShieldCheck, Code, Menu, LogOut, Sun, Moon, Sparkles } from 'lucide-react';
+import { ArrowUpRight, LayoutDashboard, Send, Mail, Server, FileText, Radio, ShieldCheck, Code, Menu, LogOut, Sun, Moon, Sparkles, Settings } from 'lucide-react';
 import { Brand } from './Landing';
 
 const pages = [
@@ -7,6 +7,7 @@ const pages = [
   ['templates', 'Templates', Mail], ['senders', 'Projects & senders', Server],
   ['logs', 'Delivery logs', FileText], ['webhooks', 'Webhooks', Radio],
   ['security', 'Security & team', ShieldCheck], ['snippets', 'API & SDK', Code],
+  ['settings', 'Account settings', Settings],
 ];
 
 export default function ConsoleNavigation({ activeTab, onTab, projects, activeProject, onProject, user, onLogout, onNewProject, theme, onTheme, onPrompt, onPricing }) {
@@ -22,7 +23,19 @@ export default function ConsoleNavigation({ activeTab, onTab, projects, activePr
         {onPricing && <button className="sidebar-link" onClick={onPricing}><Sparkles size={16} aria-hidden="true" /> Pricing &amp; Credits</button>}
         <button className="sidebar-link" onClick={onPrompt}>AI setup prompt <ArrowUpRight size={15} aria-hidden="true" /></button>
         <button className="sidebar-link" onClick={onTheme}>{theme === 'dark' ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />} {theme === 'dark' ? 'Light appearance' : 'Dark appearance'}</button>
-        <div className="sidebar-user"><span title={user?.name}>{user?.name || 'Your account'}</span><button className="icon-button" onClick={onLogout} aria-label="Sign out"><LogOut size={17} aria-hidden="true" /></button></div>
+        <div className="sidebar-user">
+          <button
+            type="button"
+            className="sidebar-user-action"
+            onClick={() => { onTab('settings'); setExpanded(false); }}
+            title="Account & User Settings"
+            aria-label="Account Settings"
+          >
+            <span className="sidebar-user-name" title={user?.name}>{user?.name || 'Your account'}</span>
+            <Settings size={14} aria-hidden="true" className="settings-icon opacity-70 hover:opacity-100" />
+          </button>
+          <button className="icon-button" onClick={onLogout} aria-label="Sign out" title="Sign out"><LogOut size={17} aria-hidden="true" /></button>
+        </div>
       </div>
     </aside>
   </>;
